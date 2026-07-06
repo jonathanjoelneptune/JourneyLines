@@ -24,6 +24,14 @@ const MAP_STYLE = {
       tileSize: 256,
       attribution: 'Tiles &copy; Esri'
     },
+    countryBoundaries: {
+      type: 'geojson',
+      data: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_boundary_lines_land.geojson'
+    },
+    stateBoundaries: {
+      type: 'geojson',
+      data: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces_lines.geojson'
+    },
     // v2.3: base-map city label raster removed. Active trip endpoints are labeled by the app overlay instead.
   },
   layers: [
@@ -41,6 +49,28 @@ const MAP_STYLE = {
         'raster-brightness-min': 0.0,
         'raster-brightness-max': 0.78,
         'raster-fade-duration': 650
+      }
+    },
+    {
+      id: 'country-boundaries-subtle',
+      type: 'line',
+      source: 'countryBoundaries',
+      minzoom: 0,
+      paint: {
+        'line-color': 'rgba(205, 236, 255, 0.62)',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.25, 3, 0.45, 6, 0.75],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 0, 0.10, 2, 0.16, 6, 0.24]
+      }
+    },
+    {
+      id: 'state-boundaries-subtle',
+      type: 'line',
+      source: 'stateBoundaries',
+      minzoom: 2.2,
+      paint: {
+        'line-color': 'rgba(195, 230, 255, 0.54)',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 2, 0.18, 4, 0.34, 7, 0.58],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 2, 0.06, 4, 0.12, 7, 0.20]
       }
     }
   ]
@@ -525,33 +555,62 @@ function colorForLeg(active, travelersById) {
 
 function buildVisitedLocations(completedLegs, active, completedMode, scene, travelersById = {}) {
   const pointMap = new Map();
-  const add = (loc, legWrapper, isNew = false) => {
-    if (!loc?.id) return;
-    const existing = pointMap.get(loc.id);
+  const addVisit = (loc, legWrapper, isNew = false) => {
+    if (!loc?.id || !legWrapper) return;
     const color = colorForLeg(legWrapper, travelersById);
-    // Keep the first color assigned to a visited pin so old pins do not recolor when a Joey/Bonnie-only trip becomes active.
-    pointMap.set(loc.id, { ...(existing || loc), ...loc, color: existing?.color || color, isNew: Boolean(existing?.isNew || isNew) });
+    const existing = pointMap.get(loc.id);
+    const visits = existing?.visits ? [...existing.visits] : [];
+    visits.push({ color, tripId: legWrapper.trip?.id, legIndex: legWrapper.legIndex, mode: legWrapper.leg?.mode });
+    pointMap.set(loc.id, {
+      ...(existing || loc),
+      ...loc,
+      color,
+      visits,
+      visitColors: visits.map(v => v.color),
+      isNew: Boolean(existing?.isNew || isNew)
+    });
   };
+  const addSeed = (loc, legWrapper) => {
+    if (!loc?.id || pointMap.has(loc.id)) return;
+    const color = colorForLeg(legWrapper, travelersById);
+    const visits = [{ color, tripId: legWrapper?.trip?.id || 'seed', legIndex: -1, mode: legWrapper?.leg?.mode || 'seed' }];
+    pointMap.set(loc.id, { ...loc, color, visits, visitColors: [color], isNew: false });
+  };
+
+  // Seed the first origin so the initial home/base point can appear, then record
+  // each arrival as the actual visit. This avoids counting round-trip departure
+  // points twice while still telling the color story of repeat destinations.
+  const firstCompleted = completedLegs?.[0];
+  if (firstCompleted?.leg?.from) addSeed(firstCompleted.leg.from, firstCompleted);
+
   for (const l of completedLegs || []) {
-    add(l.leg.from, l, false);
-    add(l.leg.to, l, false);
+    addVisit(l.leg.to, l, false);
   }
   if (active && !completedMode) {
-    add(active.leg.from, active, false);
-    if (scene?.arrivalLabelVisible) add(active.leg.to, active, true);
+    addSeed(active.leg.from, active);
+    if (scene?.arrivalLabelVisible) addVisit(active.leg.to, active, true);
   }
   return [...pointMap.values()];
 }
 
+function cssSegmentGradient(colors = [], fallback = '#00e5ff') {
+  const clean = (colors.length ? colors : [fallback]).filter(Boolean);
+  if (clean.length <= 1) return clean[0] || fallback;
+  if (clean.length === 2) return `linear-gradient(90deg, ${clean[0]} 0 50%, ${clean[1]} 50% 100%)`;
+  const step = 100 / clean.length;
+  const stops = clean.map((c, i) => `${c} ${(i * step).toFixed(3)}% ${((i + 1) * step).toFixed(3)}%`).join(', ');
+  return `conic-gradient(from -90deg, ${stops})`;
+}
+
 function syncVisitedPoints(map, visitedLocations, sigRef) {
-  const sig = visitedLocations.map(l => `${l.id}:${displayNameForLocation(l)}:${l.color || '#00e5ff'}:${l.isNew ? 1 : 0}`).sort().join('|');
+  const sig = visitedLocations.map(l => `${l.id}:${displayNameForLocation(l)}:${(l.visitColors || [l.color || '#00e5ff']).join(',')}:${l.isNew ? 1 : 0}`).sort().join('|');
   if (sigRef?.current === sig) return;
   if (sigRef) sigRef.current = sig;
   map.getSource('visited-points')?.setData({
     type: 'FeatureCollection',
     features: visitedLocations.map(loc => ({
       type: 'Feature',
-      properties: { id: loc.id, name: loc.name, displayName: displayNameForLocation(loc), showLabel: true, color: loc.color || '#00e5ff', isNew: Boolean(loc.isNew) },
+      properties: { id: loc.id, name: loc.name, displayName: displayNameForLocation(loc), showLabel: true, color: loc.color || '#00e5ff', isNew: Boolean(loc.isNew), visitCount: loc.visitColors?.length || 1 },
       geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] }
     }))
   });
@@ -582,7 +641,12 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       el.__jlMarker.setLngLat([loc.lon, loc.lat]);
     }
 
+    const visitColors = loc.visitColors?.length ? loc.visitColors : [loc.color || color];
+    const gradient = cssSegmentGradient(visitColors, loc.color || color);
     el.style.setProperty('--place-color', loc.color || color);
+    el.style.setProperty('--pin-segments', gradient);
+    el.style.setProperty('--pin-tail-color', visitColors[visitColors.length - 1] || loc.color || color);
+    el.dataset.visitCount = String(visitColors.length);
     el.__jlLocation = loc;
 
     let inner = el.querySelector('.jl-map-pin-inner');
@@ -642,6 +706,7 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const nearScreenEdge = pt.x < 6 || pt.x > w - 6 || pt.y < 6 || pt.y > h - 6;
     const visible = onScreen && visibleHemisphere && !nearScreenEdge;
     el.style.opacity = visible ? '1' : '0';
+    el.style.visibility = visible ? 'visible' : 'hidden';
     el.style.pointerEvents = 'none';
   }
 }

@@ -1105,3 +1105,31 @@ body { background: #000; }
 .maplibregl-marker.jl-map-pin .jl-map-pin-inner {
   transform-origin: 50% 100%;
 }
+
+/* v2.29 hard culling, subtle boundaries, and multi-visit segmented placards */
+.maplibregl-marker.jl-map-pin {
+  transition: none !important;
+}
+.jl-map-pin {
+  transition: none !important;
+}
+.jl-map-pin-inner {
+  border: 2px solid transparent !important;
+  background:
+    linear-gradient(rgba(1, 8, 20, 0.94), rgba(1, 8, 20, 0.94)) padding-box,
+    var(--pin-segments, var(--place-color, #00e5ff)) border-box !important;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.58) !important;
+}
+.jl-map-pin-dot {
+  background: var(--pin-segments, var(--place-color, #00e5ff)) !important;
+  border: 1px solid rgba(255,255,255,.92) !important;
+  box-shadow: none !important;
+}
+.jl-map-pin-tail {
+  background: rgba(1, 8, 20, 0.94) !important;
+  border-right: 2px solid var(--pin-tail-color, var(--place-color, #00e5ff)) !important;
+  border-bottom: 2px solid var(--pin-tail-color, var(--place-color, #00e5ff)) !important;
+}
+.jl-map-pin[data-visit-count='1'] .jl-map-pin-inner {
+  border-color: color-mix(in srgb, var(--place-color, #00e5ff), white 36%) !important;
+}
