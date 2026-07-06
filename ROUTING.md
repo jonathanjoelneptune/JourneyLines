@@ -1,28 +1,32 @@
-# JourneyLines Routing
+# JourneyLines Routing Notes — v2.13
 
-## Mapbox driving routes
+## Mapbox token source
+JourneyLines uses a Mapbox public token for driving route geometry. In v2.13 the GitHub Actions workflow writes the token into:
 
-JourneyLines uses `VITE_MAPBOX_TOKEN` at build time. The token must be saved as a GitHub repository secret named exactly:
+`dist/runtime-config.js`
 
-```text
-VITE_MAPBOX_TOKEN
-```
+The app reads tokens in this order:
 
-The deploy workflow now checks whether the secret is available before building. If it is missing, the Action will fail with a clear message instead of silently deploying a build with generic driving routes.
+1. `window.JOURNEYLINES_CONFIG.mapboxToken` from `runtime-config.js`
+2. `import.meta.env.VITE_MAPBOX_TOKEN`
+3. `src/data/routingSettings.json` public token field, intentionally blank by default
+4. `localStorage.getItem('journeylines.mapboxToken')` fallback
 
-The app reads the token in this order:
+## Required GitHub Secret
+Repo → Settings → Secrets and variables → Actions → Repository secrets:
 
-1. `import.meta.env.VITE_MAPBOX_TOKEN` from GitHub Actions / Vite build
-2. `routingSettings.json` publicToken, blank by default
-3. browser localStorage fallback for local testing
+`VITE_MAPBOX_TOKEN`
 
-Driving routes are cached in localStorage by cache version.
+## How to confirm after deploy
+Open:
 
-## Boat and train routing
+`https://jonathanjoelneptune.github.io/JourneyLines/runtime-config.js`
 
-Boat and train routes currently use manual waypoint overrides in `src/data/routeOverrides.json`. Cruise routing is represented by curated port/ocean waypoints for now. A future cruise-route database can be added as more exact itinerary port calls are known.
+It should contain:
 
+`window.JOURNEYLINES_CONFIG = {"mapboxToken":"pk...."};`
 
-## v2.12 Mapbox token runtime config
+If it is blank, the updated `.github/workflows/deploy.yml` did not deploy or the secret is not available to the workflow.
 
-GitHub Actions writes `journeylines/public/runtime-config.js` during deployment using the repository secret `VITE_MAPBOX_TOKEN`. The app checks `window.JOURNEYLINES_CONFIG.mapboxToken` first, then `import.meta.env.VITE_MAPBOX_TOKEN`, then `routingSettings.json`, then localStorage. This makes the deployed gh-pages site use the token without committing it to source.
+## Driving route behavior
+Driving routes use Mapbox Directions with profile `mapbox/driving` when a token is available. If the token is missing, JourneyLines falls back to manual/generic geometry and logs a console warning.

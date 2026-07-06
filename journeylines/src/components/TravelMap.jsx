@@ -46,7 +46,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, onUserInteractPause = null }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -148,44 +148,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const navigationMethods = [map.dragPan, map.scrollZoom, map.boxZoom, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
-    // v2.11: interactions stay available. If the user drags/zooms while playback is running, App pauses.
-    for (const method of navigationMethods) {
-      try { method.enable(); } catch {}
+
+    // v2.13: revert drag-while-playing. During playback the cinematic camera owns the globe.
+    // Manual panning/zooming is available only while paused/reset.
+    const methods = [map.dragPan, map.scrollZoom, map.boxZoom, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
+    for (const method of methods) {
+      try { isPlaying ? method.disable() : method.enable(); } catch {}
     }
-    // Keep north-up orientation. Users can pan/zoom, but not rotate the globe.
     try { map.dragRotate.disable(); } catch {}
     try { map.touchZoomRotate.disableRotation(); } catch {}
     try { map.setBearing(0); } catch {}
-  }, [isPlaying]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    // When playback starts/restarts, JourneyLines owns the camera again until the user touches the map.
     if (isPlaying) userCameraOverrideRef.current = false;
-    const pauseForUser = () => {
-      if (!isPlaying) return;
-      userCameraOverrideRef.current = true;
-      if (typeof onUserInteractPause === 'function') onUserInteractPause();
-    };
-    const canvas = map.getCanvas();
-    const opts = { passive: true, capture: true };
-    canvas.addEventListener('pointerdown', pauseForUser, opts);
-    canvas.addEventListener('wheel', pauseForUser, opts);
-    canvas.addEventListener('touchstart', pauseForUser, opts);
-    map.on('dragstart', pauseForUser);
-    map.on('zoomstart', pauseForUser);
-    map.on('rotatestart', pauseForUser);
-    return () => {
-      canvas.removeEventListener('pointerdown', pauseForUser, opts);
-      canvas.removeEventListener('wheel', pauseForUser, opts);
-      canvas.removeEventListener('touchstart', pauseForUser, opts);
-      map.off('dragstart', pauseForUser);
-      map.off('zoomstart', pauseForUser);
-      map.off('rotatestart', pauseForUser);
-    };
-  }, [isPlaying, onUserInteractPause]);
+  }, [isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -244,7 +218,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     if (!routingSettings?.mapbox?.enabled) return;
     const token = getMapboxToken();
-    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because VITE_MAPBOX_TOKEN was not available at build time.'); return; }
+    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because no Mapbox token was found in runtime-config.js, VITE_MAPBOX_TOKEN, routingSettings.json, or localStorage. Check the deployed /runtime-config.js file and the GitHub Actions workflow.'); return; }
     const candidates = legs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
     if (!candidates.length) return;
     console.info(`JourneyLines: fetching ${candidates.length} Mapbox driving route(s) with cache ${routeCacheVersion()}.`);
@@ -661,7 +635,7 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
-function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.12'; }
+function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.13'; }
 function routeCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }

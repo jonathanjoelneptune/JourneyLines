@@ -7,7 +7,7 @@
     "overview": "full",
     "cacheInLocalStorage": true,
     "maxRoutesPerSession": 120,
-    "cacheVersion": "v2.12",
+    "cacheVersion": "v2.13",
     "concurrency": 4
   },
   "manualOverridesEnabled": true,

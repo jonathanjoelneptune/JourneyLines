@@ -93,7 +93,7 @@ export default function App() {
       <div className="tagline">Animated travel history across a living world atlas</div>
       <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} onUserInteractPause={pause} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} />
     {!started && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
       <h1>JourneyLines</h1>
