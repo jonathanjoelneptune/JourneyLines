@@ -61,6 +61,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const lastCameraRef = useRef(null);
   const arrivalTimerRef = useRef(null);
   const routeRequestsRef = useRef(new Set());
+  const currentOverlayStateRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadStoredRouteCache());
 
@@ -125,6 +126,24 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    const refresh = () => {
+      const state = currentOverlayStateRef.current;
+      if (!state) return;
+      updateOverlay(map, state.active, state.scene, state.color);
+      const destPt = state.active?.leg?.to ? map.project([state.active.leg.to.lon, state.active.leg.to.lat]) : null;
+      if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
+    };
+    map.on('move', refresh);
+    map.on('render', refresh);
+    return () => {
+      map.off('move', refresh);
+      map.off('render', refresh);
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
     const navigationMethods = [map.dragPan, map.scrollZoom, map.boxZoom, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
     for (const method of navigationMethods) {
       try { isPlaying ? method.disable() : method.enable(); } catch {}
@@ -151,6 +170,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!scene || !active) {
       syncActiveRoute(map, null);
       syncPulse(map, null, 'transparent');
+      currentOverlayStateRef.current = null;
       setOverlayVisibility(false);
       if (completedMode) {
         map.easeTo({ center: [-38, 23], zoom: 1.55, bearing: 0, pitch: 0, duration: 900, essential: true });
@@ -170,29 +190,30 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     lastCameraRef.current = camera;
     map.jumpTo({ ...camera, essential: true });
 
+    currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
   }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!mapReady || !map || !active || completedMode || scene?.phase !== 'arrival') return;
+    if (!mapReady || !map || !active || completedMode || !scene?.pulseActive) return;
     const color = colorForLeg(active, travById);
     clearTimeout(arrivalTimerRef.current);
     syncPulse(map, active.leg.to, color);
     arrivalTimerRef.current = setTimeout(() => syncPulse(map, active.leg.to, 'transparent'), 900);
     return () => clearTimeout(arrivalTimerRef.current);
-  }, [mapReady, activeIndex, scene?.phase, active, completedMode, travById]);
+  }, [mapReady, activeIndex, scene?.pulseActive, active, completedMode, travById]);
 
 
   useEffect(() => {
     if (!routingSettings?.mapbox?.enabled) return;
     const token = getMapboxToken();
-    if (!token) return;
-    const candidates = visibleLegs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
+    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because VITE_MAPBOX_TOKEN was not available at build time.'); return; }
+    const candidates = legs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
     if (!candidates.length) return;
     let cancelled = false;
     async function runQueue() {
-      for (const item of candidates.slice(0, 24)) {
+      for (const item of candidates.slice(0, routingSettings?.mapbox?.maxRoutesPerSession || 80)) {
         const key = routeCacheKey(item.leg);
         if (cancelled || routeRequestsRef.current.has(key)) continue;
         routeRequestsRef.current.add(key);
@@ -212,7 +233,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     }
     runQueue();
     return () => { cancelled = true; };
-  }, [visibleLegs, routedGeometries]);
+  }, [legs, routedGeometries]);
 
   function setOverlayVisibility(visible) {
     for (const ref of [vehicleRef, pulseRef]) {
@@ -226,7 +247,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
 
     const mode = leg.mode;
-    const rotation = mode === 'plane' || mode === 'move' ? projectedScreenHeading(map, leg, sceneState.routeProgress) : 0;
+    const rotation = mode === 'plane' || mode === 'move' ? projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries) : 0;
     vehicleRef.current.innerHTML = vehicleSvg(mode === 'move' ? 'plane' : mode);
     vehicleRef.current.dataset.mode = mode;
     vehicleRef.current.style.setProperty('--vehicle-color', color);
@@ -251,18 +272,40 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
 function addRouteSourcesAndLayers(map) {
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 4.5 } });
+    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 6.5 } });
     map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] } });
   }
   if (!map.getSource('active-route')) {
     map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 8, 'line-opacity': 0.32, 'line-blur': 7 } });
-    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 3.2, 'line-opacity': 0.98 } });
+    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 10.5, 'line-opacity': 0.46, 'line-blur': 9 } });
+    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 3.8, 'line-opacity': 1 } });
   }
   if (!map.getSource('visited-points')) {
     map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 7, 'circle-color': '#061224', 'circle-opacity': 0.84 } });
-    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 3.9, 'circle-color': '#effcff', 'circle-stroke-color': '#061224', 'circle-stroke-width': 1.5, 'circle-opacity': 0.96 } });
+    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 8.5, 'circle-color': '#061224', 'circle-opacity': 0.88 } });
+    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 4.4, 'circle-color': '#effcff', 'circle-stroke-color': '#061224', 'circle-stroke-width': 1.7, 'circle-opacity': 0.98 } });
+    map.addLayer({
+      id: 'visited-labels',
+      type: 'symbol',
+      source: 'visited-points',
+      layout: {
+        'text-field': ['get', 'displayName'],
+        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 1, 10, 4, 13, 7, 15],
+        'text-anchor': 'left',
+        'text-offset': [0.82, -1.15],
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+        'text-optional': false
+      },
+      paint: {
+        'text-color': '#f9feff',
+        'text-halo-color': '#031020',
+        'text-halo-width': 2.2,
+        'text-halo-blur': 0.6,
+        'text-opacity': ['case', ['boolean', ['get', 'showLabel'], true], 1, 0]
+      }
+    });
   }
 }
 
@@ -275,7 +318,7 @@ function addPulseLayer(map) {
 function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}) {
   const features = showTrails ? completedLegs.map((l, i) => {
     const color = colorForLeg(l, travelersById);
-    return routeFeature(l.leg, color, l.trip.id, i, 0.82, width, false, 1, routedGeometries);
+    return routeFeature(l.leg, color, l.trip.id, i, 0.9, width, false, 1, routedGeometries);
   }) : [];
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
@@ -300,10 +343,10 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       tripId,
       index,
       color,
-      width: active ? 3.2 : width,
-      opacity: active ? 0.98 : opacity,
-      glowWidth: active ? 8 : width * 3.1,
-      glowOpacity: active ? 0.34 : Math.min(0.36, opacity * 0.42),
+      width: active ? 3.8 : Math.max(width, 1.9),
+      opacity: active ? 1 : Math.max(0.78, opacity),
+      glowWidth: active ? 10.5 : Math.max(width * 4.1, 7.2),
+      glowOpacity: active ? 0.48 : Math.min(0.52, Math.max(0.34, opacity * 0.55)),
       dash: dashForMode(leg.mode)
     },
     geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 180 : 96, routedGeometries) }
@@ -357,10 +400,11 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
     screenHeading: headingToScreenRotation(heading, bearing),
     vehicleScale: vehicleScale(leg.mode, phase, endpointBias, p),
     vehicleVisible: raw <= 1 && p > 0.006 && p < 0.994,
-    pulseActive: phase === 'arrival' || phase === 'settle',
+    pulseActive: arrived,
     arrivalLabelVisible: arrived,
     newArrivalId: arrived ? leg.to.id : null,
     camera: { center: [center.lon, center.lat], zoom, pitch, bearing },
+    routedGeometries,
     frameKey: `${active.trip.id}:${active.legIndex}:${Math.round(raw * 1000)}:${cameraMode}`
   };
 }
@@ -395,43 +439,39 @@ function buildVisitedLocations(completedLegs, active, completedMode, scene) {
 }
 
 function syncVisitedPoints(map, visitedLocations, sigRef) {
-  const sig = visitedLocations.map(l => l.id).sort().join('|');
+  const sig = visitedLocations.map(l => `${l.id}:${displayNameForLocation(l)}`).sort().join('|');
   if (sigRef?.current === sig) return;
   if (sigRef) sigRef.current = sig;
   map.getSource('visited-points')?.setData({
     type: 'FeatureCollection',
-    features: visitedLocations.map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }))
+    features: visitedLocations.map(loc => ({
+      type: 'Feature',
+      properties: { id: loc.id, name: loc.name, displayName: displayNameForLocation(loc), showLabel: true },
+      geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] }
+    }))
   });
 }
 
 function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, color = '#00e5ff', newArrivalId = null) {
+  // v2.8: persistent labels are now MapLibre symbol layers so they stay attached to the globe,
+  // move while paused, and hide naturally behind the globe horizon. This overlay is used only
+  // for the one-time destination pin-drop animation on arrival.
   const container = containerRef.current;
-  if (!container) return;
-  const wanted = new Set(visitedLocations.map(l => l.id));
-  for (const [id, el] of labelsRef.current.entries()) {
-    if (!wanted.has(id)) {
-      el.remove();
-      labelsRef.current.delete(id);
-    }
-  }
-  for (const loc of visitedLocations) {
-    let el = labelsRef.current.get(loc.id);
-    if (!el) {
-      el = document.createElement('div');
-      el.className = 'jl-persistent-place-label';
-      el.innerHTML = `<span class="jl-place-dot"></span><span class="jl-place-name">${escapeHtml(loc.name)}</span>`;
-      container.appendChild(el);
-      labelsRef.current.set(loc.id, el);
-    }
-    el.style.setProperty('--place-color', color);
-    const pt = map.project([loc.lon, loc.lat]);
-    el.style.transform = `translate3d(${pt.x + 12}px, ${pt.y - 28}px, 0)`;
-    if (newArrivalId === loc.id && !el.classList.contains('has-arrived')) {
-      el.classList.remove('is-new-arrival');
-      void el.offsetWidth;
-      el.classList.add('is-new-arrival', 'has-arrived');
-    }
-  }
+  if (!container || !newArrivalId) return;
+  const loc = visitedLocations.find(l => l.id === newArrivalId);
+  if (!loc) return;
+  const existing = labelsRef.current.get(`pin-${newArrivalId}`);
+  if (existing) return;
+  const pt = map.project([loc.lon, loc.lat]);
+  const el = document.createElement('div');
+  el.className = 'jl-arrival-pin-drop';
+  el.style.setProperty('--place-color', color);
+  el.innerHTML = `<span class="jl-place-dot"></span><span class="jl-place-name">${escapeHtml(displayNameForLocation(loc))}</span>`;
+  el.style.transform = `translate3d(${pt.x + 12}px, ${pt.y - 28}px, 0)`;
+  container.appendChild(el);
+  labelsRef.current.set(`pin-${newArrivalId}`, el);
+  setTimeout(() => { el.classList.add('fade-out'); }, 1400);
+  setTimeout(() => { el.remove(); labelsRef.current.delete(`pin-${newArrivalId}`); }, 2050);
 }
 
 function updatePulseOverlay(el, point, color, active) {
@@ -464,9 +504,9 @@ function headingAlongRoute(leg, t, routedGeometries = {}) {
   return bearingBetween(a, b);
 }
 
-function projectedScreenHeading(map, leg, t) {
-  const a = pointAtRouteProgress(leg, Math.max(0, t - 0.01));
-  const b = pointAtRouteProgress(leg, Math.min(1, t + 0.01));
+function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
+  const a = pointAtRouteProgress(leg, Math.max(0, t - 0.01), routedGeometries);
+  const b = pointAtRouteProgress(leg, Math.min(1, t + 0.01), routedGeometries);
   const pa = map.project([a.lon, a.lat]);
   const pb = map.project([b.lon, b.lat]);
   return Math.atan2(pb.x - pa.x, -(pb.y - pa.y)) * 180 / Math.PI;
@@ -474,11 +514,11 @@ function projectedScreenHeading(map, leg, t) {
 
 
 function routeCacheKey(leg) {
-  return `${leg.from.id}->${leg.to.id}:${leg.mode}`;
+  return `v2.8:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }
 
 function reverseRouteCacheKey(leg) {
-  return `${leg.to.id}->${leg.from.id}:${leg.mode}`;
+  return `v2.8:${leg.to.id}->${leg.from.id}:${leg.mode}`;
 }
 
 function getRoutedGeometry(leg, routedGeometries = {}) {
@@ -672,7 +712,7 @@ function vehicleScale(mode, phase, endpointBias, progress) {
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
   if (!(mode === 'plane' || mode === 'move')) return routeProgress;
   if (rawP > 0.965) return 1;
-  const offset = distance > 3000 ? 0.0035 : distance > 900 ? 0.006 : 0.012;
+  const offset = distance > 3000 ? 0.006 : distance > 900 ? 0.010 : 0.018;
   return Math.max(0, Math.min(1, routeProgress - offset));
 }
 function bearingBetween(a, b) {
@@ -695,6 +735,19 @@ function vehicleSvg(mode) {
   if (mode === 'train') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><rect x="-12" y="-18" width="24" height="34" rx="6"/><path d="M-7 -10 H7 M-7 0 H7"/><circle cx="-6" cy="18" r="3"/><circle cx="6" cy="18" r="3"/></svg>';
   return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M0 -22 L6 -4 L23 3 L23 9 L5 6 L2 18 L8 22 L8 25 L0 21 L-8 25 L-8 22 L-2 18 L-5 6 L-23 9 L-23 3 L-6 -4 Z"/></svg>';
 }
+
+const US_STATE_ABBR = {
+  Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE', Florida: 'FL', Georgia: 'GA', Hawaii: 'HI', Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA', Maine: 'ME', Maryland: 'MD', Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS', Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH', Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT', Virginia: 'VA', Washington: 'WA', 'Washington DC': 'DC', 'District of Columbia': 'DC', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY'
+};
+function displayNameForLocation(loc) {
+  if (!loc) return '';
+  const region = loc.region || '';
+  if (loc.country === 'United States' && region) {
+    return `${loc.name}, ${US_STATE_ABBR[region] || region}`;
+  }
+  return loc.name;
+}
+
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 function smoothstep(x) { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); }
 function lerp(a, b, t) { return a + (b - a) * t; }

@@ -5,8 +5,10 @@
     "profile": "mapbox/driving",
     "geometries": "geojson",
     "overview": "full",
-    "cacheInLocalStorage": true
+    "cacheInLocalStorage": true,
+    "maxRoutesPerSession": 120,
+    "cacheVersion": "v2.8"
   },
   "manualOverridesEnabled": true,
-  "notes": "Preferred token source is the GitHub Actions repository secret VITE_MAPBOX_TOKEN, injected at build time. publicToken remains empty by default. Browser localStorage key journeylines.mapboxToken is retained only as a fallback for local testing. Driving routes use Mapbox Directions when a token is available; boat/train use manual overrides for now."
+  "notes": "Preferred token source is the GitHub Actions repository secret VITE_MAPBOX_TOKEN, injected at build time. publicToken remains empty by default. Browser localStorage key journeylines.mapboxToken is retained only as a fallback for local testing. Driving routes use Mapbox Directions when a token is available; boat/train use manual overrides for now. v2.8 uses globe-anchored MapLibre symbol labels and refreshed route cache keys."
 }

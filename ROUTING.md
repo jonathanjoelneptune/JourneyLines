@@ -1,69 +1,36 @@
-# JourneyLines routing plan
+# JourneyLines Routing Notes
 
-JourneyLines v2.6 adds the first routing layer beyond straight-line travel.
+## Driving
 
-## Driving: Mapbox Directions
+Driving routes are fetched from Mapbox Directions using the public token injected by GitHub Actions as `VITE_MAPBOX_TOKEN`.
 
-Driving routes can be fetched from Mapbox Directions when a public token is available.
+The token priority order is:
 
-Add your public token in either place:
+1. `import.meta.env.VITE_MAPBOX_TOKEN`, injected from the GitHub repository secret at build time.
+2. `src/data/routingSettings.json` `publicToken`, intentionally blank by default.
+3. Browser `localStorage` key `journeylines.mapboxToken`, retained only for local testing.
 
-1. Edit `journeylines/src/data/routingSettings.json`:
+v2.8 bumps the route cache key to `v2.8:*` so old generic fallback routes will not hide newly fetched Mapbox Directions results.
 
-```json
-{
-  "mapbox": {
-    "publicToken": "pk.your_public_token_here"
-  }
-}
-```
-
-2. Or store it in the browser console once:
-
-```js
-localStorage.setItem('journeylines.mapboxToken', 'pk.your_public_token_here')
-```
-
-The app uses:
+Driving routes use:
 
 - profile: `mapbox/driving`
 - geometry: `geojson`
 - overview: `full`
-- local cache key: `journeylines.routeCache`
 
-If no token is present, drive routes fall back to manual waypoint overrides or simple point-to-point paths.
+If the token is missing or rejected by Mapbox, JourneyLines logs a warning in the browser console and falls back to manual/simple route geometry.
 
-## Boat routing
+## Boats
 
-v2.6 uses manual boat route overrides in `journeylines/src/data/routeOverrides.json`.
+Boat routes are manual overrides in `src/data/routeOverrides.json` for now. Carnival/cruise-style routes should be stored as waypoint paths from the likely departure port to each port of call.
 
-Included manual cruise-style paths:
+Known intent:
 
-- Melbourne / Port Canaveral area to Nassau
-- Nassau back to Melbourne / Port Canaveral area
-- Melbourne / Port Canaveral area to Jamaica
-- Jamaica to Grand Cayman
-- Grand Cayman back to Melbourne / Port Canaveral area
-- Long Beach / Catalina routing through the Long Beach port waypoint
+- Bahamas/Jamaica/Cayman cruise routes use Port Canaveral/Miami-style waypoints depending on the trip context.
+- Catalina uses Long Beach/San Pedro-style ferry routing to Catalina Island.
 
-This is intentionally manual for now because there is not a simple universal browser-only equivalent of Mapbox Directions for cruise ships. A future cruise routing database could be added as a curated JSON dataset with named ports, cruise legs, and typical sea-lane waypoints.
+A future cruise routing database could be built as a curated JSON library of cruise ports and common port-to-port legs.
 
-## Train routing
+## Trains
 
-v2.6 uses manual train waypoints for known train legs. A future true train-routing implementation would likely need a server-side transit engine such as OpenTripPlanner plus GTFS data, which is outside the scope of a purely static GitHub Pages app.
-
-## Future route database idea
-
-A good future structure would be:
-
-```json
-{
-  "ports": [],
-  "cruiseLines": [],
-  "itineraries": [],
-  "seaLanes": [],
-  "railCorridors": []
-}
-```
-
-This would let JourneyLines route cruises and trains from curated real-world corridors without requiring a live paid service for every playback.
+Train routes are also manual overrides for now. A future true train routing option would require a transit routing provider or an OpenTripPlanner server with GTFS data, which is outside the static GitHub Pages-only model.
