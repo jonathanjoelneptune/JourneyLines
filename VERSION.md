@@ -1,17 +1,9 @@
-# JourneyLines v2.9 — Persistent Pins + Driving Route Diagnostics
+# JourneyLines v2.10 — Persistent Stylized Pins + Air Arc + Token Check
 
-Date: 2026-07-06
-
-## Changes
-
-- Restored persistent colored visited pins on the globe.
-- Visited pins now keep their own traveler color instead of recoloring when a different traveler trip becomes active.
-- Destination pin now drops in as a simple dot when the vehicle arrives, then remains visible as a persistent map-anchored pin/label.
-- Previous route legs remain visible with stronger glow.
-- Added an active airplane air-arc overlay so the live flight trail feels less flat against the terrain.
-- Plane route trail endpoint is offset farther behind the aircraft to better align with the tail.
-- Mapbox driving route fetching now runs in parallel and logs cache/fetch status to the browser console.
-- Mapbox route cache version bumped to v2.9 so old fallback routes do not mask newly fetched Directions routes.
-- Keeps GitHub secret token support via `VITE_MAPBOX_TOKEN`.
-- Keeps working `gh-pages` deployment workflow.
-- Keeps `package-lock.json` out of the repo.
+- Replaces MapLibre text labels with globe-anchored HTML stylized pins.
+- Prevents repeated drop animations for the same arrival.
+- Keeps each visited place pin visible after arrival.
+- Removes MapLibre glyph/text layer usage to avoid demotiles font 404 spam.
+- Adds a higher, more glowing active airplane arc overlay.
+- Adds a GitHub Actions check that verifies `VITE_MAPBOX_TOKEN` is available before building.
+- Keeps gh-pages branch deployment and no package-lock.json.

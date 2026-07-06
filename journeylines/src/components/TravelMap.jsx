@@ -11,7 +11,6 @@ import routingSettings from '../data/routingSettings.json';
 const MAP_STYLE = {
   version: 8,
   name: 'JourneyLines Terrain Globe',
-  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
   sources: {
     terrainImagery: {
       type: 'raster',
@@ -58,6 +57,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const overlayRef = useRef(null);
   const visitedLabelsRef = useRef(null);
   const persistentLabelElsRef = useRef(new Map());
+  const droppedPinIdsRef = useRef(new Set());
   const lastVisitedSigRef = useRef('');
   const lastCameraRef = useRef(null);
   const arrivalTimerRef = useRef(null);
@@ -111,7 +111,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
       const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
-      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById));
+      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
       setMapReady(true);
     });
 
@@ -134,6 +134,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       updateAirArcOverlay(map, airArcRef.current, state.active, state.scene, state.color);
       const destPt = state.active?.leg?.to ? map.project([state.active.leg.to.lon, state.active.leg.to.lat]) : null;
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
+      refreshPersistentPinPositions(map, persistentLabelElsRef);
     };
     map.on('move', refresh);
     map.on('render', refresh);
@@ -162,7 +163,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
       const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
-      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById));
+      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
   }, [mapReady, completedLegs, active, completedMode, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
 
   useEffect(() => {
@@ -184,7 +185,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries);
     const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
-    updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, color, scene.newArrivalId);
+    updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, color, scene.newArrivalId, droppedPinIdsRef);
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
 
     const smoothing = scene.phase === 'settle' ? 0.006 : scene.phase === 'takeoff' ? 0.008 : 0.007;
@@ -300,31 +301,11 @@ function addRouteSourcesAndLayers(map) {
   }
   if (!map.getSource('visited-points')) {
     map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'visited-points-glow', type: 'circle', source: 'visited-points', paint: { 'circle-radius': ['case', ['boolean', ['get', 'isNew'], false], 16, 11.5], 'circle-color': ['get', 'color'], 'circle-opacity': 0.35, 'circle-blur': 0.7 } });
-    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 8.5, 'circle-color': '#061224', 'circle-opacity': 0.94 } });
-    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 5.1, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#f6feff', 'circle-stroke-width': 1.8, 'circle-opacity': 1 } });
-    map.addLayer({
-      id: 'visited-labels',
-      type: 'symbol',
-      source: 'visited-points',
-      layout: {
-        'text-field': ['get', 'displayName'],
-        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 1, 10, 4, 13, 7, 15],
-        'text-anchor': 'left',
-        'text-offset': [0.86, -1.22],
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-        'text-optional': false
-      },
-      paint: {
-        'text-color': '#f9feff',
-        'text-halo-color': '#031020',
-        'text-halo-width': 2.2,
-        'text-halo-blur': 0.6,
-        'text-opacity': ['case', ['boolean', ['get', 'showLabel'], true], 1, 0]
-      }
-    });
+    map.addLayer({ id: 'visited-points-glow', type: 'circle', source: 'visited-points', paint: { 'circle-radius': ['case', ['boolean', ['get', 'isNew'], false], 16, 11.5], 'circle-color': ['get', 'color'], 'circle-opacity': 0.0, 'circle-blur': 0.7 } });
+    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 8.5, 'circle-color': '#061224', 'circle-opacity': 0.0 } });
+    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 5.1, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#f6feff', 'circle-stroke-width': 1.8, 'circle-opacity': 0 } });
+    // Persistent stylized pins are rendered in the HTML overlay so they move with globe pan/zoom and do not use MapLibre glyphs.
+
   }
 }
 
@@ -465,9 +446,9 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
   const dy = tail.y - fromPt.y;
   const dist = Math.hypot(dx, dy);
   if (dist < 8) { pathEl.style.opacity = '0'; pathEl.setAttribute('d', ''); return; }
-  const lift = Math.min(150, Math.max(32, dist * 0.18));
+  const lift = Math.min(310, Math.max(56, dist * 0.34));
   const cx = (fromPt.x + tail.x) / 2 - dy / dist * lift;
-  const cy = (fromPt.y + tail.y) / 2 + dx / dist * lift - lift * 0.45;
+  const cy = (fromPt.y + tail.y) / 2 + dx / dist * lift - lift * 0.72;
   pathEl.setAttribute('d', `M ${fromPt.x.toFixed(1)} ${fromPt.y.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${tail.x.toFixed(1)} ${tail.y.toFixed(1)}`);
   pathEl.style.setProperty('--air-arc-color', color);
   pathEl.style.opacity = String(Math.min(1, 0.25 + sceneState.lineProgress * 1.1));
@@ -512,24 +493,66 @@ function syncVisitedPoints(map, visitedLocations, sigRef) {
   });
 }
 
-function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, color = '#00e5ff', newArrivalId = null) {
-  // MapLibre circle/symbol layers are the persistent pins and labels. They stay attached to the globe.
-  // This overlay only creates a one-time pin drop accent at the arrival point; it does not replace the persistent pin.
+function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, color = '#00e5ff', newArrivalId = null, droppedIdsRef = { current: new Set() }) {
   const container = containerRef.current;
-  if (!container || !newArrivalId) return;
-  const loc = visitedLocations.find(l => l.id === newArrivalId);
-  if (!loc) return;
-  const key = `drop-${newArrivalId}`;
-  const existing = labelsRef.current.get(key);
-  if (existing) return;
-  const pt = map.project([loc.lon, loc.lat]);
-  const el = document.createElement('div');
-  el.className = 'jl-arrival-dot-drop';
-  el.style.setProperty('--place-color', loc.color || color);
-  el.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) translate(-50%, -50%)`;
-  container.appendChild(el);
-  labelsRef.current.set(key, el);
-  setTimeout(() => { el.remove(); labelsRef.current.delete(key); }, 950);
+  if (!container) return;
+  const seen = new Set();
+
+  for (const loc of visitedLocations || []) {
+    if (!loc?.id) continue;
+    seen.add(loc.id);
+    let el = labelsRef.current.get(loc.id);
+    const isNew = loc.id === newArrivalId && !droppedIdsRef.current.has(loc.id);
+
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'jl-map-pin';
+      el.dataset.locationId = loc.id;
+      container.appendChild(el);
+      labelsRef.current.set(loc.id, el);
+    }
+
+    el.style.setProperty('--place-color', loc.color || color);
+    el.innerHTML = `<span class="jl-map-pin-dot"></span><span class="jl-map-pin-name">${escapeHtml(displayNameForLocation(loc))}</span><span class="jl-map-pin-tail"></span>`;
+    el.__jlLocation = loc;
+    el.classList.toggle('is-dropping', Boolean(isNew));
+    if (isNew) {
+      droppedIdsRef.current.add(loc.id);
+      window.setTimeout(() => el?.classList?.remove('is-dropping'), 980);
+    }
+  }
+
+  // Remove only locations that have not been reached in the current filtered playback.
+  for (const [id, el] of labelsRef.current.entries()) {
+    if (!seen.has(id)) {
+      el.remove();
+      labelsRef.current.delete(id);
+      droppedIdsRef.current.delete(id);
+    }
+  }
+  refreshPersistentPinPositions(map, labelsRef);
+}
+
+function refreshPersistentPinPositions(map, labelsRef) {
+  if (!map || !labelsRef?.current) return;
+  const canvas = map.getCanvas();
+  const w = canvas?.clientWidth || window.innerWidth;
+  const h = canvas?.clientHeight || window.innerHeight;
+  const center = { x: w / 2, y: h / 2 };
+  const globeRadius = Math.min(w, h) * 0.48;
+
+  for (const el of labelsRef.current.values()) {
+    const loc = el.__jlLocation;
+    if (!loc) continue;
+    const pt = map.project([loc.lon, loc.lat]);
+    const dx = pt.x - center.x;
+    const dy = pt.y - center.y;
+    const onScreen = pt.x > -160 && pt.x < w + 160 && pt.y > -120 && pt.y < h + 120;
+    // Approximate far-side culling for the globe. MapLibre still projects hidden positions, so this keeps pins from floating on the opposite side.
+    const nearVisibleHemisphere = Math.hypot(dx, dy) < globeRadius * 1.06;
+    el.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) translate(-50%, calc(-100% - 10px))`;
+    el.style.opacity = onScreen && nearVisibleHemisphere ? '1' : '0';
+  }
 }
 
 function updatePulseOverlay(el, point, color, active) {
@@ -571,7 +594,7 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
-function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.9'; }
+function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.10'; }
 function routeCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }

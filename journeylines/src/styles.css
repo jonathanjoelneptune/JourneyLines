@@ -552,3 +552,70 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
   68% { opacity: 1; translate: 0 5px; scale: 1.22; filter: blur(0); }
   100% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
 }
+
+/* v2.10 persistent stylized pin/nameplate system */
+.jl-map-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgba(1, 8, 20, 0.94);
+  border: 1px solid color-mix(in srgb, var(--place-color, #00e5ff), white 36%);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--place-color, #00e5ff), transparent 42%),
+    0 10px 20px rgba(0, 0, 0, 0.62);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.96);
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform, opacity;
+  z-index: 22;
+}
+.jl-map-pin-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--place-color, #00e5ff);
+  box-shadow: 0 0 12px var(--place-color, #00e5ff), 0 0 24px color-mix(in srgb, var(--place-color, #00e5ff), transparent 38%);
+  border: 1px solid rgba(255,255,255,.88);
+  flex: 0 0 auto;
+}
+.jl-map-pin-tail {
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  background: rgba(1, 8, 20, 0.94);
+  border-right: 1px solid color-mix(in srgb, var(--place-color, #00e5ff), white 24%);
+  border-bottom: 1px solid color-mix(in srgb, var(--place-color, #00e5ff), white 24%);
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 6px 6px 10px rgba(0,0,0,.22);
+}
+.jl-map-pin.is-dropping {
+  animation: jl-map-pin-drop-v210 .82s cubic-bezier(.16,.9,.20,1) both;
+}
+@keyframes jl-map-pin-drop-v210 {
+  0% { opacity: 0; translate: 0 -58px; scale: .86; filter: blur(1.6px); }
+  70% { opacity: 1; translate: 0 4px; scale: 1.02; filter: blur(0); }
+  100% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
+}
+.jl-arrival-dot-drop,
+.jl-arrival-pin-drop {
+  display: none !important;
+}
+.jl-air-arc-overlay path {
+  stroke-width: 4.8px;
+  filter:
+    drop-shadow(0 0 8px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 0 24px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 20px 28px rgba(0,0,0,0.42));
+}

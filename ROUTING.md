@@ -1,23 +1,23 @@
-# JourneyLines Routing Notes — v2.9
+# JourneyLines Routing
 
-## Driving
+## Mapbox driving routes
 
-Driving routes use Mapbox Directions when a `VITE_MAPBOX_TOKEN` repository secret is injected at build time. The app requests `mapbox/driving` routes with GeoJSON geometry and caches successful routes in browser localStorage using cache version `v2.9`.
+JourneyLines uses `VITE_MAPBOX_TOKEN` at build time. The token must be saved as a GitHub repository secret named exactly:
 
-If a drive leg still looks straight or uses a rough manual route, open the browser console and look for:
+```text
+VITE_MAPBOX_TOKEN
+```
 
-- `JourneyLines: fetching ... Mapbox driving route(s)`
-- `JourneyLines: Mapbox route cached ...`
-- `JourneyLines Mapbox route fetch failed ...`
-- `JourneyLines: Mapbox driving routes disabled ...`
+The deploy workflow now checks whether the secret is available before building. If it is missing, the Action will fail with a clear message instead of silently deploying a build with generic driving routes.
 
-Common causes:
+The app reads the token in this order:
 
-1. The `VITE_MAPBOX_TOKEN` GitHub Actions secret was not present during the build.
-2. The Mapbox token URL restriction does not include `https://jonathanjoelneptune.github.io`.
-3. The token lacks access for Directions API requests.
-4. Browser localStorage has older cached fallback data. v2.9 uses a new cache version to avoid most stale-route issues.
+1. `import.meta.env.VITE_MAPBOX_TOKEN` from GitHub Actions / Vite build
+2. `routingSettings.json` publicToken, blank by default
+3. browser localStorage fallback for local testing
 
-## Boat and Train
+Driving routes are cached in localStorage by cache version.
 
-Boat and train routes still use manual route overrides in `src/data/routeOverrides.json`. This is intentional until a stronger marine/rail routing source is selected. Cruise-style routes are represented by curated waypoints.
+## Boat and train routing
+
+Boat and train routes currently use manual waypoint overrides in `src/data/routeOverrides.json`. Cruise routing is represented by curated port/ocean waypoints for now. A future cruise-route database can be added as more exact itinerary port calls are known.
