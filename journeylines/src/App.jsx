@@ -57,6 +57,8 @@ export default function App() {
       setLegProgress(p);
       if (p >= 1) {
         tRef.current.elapsed = 0;
+        tRef.current.last = null;
+        setLegProgress(0);
         setActiveIndex(i => {
           if (i + 1 >= legs.length) { setIsPlaying(false); return i; }
           return i + 1;
@@ -89,7 +91,7 @@ export default function App() {
       <div className="tagline">Animated travel history across a living world atlas</div>
       <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} />
     {!started && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
       <h1>JourneyLines</h1>

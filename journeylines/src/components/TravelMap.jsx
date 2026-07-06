@@ -14,10 +14,10 @@ const MAP_STYLE = {
     cartoDark: {
       type: 'raster',
       tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
+        'https://b.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
+        'https://c.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
+        'https://d.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png'
       ],
       tileSize: 256,
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
@@ -25,7 +25,7 @@ const MAP_STYLE = {
   },
   layers: [
     { id: 'background', type: 'background', paint: { 'background-color': '#07101f' } },
-    { id: 'carto-dark', type: 'raster', source: 'cartoDark', minzoom: 0, maxzoom: 19, paint: { 'raster-opacity': 0.92, 'raster-saturation': -0.14, 'raster-contrast': 0.1, 'raster-brightness-min': 0.03, 'raster-brightness-max': 0.83 } }
+    { id: 'carto-dark', type: 'raster', source: 'cartoDark', minzoom: 0, maxzoom: 19, paint: { 'raster-opacity': 0.86, 'raster-saturation': -0.18, 'raster-contrast': -0.08, 'raster-brightness-min': 0.12, 'raster-brightness-max': 0.96 } }
   ]
 };
 
@@ -34,10 +34,12 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55 }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const endpointMarkerRefs = useRef([]);
+  const endpointKeyRef = useRef('');
   const lastCameraRef = useRef(null);
   const arrivalRef = useRef(null);
 
@@ -76,9 +78,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth);
     });
 
-    return () => { markerRef.current?.remove(); map.remove(); mapRef.current = null; };
+    return () => { markerRef.current?.remove(); endpointMarkerRefs.current.forEach(m => m.remove()); map.remove(); mapRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const methods = [map.dragPan, map.scrollZoom, map.boxZoom, map.dragRotate, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
+    for (const method of methods) {
+      try { isPlaying ? method.disable() : method.enable(); } catch {}
+    }
+  }, [isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -92,6 +103,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!scene || !active) {
       syncActiveRoute(map, null);
       updateVehicle(null);
+      updateEndpointMarkers(null);
       if (completedMode) {
         map.easeTo({ center: [-38, 23], zoom: 1.35, bearing: 0, pitch: 0, duration: 900, essential: true });
       }
@@ -102,10 +114,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     syncActiveRoute(map, active, scene.routeProgress, color);
     syncPulse(map, active.leg.to, scene.phase === 'arrival' ? color : 'transparent');
     updateVehicle({ point: scene.vehicle, mode: active.leg.mode, color, heading: scene.heading, scale: scene.vehicleScale });
+    updateEndpointMarkers(active, color);
 
-    const camera = smoothCamera(lastCameraRef.current, scene.camera, 0.72);
+    const camera = smoothCamera(lastCameraRef.current, scene.camera, 0.26);
     lastCameraRef.current = camera;
-    map.easeTo({ ...camera, duration: 160, easing: t => t, essential: true });
+    map.jumpTo({ ...camera, essential: true });
   }, [scene?.frameKey, active, completedMode, travById]);
 
   useEffect(() => {
@@ -127,7 +140,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       return;
     }
     if (!markerRef.current) {
-      markerRef.current = new maplibregl.Marker({ element: makeVehicleElement(), anchor: 'center', pitchAlignment: 'map', rotationAlignment: 'viewport' })
+      markerRef.current = new maplibregl.Marker({ element: makeVehicleElement(), anchor: 'center', pitchAlignment: 'viewport', rotationAlignment: 'viewport' })
         .setLngLat([state.point.lon, state.point.lat])
         .addTo(mapRef.current);
     }
@@ -135,15 +148,43 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const glyph = el.querySelector('.jl-vehicle-glyph');
     glyph.innerHTML = vehicleSvg(state.mode);
     glyph.style.color = state.color;
+    glyph.style.setProperty('--vehicle-color', state.color);
     glyph.style.transform = `rotate(${state.mode === 'plane' ? state.heading : 0}deg) scale(${state.scale})`;
-    el.className = `jl-vehicle jl-vehicle--${state.mode}`;
+    el.dataset.mode = state.mode;
     markerRef.current.setLngLat([state.point.lon, state.point.lat]);
+  }
+
+  function updateEndpointMarkers(activeLeg, color) {
+    if (!mapRef.current || !activeLeg) {
+      endpointMarkerRefs.current.forEach(m => m.remove());
+      endpointMarkerRefs.current = [];
+      endpointKeyRef.current = '';
+      return;
+    }
+    const key = `${activeLeg.leg.from.id}:${activeLeg.leg.to.id}:${color}`;
+    if (endpointKeyRef.current === key) return;
+    endpointKeyRef.current = key;
+    endpointMarkerRefs.current.forEach(m => m.remove());
+    endpointMarkerRefs.current = [];
+    const endpoints = [
+      { loc: activeLeg.leg.from, kind: 'Depart' },
+      { loc: activeLeg.leg.to, kind: 'Arrive' }
+    ];
+    endpointMarkerRefs.current = endpoints.map(({ loc, kind }) => {
+      const el = document.createElement('div');
+      el.className = 'jl-place-label';
+      el.style.setProperty('--place-color', color);
+      el.innerHTML = `<span class="jl-place-dot"></span><span class="jl-place-name">${escapeHtml(loc.name)}</span>`;
+      el.title = `${kind}: ${loc.name}`;
+      return new maplibregl.Marker({ element: el, anchor: 'bottom', pitchAlignment: 'viewport', rotationAlignment: 'viewport' })
+        .setLngLat([loc.lon, loc.lat])
+        .addTo(mapRef.current);
+    });
   }
 
   return <div className="maplibre-shell">
     <div className="cinema-vignette" />
     <div className="maplibre-map" ref={containerRef} />
-    <div className="cinema-hud">Cinematic globe renderer · MapLibre GL</div>
   </div>;
 }
 
@@ -239,7 +280,7 @@ function getScene(active, rawProgress, cameraMode) {
   if (cameraMode === 'global') center = routeMid;
   if (cameraMode === 'route' || cameraMode === 'continent') center = blendGeo(routeMid, focus, 0.28);
 
-  const zoom = cameraZoom(cameraMode, distance, endpointBias);
+  const zoom = cameraZoom(cameraMode, distance, endpointBias, p);
   const pitch = cameraPitch(cameraMode, phase, distance);
   const bearing = cameraBearing(cameraMode, heading, phase);
 
@@ -287,18 +328,20 @@ function lookAhead(distance, p) {
   const endpoints = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
   return base * (1 - 0.45 * endpoints);
 }
-function cameraZoom(mode, distance, endpointBias) {
-  if (mode === 'global') return distance > 3500 ? 1.25 : 2.15;
-  if (mode === 'continent') return distance > 3500 ? 2.05 : 3.25;
-  if (mode === 'route') return distance > 4500 ? 2.35 : distance > 1500 ? 3.15 : 4.25;
-  const cruise = distance > 4500 ? 2.15 : distance > 1500 ? 3.05 : distance > 500 ? 4.15 : 5.55;
-  const close = distance > 4500 ? 3.05 : distance > 1500 ? 4.05 : distance > 500 ? 5.05 : 6.15;
-  return cruise + (close - cruise) * smoothstep(endpointBias);
+function cameraZoom(mode, distance, endpointBias, p) {
+  if (mode === 'global') return distance > 3500 ? 1.45 : 2.25;
+  if (mode === 'continent') return distance > 3500 ? 2.15 : 3.35;
+  if (mode === 'route') return distance > 4500 ? 2.75 : distance > 1500 ? 3.55 : 4.65;
+  const cruise = distance > 4500 ? 2.65 : distance > 1500 ? 3.55 : distance > 500 ? 4.85 : 6.15;
+  const close = distance > 4500 ? 4.05 : distance > 1500 ? 4.95 : distance > 500 ? 5.95 : 6.85;
+  const takeoffPop = p < 0.12 ? smoothstep(1 - p / 0.12) * 0.45 : 0;
+  const landingPop = p > 0.88 ? smoothstep((p - 0.88) / 0.12) * 0.55 : 0;
+  return cruise + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop;
 }
 function cameraPitch(mode, phase, distance) {
-  if (mode === 'global') return 0;
-  if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 48 : 58;
-  return mode === 'follow' ? 45 : 32;
+  if (mode === 'global') return 8;
+  if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 54 : 62;
+  return mode === 'follow' ? 52 : 38;
 }
 function cameraBearing(mode, heading, phase) {
   if (mode === 'global') return 0;
@@ -336,6 +379,9 @@ function vehicleSvg(mode) {
   if (mode === 'boat') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 6 C-10 16 10 16 18 6 Z"/><path d="M-1 6 L-1 -18 L14 3 Z"/><path d="M-4 6 L-4 -14 L-15 4 Z"/></svg>';
   if (mode === 'train') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><rect x="-12" y="-18" width="24" height="34" rx="6"/><path d="M-7 -10 H7 M-7 0 H7"/><circle cx="-6" cy="18" r="3"/><circle cx="6" cy="18" r="3"/></svg>';
   return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M0 -22 L6 -4 L23 3 L23 9 L5 6 L2 18 L8 22 L8 25 L0 21 L-8 25 L-8 22 L-2 18 L-5 6 L-23 9 L-23 3 L-6 -4 Z"/></svg>';
+}
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 }
 function smoothstep(x) { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); }
 function lerp(a, b, t) { return a + (b - a) * t; }
