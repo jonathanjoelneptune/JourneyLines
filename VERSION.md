@@ -1,22 +1,25 @@
-# JourneyLines v2.2.0 — MapLibre Cinematic Recovery + Terrain Texture
+# JourneyLines v2.3.0 — North-Up Globe + Label Cleanup
 
-This version recovers the intended cinematic MapLibre playback behavior and adds a terrain/satellite-textured globe style.
+## Summary
+This update keeps the MapLibre cinematic globe renderer but locks the camera bearing to north-up during playback so the globe pans, zooms, and glides without rotating/spinning the map orientation. It also removes faint base-map city labels from the raster overlay so only active JourneyLines trip endpoint labels are shown.
 
-## Key updates
+## Changes
+- Camera bearing locked to 0 degrees for north-up playback.
+- Globe can still pan, zoom, pitch, and glide cinematically.
+- Disabled globe rotation/drag-rotate while paused; panning/zooming remain available while paused.
+- Removed faint CARTO label raster layer from the MapLibre style.
+- Active origin/destination labels remain app-rendered HTML overlays.
+- Increased active place label contrast and readability.
+- Kept terrain/satellite imagery globe surface.
+- Kept v2.x MapLibre renderer and gh-pages workflow.
+- `package-lock.json` intentionally remains excluded.
 
-- Uses Esri World Imagery as the textured terrain/satellite globe surface.
-- Keeps CARTO label/reference tiles as a subtle overlay.
-- Fixes the overly white/washed-out globe from v2.1.
-- Moves vehicle icons and active city labels to a dedicated HTML overlay above MapLibre so they remain visible.
-- Restores active origin and destination labels during playback.
-- Restores cinematic camera control during playback with smoother `jumpTo` camera updates.
-- Keeps mouse interaction disabled while playing so the playback camera owns the map.
-- Adds stronger takeoff, cruise, and arrival camera choreography.
-- Airplane rotates relative to the screen direction of flight.
-- Car, boat, and train remain upright.
-- Keeps `gh-pages` deployment workflow.
-- Keeps `package-lock.json` out of the repo.
+## Upload structure
+Upload the extracted contents to the root of the existing GitHub repo:
 
-## Notes
-
-This is still MapLibre raster terrain/satellite texture, not full 3D elevation terrain. True 3D terrain would be a later step using a terrain source/provider.
+```text
+.github/workflows/deploy.yml
+.gitignore
+VERSION.md
+journeylines/
+```

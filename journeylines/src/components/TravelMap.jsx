@@ -19,17 +19,7 @@ const MAP_STYLE = {
       tileSize: 256,
       attribution: 'Tiles &copy; Esri'
     },
-    terrainReference: {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
-        'https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
-        'https://c.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
-        'https://d.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png'
-      ],
-      tileSize: 256,
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-    }
+    // v2.3: base-map city label raster removed. Active trip endpoints are labeled by the app overlay instead.
   },
   layers: [
     { id: 'background', type: 'background', paint: { 'background-color': '#020814' } },
@@ -45,20 +35,6 @@ const MAP_STYLE = {
         'raster-contrast': 0.08,
         'raster-brightness-min': 0.0,
         'raster-brightness-max': 0.72
-      }
-    },
-    {
-      id: 'terrain-reference',
-      type: 'raster',
-      source: 'terrainReference',
-      minzoom: 0,
-      maxzoom: 19,
-      paint: {
-        'raster-opacity': 0.28,
-        'raster-saturation': -0.55,
-        'raster-contrast': -0.08,
-        'raster-brightness-min': 0.0,
-        'raster-brightness-max': 0.56
       }
     }
   ]
@@ -137,10 +113,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const methods = [map.dragPan, map.scrollZoom, map.boxZoom, map.dragRotate, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
-    for (const method of methods) {
+    const navigationMethods = [map.dragPan, map.scrollZoom, map.boxZoom, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
+    for (const method of navigationMethods) {
       try { isPlaying ? method.disable() : method.enable(); } catch {}
     }
+    // v2.3: keep north-up orientation. Users can pan/zoom while paused, but not rotate the globe.
+    try { map.dragRotate.disable(); } catch {}
+    try { map.touchZoomRotate.disableRotation(); } catch {}
+    try { map.setBearing(0); } catch {}
   }, [isPlaying]);
 
   useEffect(() => {
@@ -311,7 +291,7 @@ function getScene(active, rawProgress, cameraMode) {
   if (cameraMode === 'continent') center = blendGeo(routeMid, cinematicFocus, 0.4);
 
   const heading = bearingBetween(interpolateGeo(leg.from, leg.to, Math.max(0, routeProgress - 0.01)), interpolateGeo(leg.from, leg.to, Math.min(1, routeProgress + 0.01)));
-  const bearing = cameraBearing(cameraMode, heading, phase);
+  const bearing = 0; // v2.3: north-up camera lock
   const zoom = cameraZoom(cameraMode, distance, endpointBias, p);
   const pitch = cameraPitch(cameraMode, phase, distance);
 
@@ -390,12 +370,7 @@ function cameraPitch(mode, phase, distance) {
   if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 56 : 63;
   return mode === 'follow' ? 58 : 42;
 }
-function cameraBearing(mode, heading, phase) {
-  if (mode === 'global') return 0;
-  if (mode === 'route') return heading * 0.35;
-  if (mode === 'continent') return heading * 0.45;
-  return phase === 'cruise' ? heading * 0.72 : heading * 0.88;
-}
+function cameraBearing() { return 0; }
 function headingToScreenRotation(heading, mapBearing) { return ((heading - mapBearing + 540) % 360) - 180; }
 function vehicleScale(mode, phase, endpointBias) {
   const base = mode === 'plane' ? 0.72 : 0.66;
