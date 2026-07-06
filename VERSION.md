@@ -1,16 +1,7 @@
-# JourneyLines v2.16 — Build-Time Mapbox Route Cache
+# JourneyLines v2.17 — Private Mapbox Cache, No Runtime Token
 
-This version keeps the Mapbox token private inside GitHub Actions and no longer publishes it to GitHub Pages.
-
-## Key changes
-
-- Uses the `VITE_MAPBOX_TOKEN` repository secret only inside the GitHub Actions workflow.
-- Generates `src/data/generatedRoutes.json` during the workflow using Mapbox Directions.
-- Publishes only route geometry, not the token.
-- Keeps `/runtime-config.js` intentionally token-free to avoid GitHub push protection.
-- Removes Vite/browser-side token exposure from the production build.
-- Bumps route cache version to `v2.16`.
-
-## Expected deploy behavior
-
-The GitHub Action should print safe checks showing the token prefix and length, generate driving routes, verify no `pk.` token exists in `dist`, and then publish to `gh-pages` without push-protection failures.
+- Removes runtime-config.js from the published site entirely.
+- Uses the GitHub Actions secret only as MAPBOX_TOKEN during the route-generation step.
+- Does not expose VITE_MAPBOX_TOKEN to the Vite build, preventing token embedding in the JS bundle.
+- Verifies the dist output does not contain the Mapbox token before publishing.
+- Keeps generated Mapbox driving route geometry bundled as data only.

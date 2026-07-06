@@ -1,19 +1,13 @@
-# JourneyLines Routing — v2.16
+# JourneyLines Routing
 
-JourneyLines now uses Mapbox Directions at build time only.
+## v2.17 routing architecture
 
-## Driving routes
+Mapbox is used only during GitHub Actions.
 
-1. `VITE_MAPBOX_TOKEN` is stored as a GitHub Actions repository secret.
-2. The workflow runs `npm run generate:routes` before `npm run build`.
-3. `scripts/generate-mapbox-routes.mjs` calls Mapbox Directions for every drive leg.
-4. The output is written to `src/data/generatedRoutes.json`.
-5. The deployed app reads that generated route geometry and does not need a browser token.
+1. The repository secret `VITE_MAPBOX_TOKEN` is read by the workflow.
+2. The workflow passes it to the route-generation script as `MAPBOX_TOKEN`.
+3. `scripts/generate-mapbox-routes.mjs` calls Mapbox Directions and writes `src/data/generatedRoutes.json`.
+4. The Vite build publishes only route geometry, never the token.
+5. No `runtime-config.js` is published.
 
-## Why runtime-config.js is empty
-
-`runtime-config.js` intentionally contains no Mapbox token. GitHub push protection blocks publishing token-like values to `gh-pages`, even for public `pk.` Mapbox tokens.
-
-## Boat and train routes
-
-Boat and train routes still use `src/data/routeOverrides.json` manual route waypoints for now.
+The public site should not need a Mapbox token in the browser for archived driving routes.
