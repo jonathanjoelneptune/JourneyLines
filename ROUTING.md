@@ -1,36 +1,69 @@
-# JourneyLines Routing Plan
+# JourneyLines routing plan
 
-JourneyLines currently includes a manual/offline waypoint fallback for known drive, boat, and train legs. To support true turn-by-turn paths, we need to connect route providers.
+JourneyLines v2.6 adds the first routing layer beyond straight-line travel.
 
-## What is needed
+## Driving: Mapbox Directions
 
-### Driving
-Recommended options:
-- Mapbox Directions API
-- OpenRouteService Directions API
-- self-hosted OSRM
+Driving routes can be fetched from Mapbox Directions when a public token is available.
 
-Needed from you:
-- Choose the provider.
-- Provide a browser-safe public token if using Mapbox/OpenRouteService, restricted to your GitHub Pages domain.
+Add your public token in either place:
 
-### Boats
-Boat routing is not the same as driving directions. It needs marine/nav routing data. Practical options:
-- Keep curated manual waypoints for cruises/boat legs.
-- Use a commercial marine-routing API if you find one you like.
+1. Edit `journeylines/src/data/routingSettings.json`:
 
-Needed from you:
-- Decide whether boat paths should be manually curated or API-backed.
-- For cruises, provide itinerary ports when known.
+```json
+{
+  "mapbox": {
+    "publicToken": "pk.your_public_token_here"
+  }
+}
+```
 
-### Trains
-Rail routing requires either scheduled transit data or curated rail paths. Practical options:
-- Manual waypoint routes for known train segments.
-- OpenTripPlanner/GTFS-based solution for specific regions.
+2. Or store it in the browser console once:
 
-Needed from you:
-- Confirm whether train routes can use curated waypoint paths.
-- Provide preferred station/city-level routing for known train trips if exact rail alignment matters.
+```js
+localStorage.setItem('journeylines.mapboxToken', 'pk.your_public_token_here')
+```
 
-## Recommended next step
-For v2.6, add a `routeOverrides.json` editor/import workflow so car/boat/train paths can be corrected directly in the app while we evaluate provider options.
+The app uses:
+
+- profile: `mapbox/driving`
+- geometry: `geojson`
+- overview: `full`
+- local cache key: `journeylines.routeCache`
+
+If no token is present, drive routes fall back to manual waypoint overrides or simple point-to-point paths.
+
+## Boat routing
+
+v2.6 uses manual boat route overrides in `journeylines/src/data/routeOverrides.json`.
+
+Included manual cruise-style paths:
+
+- Melbourne / Port Canaveral area to Nassau
+- Nassau back to Melbourne / Port Canaveral area
+- Melbourne / Port Canaveral area to Jamaica
+- Jamaica to Grand Cayman
+- Grand Cayman back to Melbourne / Port Canaveral area
+- Long Beach / Catalina routing through the Long Beach port waypoint
+
+This is intentionally manual for now because there is not a simple universal browser-only equivalent of Mapbox Directions for cruise ships. A future cruise routing database could be added as a curated JSON dataset with named ports, cruise legs, and typical sea-lane waypoints.
+
+## Train routing
+
+v2.6 uses manual train waypoints for known train legs. A future true train-routing implementation would likely need a server-side transit engine such as OpenTripPlanner plus GTFS data, which is outside the scope of a purely static GitHub Pages app.
+
+## Future route database idea
+
+A good future structure would be:
+
+```json
+{
+  "ports": [],
+  "cruiseLines": [],
+  "itineraries": [],
+  "seaLanes": [],
+  "railCorridors": []
+}
+```
+
+This would let JourneyLines route cruises and trains from curated real-world corridors without requiring a live paid service for every playback.

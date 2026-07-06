@@ -4,8 +4,9 @@
   "defaultProjection": "globe",
   "defaultCameraMode": "follow",
   "showTrails": true,
-  "trailOpacity": 0.28,
-  "trailWidth": 1.55,
+  "trailOpacity": 0.78,
+  "trailWidth": 2.2,
   "playbackSpeed": 1,
-  "adminClickCount": 5
+  "adminClickCount": 5,
+  "arrivalSettleMs": 3200
 }

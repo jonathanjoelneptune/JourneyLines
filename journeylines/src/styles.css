@@ -387,3 +387,78 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 .jl-vehicle-overlay {
   transition: opacity 0.28s ease;
 }
+
+
+/* v2.5 persistent visited labels */
+.jl-visited-labels-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+.jl-persistent-place-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(1, 7, 18, 0.88);
+  border: 1px solid color-mix(in srgb, var(--place-color, #00e5ff), white 28%);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--place-color, #00e5ff), transparent 52%),
+    0 9px 18px rgba(0,0,0,0.54);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.96);
+  white-space: nowrap;
+  will-change: transform, opacity;
+  transform-origin: left center;
+  opacity: .94;
+}
+.jl-persistent-place-label.is-new-arrival {
+  animation: jl-label-arrive .86s cubic-bezier(.16, .84, .26, 1);
+}
+@keyframes jl-label-arrive {
+  0% { opacity: 0; filter: blur(6px); scale: .62; }
+  56% { opacity: 1; filter: blur(0); scale: 1.08; }
+  100% { opacity: .94; filter: blur(0); scale: 1; }
+}
+
+/* v2.6 glide + persistent label hardening */
+.jl-visited-labels-overlay {
+  z-index: 16;
+}
+.jl-persistent-place-label {
+  opacity: 1;
+  background: rgba(1, 8, 20, 0.92);
+  border-color: color-mix(in srgb, var(--place-color, #00e5ff), white 36%);
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--place-color, #00e5ff), transparent 45%),
+    0 10px 22px rgba(0,0,0,0.62);
+  transition: none;
+  transform-origin: left center;
+}
+.jl-persistent-place-label .jl-place-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--place-color, #00e5ff);
+  box-shadow: 0 0 12px var(--place-color, #00e5ff);
+  flex: 0 0 auto;
+}
+.jl-persistent-place-label.is-new-arrival {
+  animation: jl-label-arrive-v26 1.05s cubic-bezier(.14,.82,.24,1) both;
+}
+@keyframes jl-label-arrive-v26 {
+  0% { opacity: 0; filter: blur(8px); scale: .48; translate: 0 8px; }
+  55% { opacity: 1; filter: blur(0); scale: 1.12; translate: 0 -2px; }
+  100% { opacity: 1; filter: blur(0); scale: 1; translate: 0 0; }
+}
+.jl-vehicle-overlay {
+  z-index: 24;
+}

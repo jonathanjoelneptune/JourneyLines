@@ -1,0 +1,94 @@
+{
+  "routes": [
+    {
+      "id": "cruise-port-canaveral-to-nassau",
+      "mode": "boat",
+      "fromLocationId": "melbourne-fl",
+      "toLocationId": "nassau-bs",
+      "source": "manual-carnival-style-port-canaveral",
+      "description": "Melbourne/Port Canaveral area to Nassau cruise-style path.",
+      "coordinates": [[-80.6081, 28.0836], [-80.6077, 28.4058], [-80.20, 27.92], [-79.25, 26.45], [-77.3504, 25.0343]]
+    },
+    {
+      "id": "cruise-nassau-to-port-canaveral",
+      "mode": "boat",
+      "fromLocationId": "nassau-bs",
+      "toLocationId": "melbourne-fl",
+      "source": "manual-carnival-style-port-canaveral",
+      "coordinates": [[-77.3504, 25.0343], [-79.25, 26.45], [-80.20, 27.92], [-80.6077, 28.4058], [-80.6081, 28.0836]]
+    },
+    {
+      "id": "cruise-port-canaveral-to-jamaica",
+      "mode": "boat",
+      "fromLocationId": "melbourne-fl",
+      "toLocationId": "montego-bay-jm",
+      "source": "manual-carnival-style-caribbean",
+      "coordinates": [[-80.6081, 28.0836], [-80.6077, 28.4058], [-79.15, 26.55], [-78.05, 24.15], [-77.35, 21.65], [-77.9188, 18.4762]]
+    },
+    {
+      "id": "cruise-jamaica-to-cayman",
+      "mode": "boat",
+      "fromLocationId": "montego-bay-jm",
+      "toLocationId": "george-town-ky",
+      "source": "manual-carnival-style-caribbean",
+      "coordinates": [[-77.9188, 18.4762], [-78.65, 18.90], [-80.05, 19.15], [-81.3792, 19.2866]]
+    },
+    {
+      "id": "cruise-cayman-to-port-canaveral",
+      "mode": "boat",
+      "fromLocationId": "george-town-ky",
+      "toLocationId": "melbourne-fl",
+      "source": "manual-carnival-style-caribbean",
+      "coordinates": [[-81.3792, 19.2866], [-81.95, 21.20], [-80.85, 24.15], [-80.6077, 28.4058], [-80.6081, 28.0836]]
+    },
+    {
+      "id": "long-beach-to-catalina",
+      "mode": "drive",
+      "fromLocationId": "los-angeles-ca",
+      "toLocationId": "catalina-ca",
+      "source": "manual-long-beach-ferry",
+      "description": "Represents driving to Long Beach and ferry to Catalina. The trip remains marked drive in the legacy data but uses a water waypoint.",
+      "coordinates": [[-118.2437, 34.0522], [-118.1937, 33.7701], [-118.3209, 33.6103], [-118.3278, 33.3428]]
+    },
+    {
+      "id": "rome-to-florence-train",
+      "mode": "train",
+      "fromLocationId": "rome-it",
+      "toLocationId": "florence-it",
+      "source": "manual-rail",
+      "coordinates": [[12.4964, 41.9028], [11.2558, 43.7696]]
+    },
+    {
+      "id": "florence-to-venice-train",
+      "mode": "train",
+      "fromLocationId": "florence-it",
+      "toLocationId": "venice-it",
+      "source": "manual-rail",
+      "coordinates": [[11.2558, 43.7696], [11.3426, 44.4949], [12.3155, 45.4408]]
+    },
+    {
+      "id": "london-to-amsterdam-train",
+      "mode": "train",
+      "fromLocationId": "london-uk",
+      "toLocationId": "amsterdam-nl",
+      "source": "manual-rail",
+      "coordinates": [[-0.1276, 51.5072], [1.313, 51.129], [2.3522, 48.8566], [4.9041, 52.3676]]
+    },
+    {
+      "id": "london-to-edinburgh-train",
+      "mode": "train",
+      "fromLocationId": "london-uk",
+      "toLocationId": "edinburgh-uk",
+      "source": "manual-rail",
+      "coordinates": [[-0.1276, 51.5072], [-1.6178, 54.9783], [-3.1883, 55.9533]]
+    },
+    {
+      "id": "paris-to-versailles-train",
+      "mode": "train",
+      "fromLocationId": "paris-fr",
+      "toLocationId": "versailles-fr",
+      "source": "manual-rail",
+      "coordinates": [[2.3522, 48.8566], [2.1301, 48.8014]]
+    }
+  ]
+}

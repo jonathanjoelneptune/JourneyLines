@@ -26,7 +26,7 @@ export default function App() {
   const [admin, setAdmin] = useState(false);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
-  const SETTLE_MS = 2200;
+  const SETTLE_MS = settings.arrivalSettleMs || 3200;
 
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
 
@@ -55,7 +55,7 @@ export default function App() {
       const dur = legDurationMs(legs[Math.min(activeIndex, legs.length - 1)]?.leg.miles || 500, speed);
       const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
       tRef.current.elapsed += dt;
-      const p = Math.min(1, tRef.current.elapsed / dur);
+      const p = tRef.current.elapsed / dur;
       setLegProgress(p);
       if (tRef.current.elapsed >= dur + settle) {
         tRef.current.elapsed = 0;
@@ -85,7 +85,7 @@ export default function App() {
     if (clickRef.current >= settings.adminClickCount) { setAdmin(a => !a); clickRef.current = 0; }
   }
 
-  const progress = legs.length ? Math.min(1, (Math.min(activeIndex, legs.length - 1) + legProgress) / legs.length) : 1;
+  const progress = legs.length ? Math.min(1, (Math.min(activeIndex, legs.length - 1) + Math.min(1, legProgress)) / legs.length) : 1;
 
   return <main className={`app ${isPlaying ? 'is-playing' : ''}`}>
     <header className="topbar">

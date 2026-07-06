@@ -5,6 +5,8 @@ import { geoInterpolate } from 'd3-geo';
 import LegacySvgMap from './LegacySvgMap.jsx';
 import { flattenLegs, getTravelerKey } from '../utils/tripExpansion.js';
 import { milesBetween } from '../utils/distanceUtils.js';
+import routeOverrides from '../data/routeOverrides.json';
+import routingSettings from '../data/routingSettings.json';
 
 const MAP_STYLE = {
   version: 8,
@@ -53,9 +55,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const destLabelRef = useRef(null);
   const pulseRef = useRef(null);
   const overlayRef = useRef(null);
+  const visitedLabelsRef = useRef(null);
+  const persistentLabelElsRef = useRef(new Map());
+  const lastVisitedSigRef = useRef('');
   const lastCameraRef = useRef(null);
   const arrivalTimerRef = useRef(null);
+  const routeRequestsRef = useRef(new Set());
   const [mapReady, setMapReady] = useState(false);
+  const [routedGeometries, setRoutedGeometries] = useState(() => loadStoredRouteCache());
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
@@ -64,8 +71,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const completedMode = activeIndex >= legs.length;
   const safeActiveIndex = Math.min(activeIndex, Math.max(0, legs.length - 1));
   const active = legs[safeActiveIndex];
-  const scene = active && !completedMode ? getScene(active, legProgress, cameraMode) : null;
+  const nextActive = !completedMode ? legs[Math.min(activeIndex + 1, Math.max(0, legs.length - 1))] : null;
+  const scene = active && !completedMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries) : null;
   const completedLegs = completedMode ? legs : legs.slice(0, Math.max(0, activeIndex));
+  const visibleLegs = useMemo(() => completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1)), [completedMode, legs, activeIndex]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -97,8 +106,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       } catch {}
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
-      syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth);
-      syncVisitedPoints(map, completedLegs, active, completedMode);
+      syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
+      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene);
+      syncVisitedPoints(map, visited, lastVisitedSigRef);
+      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById));
       setMapReady(true);
     });
 
@@ -127,9 +138,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
-    syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth);
-      syncVisitedPoints(map, completedLegs, active, completedMode);
-  }, [mapReady, completedLegs, active, completedMode, travById, showTrails, trailOpacity, trailWidth]);
+    syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
+      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene);
+      syncVisitedPoints(map, visited, lastVisitedSigRef);
+      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById));
+  }, [mapReady, completedLegs, active, completedMode, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -146,16 +159,19 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     }
 
     const color = colorForLeg(active, travById);
-    syncActiveRoute(map, active, scene.routeProgress, color);
-    syncVisitedPoints(map, completedLegs, active, completedMode);
-    syncPulse(map, active.leg.to, scene.phase === 'arrival' ? color : 'transparent');
+    syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries);
+    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene);
+    syncVisitedPoints(map, visited, lastVisitedSigRef);
+    updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, color, scene.newArrivalId);
+    syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
 
-    const camera = smoothCamera(lastCameraRef.current, scene.camera, scene.phase === 'takeoff' ? 0.075 : 0.06);
+    const smoothing = scene.phase === 'settle' ? 0.006 : scene.phase === 'takeoff' ? 0.008 : 0.007;
+    const camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
     lastCameraRef.current = camera;
     map.jumpTo({ ...camera, essential: true });
 
     updateOverlay(map, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -167,29 +183,57 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     return () => clearTimeout(arrivalTimerRef.current);
   }, [mapReady, activeIndex, scene?.phase, active, completedMode, travById]);
 
+
+  useEffect(() => {
+    if (!routingSettings?.mapbox?.enabled) return;
+    const token = getMapboxToken();
+    if (!token) return;
+    const candidates = visibleLegs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
+    if (!candidates.length) return;
+    let cancelled = false;
+    async function runQueue() {
+      for (const item of candidates.slice(0, 24)) {
+        const key = routeCacheKey(item.leg);
+        if (cancelled || routeRequestsRef.current.has(key)) continue;
+        routeRequestsRef.current.add(key);
+        try {
+          const coords = await fetchMapboxRoute(item.leg, token);
+          if (!cancelled && coords?.length > 1) {
+            setRoutedGeometries(prev => {
+              const next = { ...prev, [key]: coords };
+              persistRouteCache(next);
+              return next;
+            });
+          }
+        } catch (err) {
+          console.warn('JourneyLines Mapbox route fetch failed', key, err);
+        }
+      }
+    }
+    runQueue();
+    return () => { cancelled = true; };
+  }, [visibleLegs, routedGeometries]);
+
   function setOverlayVisibility(visible) {
-    for (const ref of [vehicleRef, originLabelRef, destLabelRef, pulseRef]) {
+    for (const ref of [vehicleRef, pulseRef]) {
       if (ref.current) ref.current.style.opacity = visible ? '1' : '0';
     }
   }
 
   function updateOverlay(map, activeLeg, sceneState, color) {
-    if (!vehicleRef.current || !originLabelRef.current || !destLabelRef.current) return;
+    if (!vehicleRef.current) return;
     const { leg } = activeLeg;
     const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
-    const originPt = map.project([leg.from.lon, leg.from.lat]);
-    const destPt = map.project([leg.to.lon, leg.to.lat]);
 
     const mode = leg.mode;
-    const rotation = mode === 'plane' || mode === 'move' ? sceneState.screenHeading : 0;
+    const rotation = mode === 'plane' || mode === 'move' ? projectedScreenHeading(map, leg, sceneState.routeProgress) : 0;
     vehicleRef.current.innerHTML = vehicleSvg(mode === 'move' ? 'plane' : mode);
     vehicleRef.current.dataset.mode = mode;
     vehicleRef.current.style.setProperty('--vehicle-color', color);
     vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible ? '1' : '0';
 
-    updatePlaceLabel(originLabelRef.current, leg.from.name, originPt, color, 'origin');
-    updatePlaceLabel(destLabelRef.current, leg.to.name, destPt, color, 'destination');
+    const destPt = map.project([leg.to.lon, leg.to.lat]);
     updatePulseOverlay(pulseRef.current, destPt, color, sceneState.pulseActive);
   }
 
@@ -198,8 +242,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     <div className="cinema-vignette" />
     <div className="map-overlay" ref={overlayRef}>
       <div className="jl-vehicle-overlay" ref={vehicleRef} />
-      <div className="jl-place-label-overlay" ref={originLabelRef} />
-      <div className="jl-place-label-overlay is-destination" ref={destLabelRef} />
+      <div className="jl-visited-labels-overlay" ref={visitedLabelsRef} />
       <div className="jl-arrival-ripple" ref={pulseRef} />
     </div>
   </div>;
@@ -229,18 +272,18 @@ function addPulseLayer(map) {
   map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 10, 6, 24], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
 }
 
-function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width) {
+function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}) {
   const features = showTrails ? completedLegs.map((l, i) => {
     const color = colorForLeg(l, travelersById);
-    return routeFeature(l.leg, color, l.trip.id, i, opacity, width, false);
+    return routeFeature(l.leg, color, l.trip.id, i, 0.82, width, false, 1, routedGeometries);
   }) : [];
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
 }
 
-function syncActiveRoute(map, active, progress = 1, color = '#00e5ff') {
+function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeometries = {}) {
   if (!active) { map.getSource('active-route')?.setData(emptyCollection()); return; }
-  const feature = routeFeature(active.leg, color, active.trip.id, active.legIndex, 1, 2, true, progress);
+  const feature = routeFeature(active.leg, color, active.trip.id, active.legIndex, 1, 2, true, progress, routedGeometries);
   map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [feature] });
 
 }
@@ -250,7 +293,7 @@ function syncPulse(map, loc, color) {
   map.getSource('arrival-pulse')?.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { color }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }] });
 }
 
-function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1) {
+function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
   return {
     type: 'Feature',
     properties: {
@@ -260,46 +303,65 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       width: active ? 3.2 : width,
       opacity: active ? 0.98 : opacity,
       glowWidth: active ? 8 : width * 3.1,
-      glowOpacity: active ? 0.32 : opacity * 0.34,
+      glowOpacity: active ? 0.34 : Math.min(0.36, opacity * 0.42),
       dash: dashForMode(leg.mode)
     },
-    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 140 : 54) }
+    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 180 : 96, routedGeometries) }
   };
 }
 
-function getScene(active, rawProgress, cameraMode) {
-  const p = Math.max(0, Math.min(1, rawProgress));
+function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries = {}) {
+  const raw = Math.max(0, rawProgress);
+  const p = Math.max(0, Math.min(1, raw));
+  const settleT = Math.max(0, Math.min(1, (raw - 1) / 0.28));
   const leg = active.leg;
   const distance = milesBetween(leg.from, leg.to);
   const routeProgress = takeoffCruiseLandingEase(p);
-  const vehicle = pointAtRouteProgress(leg, routeProgress);
-  const future = pointAtRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p)));
-  const routeMid = pointAtRouteProgress(leg, 0.5);
-  const phase = p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
+  const lineProgress = lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
+  const vehicle = pointAtRouteProgress(leg, routeProgress, routedGeometries);
+  const future = pointAtRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p)), routedGeometries);
+  const routeMid = pointAtRouteProgress(leg, 0.5, routedGeometries);
+  const phase = raw > 1 ? 'settle' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
   const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
-  const cinematicFocus = blendGeo(vehicle, future, phase === 'cruise' ? 0.62 : 0.36);
+  let cinematicFocus = blendGeo(vehicle, future, phase === 'cruise' ? 0.62 : 0.36);
+
+  if (phase === 'settle') {
+    const nextFrom = nextActive?.leg?.from;
+    const driftRadius = distance > 1500 ? 0.55 : distance > 450 ? 0.28 : 0.12;
+    const quietDrift = {
+      lon: leg.to.lon + Math.sin(settleT * Math.PI * 1.15) * driftRadius,
+      lat: leg.to.lat + Math.sin(settleT * Math.PI * 0.72) * driftRadius * 0.55
+    };
+    cinematicFocus = nextFrom && nextFrom.id !== leg.to.id
+      ? blendGeo(quietDrift, nextFrom, 0.16 * smoothstep(settleT))
+      : quietDrift;
+  }
 
   let center = cinematicFocus;
   if (cameraMode === 'global') center = blendGeo(routeMid, cinematicFocus, 0.2);
   if (cameraMode === 'route') center = blendGeo(routeMid, cinematicFocus, 0.52);
   if (cameraMode === 'continent') center = blendGeo(routeMid, cinematicFocus, 0.4);
 
-  const heading = headingAlongRoute(leg, routeProgress);
-  const bearing = 0; // v2.3: north-up camera lock
-  const zoom = cameraZoom(cameraMode, distance, endpointBias, p);
-  const pitch = cameraPitch(cameraMode, phase, distance);
+  const heading = headingAlongRoute(leg, routeProgress, routedGeometries);
+  const bearing = 0; // North-up. No route-heading camera rotation.
+  const zoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT);
+  const pitch = cameraPitch(cameraMode, phase, distance, settleT);
+  const arrived = routeProgress >= 0.995 || phase === 'settle';
 
   return {
     phase,
     routeProgress,
+    lineProgress,
     vehicle,
     heading,
     screenHeading: headingToScreenRotation(heading, bearing),
     vehicleScale: vehicleScale(leg.mode, phase, endpointBias, p),
-    vehicleVisible: p > 0.006 && p < 0.994,
-    pulseActive: p > 0.88,
+    vehicleVisible: raw <= 1 && p > 0.006 && p < 0.994,
+    pulseActive: phase === 'arrival' || phase === 'settle',
+    arrivalLabelVisible: arrived,
+    newArrivalId: arrived ? leg.to.id : null,
     camera: { center: [center.lon, center.lat], zoom, pitch, bearing },
-    frameKey: `${active.trip.id}:${active.legIndex}:${Math.round(p * 1000)}:${cameraMode}`
+    frameKey: `${active.trip.id}:${active.legIndex}:${Math.round(raw * 1000)}:${cameraMode}`
   };
 }
 
@@ -319,7 +381,7 @@ function colorForLeg(active, travelersById) {
   return travelersById[getTravelerKey(active.trip)]?.color || '#00e5ff';
 }
 
-function syncVisitedPoints(map, completedLegs, active, completedMode) {
+function buildVisitedLocations(completedLegs, active, completedMode, scene) {
   const pointMap = new Map();
   for (const l of completedLegs || []) {
     pointMap.set(l.leg.from.id, l.leg.from);
@@ -327,12 +389,49 @@ function syncVisitedPoints(map, completedLegs, active, completedMode) {
   }
   if (active && !completedMode) {
     pointMap.set(active.leg.from.id, active.leg.from);
-    pointMap.set(active.leg.to.id, active.leg.to);
+    if (scene?.arrivalLabelVisible) pointMap.set(active.leg.to.id, active.leg.to);
   }
+  return [...pointMap.values()];
+}
+
+function syncVisitedPoints(map, visitedLocations, sigRef) {
+  const sig = visitedLocations.map(l => l.id).sort().join('|');
+  if (sigRef?.current === sig) return;
+  if (sigRef) sigRef.current = sig;
   map.getSource('visited-points')?.setData({
     type: 'FeatureCollection',
-    features: [...pointMap.values()].map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }))
+    features: visitedLocations.map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }))
   });
+}
+
+function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, color = '#00e5ff', newArrivalId = null) {
+  const container = containerRef.current;
+  if (!container) return;
+  const wanted = new Set(visitedLocations.map(l => l.id));
+  for (const [id, el] of labelsRef.current.entries()) {
+    if (!wanted.has(id)) {
+      el.remove();
+      labelsRef.current.delete(id);
+    }
+  }
+  for (const loc of visitedLocations) {
+    let el = labelsRef.current.get(loc.id);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'jl-persistent-place-label';
+      el.innerHTML = `<span class="jl-place-dot"></span><span class="jl-place-name">${escapeHtml(loc.name)}</span>`;
+      container.appendChild(el);
+      labelsRef.current.set(loc.id, el);
+    }
+    el.style.setProperty('--place-color', color);
+    const pt = map.project([loc.lon, loc.lat]);
+    el.style.transform = `translate3d(${pt.x + 12}px, ${pt.y - 28}px, 0)`;
+    if (newArrivalId === loc.id && !el.classList.contains('has-arrived')) {
+      el.classList.remove('is-new-arrival');
+      void el.offsetWidth;
+      el.classList.add('is-new-arrival', 'has-arrived');
+    }
+  }
 }
 
 function updatePulseOverlay(el, point, color, active) {
@@ -343,32 +442,103 @@ function updatePulseOverlay(el, point, color, active) {
   el.style.opacity = active ? '1' : '0';
 }
 
-function routeCoordinates(leg, progress = 1, n = 64) {
+function routeCoordinates(leg, progress = 1, n = 64, routedGeometries = {}) {
   if (leg.mode === 'plane' || leg.mode === 'move') return routeSamples(leg.from, leg.to, progress, n);
+  const routed = getRoutedGeometry(leg, routedGeometries);
+  if (routed?.length > 1) return samplePolyline(routed, progress, n);
   const pts = waypointPathForLeg(leg);
   return samplePolyline(pts, progress, n);
 }
 
-function pointAtRouteProgress(leg, t) {
+function pointAtRouteProgress(leg, t, routedGeometries = {}) {
   if (leg.mode === 'plane' || leg.mode === 'move') return interpolateGeo(leg.from, leg.to, t);
-  const coords = waypointPathForLeg(leg);
+  const routed = getRoutedGeometry(leg, routedGeometries);
+  const coords = routed?.length > 1 ? routed : waypointPathForLeg(leg);
   const [lon, lat] = pointOnPolyline(coords, t);
   return { lon, lat };
 }
 
-function headingAlongRoute(leg, t) {
-  const a = pointAtRouteProgress(leg, Math.max(0, t - 0.008));
-  const b = pointAtRouteProgress(leg, Math.min(1, t + 0.008));
+function headingAlongRoute(leg, t, routedGeometries = {}) {
+  const a = pointAtRouteProgress(leg, Math.max(0, t - 0.008), routedGeometries);
+  const b = pointAtRouteProgress(leg, Math.min(1, t + 0.008), routedGeometries);
   return bearingBetween(a, b);
 }
 
+function projectedScreenHeading(map, leg, t) {
+  const a = pointAtRouteProgress(leg, Math.max(0, t - 0.01));
+  const b = pointAtRouteProgress(leg, Math.min(1, t + 0.01));
+  const pa = map.project([a.lon, a.lat]);
+  const pb = map.project([b.lon, b.lat]);
+  return Math.atan2(pb.x - pa.x, -(pb.y - pa.y)) * 180 / Math.PI;
+}
+
+
+function routeCacheKey(leg) {
+  return `${leg.from.id}->${leg.to.id}:${leg.mode}`;
+}
+
+function reverseRouteCacheKey(leg) {
+  return `${leg.to.id}->${leg.from.id}:${leg.mode}`;
+}
+
+function getRoutedGeometry(leg, routedGeometries = {}) {
+  const key = routeCacheKey(leg);
+  if (routedGeometries[key]?.length > 1) return routedGeometries[key];
+  const reverse = routedGeometries[reverseRouteCacheKey(leg)];
+  if (reverse?.length > 1) return [...reverse].reverse();
+  const manual = getManualRoute(leg);
+  return manual?.length > 1 ? manual : null;
+}
+
+function getManualRoute(leg) {
+  const routes = routeOverrides?.routes || [];
+  const direct = routes.find(r => r.mode === leg.mode && r.fromLocationId === leg.from.id && r.toLocationId === leg.to.id);
+  if (direct?.coordinates?.length > 1) return direct.coordinates;
+  const reverse = routes.find(r => r.mode === leg.mode && r.fromLocationId === leg.to.id && r.toLocationId === leg.from.id);
+  if (reverse?.coordinates?.length > 1) return [...reverse.coordinates].reverse();
+  return null;
+}
+
+function getMapboxToken() {
+  return (routingSettings?.mapbox?.publicToken || localStorage.getItem('journeylines.mapboxToken') || '').trim();
+}
+
+async function fetchMapboxRoute(leg, token) {
+  const profile = routingSettings?.mapbox?.profile || 'mapbox/driving';
+  const coords = `${leg.from.lon},${leg.from.lat};${leg.to.lon},${leg.to.lat}`;
+  const params = new URLSearchParams({
+    alternatives: 'false',
+    geometries: routingSettings?.mapbox?.geometries || 'geojson',
+    overview: routingSettings?.mapbox?.overview || 'full',
+    steps: 'false',
+    access_token: token
+  });
+  const url = `https://api.mapbox.com/directions/v5/${profile}/${coords}?${params.toString()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Mapbox Directions ${res.status}`);
+  const data = await res.json();
+  const geometry = data?.routes?.[0]?.geometry?.coordinates;
+  return Array.isArray(geometry) ? geometry : null;
+}
+
+function loadStoredRouteCache() {
+  try { return JSON.parse(localStorage.getItem('journeylines.routeCache') || '{}') || {}; } catch { return {}; }
+}
+
+function persistRouteCache(cache) {
+  if (!routingSettings?.mapbox?.cacheInLocalStorage) return;
+  try { localStorage.setItem('journeylines.routeCache', JSON.stringify(cache)); } catch {}
+}
+
 function waypointPathForLeg(leg) {
+  const manual = getManualRoute(leg);
+  if (manual?.length > 1) return manual;
   const a = [leg.from.lon, leg.from.lat];
   const b = [leg.to.lon, leg.to.lat];
   const key = `${leg.from.id}->${leg.to.id}:${leg.mode}`;
   const reverseKey = `${leg.to.id}->${leg.from.id}:${leg.mode}`;
-  const manual = ROUTE_WAYPOINTS[key] || (ROUTE_WAYPOINTS[reverseKey] ? [...ROUTE_WAYPOINTS[reverseKey]].reverse() : null);
-  if (manual) return [a, ...manual, b];
+  const legacy = ROUTE_WAYPOINTS[key] || (ROUTE_WAYPOINTS[reverseKey] ? [...ROUTE_WAYPOINTS[reverseKey]].reverse() : null);
+  if (legacy) return [a, ...legacy, b];
   return [a, b];
 }
 
@@ -467,18 +637,20 @@ function lookAhead(distance, p) {
   const endpoint = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
   return base * (1 - 0.5 * endpoint);
 }
-function cameraZoom(mode, distance, endpointBias, p) {
+function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0) {
   if (mode === 'global') return distance > 3500 ? 1.75 : 2.65;
   if (mode === 'continent') return distance > 3500 ? 2.65 : 4.15;
   if (mode === 'route') return distance > 4500 ? 3.0 : distance > 1500 ? 4.1 : 5.4;
   const cruise = distance > 4500 ? 3.1 : distance > 1500 ? 4.15 : distance > 500 ? 5.4 : 6.7;
   const close = distance > 4500 ? 4.7 : distance > 1500 ? 5.7 : distance > 500 ? 6.7 : 7.6;
-  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.34 : 0;
-  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.46 : 0;
-  return cruise + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop;
+  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.26 : 0;
+  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.34 : 0;
+  const settleBreath = phase === 'settle' ? 0.16 * Math.sin(settleT * Math.PI) : 0;
+  return cruise + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop - settleBreath;
 }
-function cameraPitch(mode, phase, distance) {
+function cameraPitch(mode, phase, distance, settleT = 0) {
   if (mode === 'global') return 0;
+  if (phase === 'settle') return (distance > 1500 ? 54 : 60) - 4 * smoothstep(settleT);
   if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 56 : 63;
   return mode === 'follow' ? 58 : 42;
 }
@@ -490,6 +662,12 @@ function vehicleScale(mode, phase, endpointBias, progress) {
   const takeoffGrow = smoothstep(Math.max(0, Math.min(1, progress / 0.14)));
   const landingShrink = smoothstep(Math.max(0, Math.min(1, (1 - progress) / 0.14)));
   return cinematic * takeoffGrow * landingShrink;
+}
+function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
+  if (!(mode === 'plane' || mode === 'move')) return routeProgress;
+  if (rawP > 0.965) return 1;
+  const offset = distance > 3000 ? 0.0035 : distance > 900 ? 0.006 : 0.012;
+  return Math.max(0, Math.min(1, routeProgress - offset));
 }
 function bearingBetween(a, b) {
   const toRad = d => d * Math.PI / 180;
