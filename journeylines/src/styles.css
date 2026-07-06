@@ -619,3 +619,58 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
     drop-shadow(0 0 24px var(--air-arc-color, #00e5ff))
     drop-shadow(0 20px 28px rgba(0,0,0,0.42));
 }
+
+/* v2.11 pin drop, far-side culling, and higher airplane arc */
+.jl-map-pin.is-dropping {
+  animation: jl-map-pin-drop-v211 1.05s cubic-bezier(.12,.82,.18,1) both;
+}
+@keyframes jl-map-pin-drop-v211 {
+  0% { opacity: 0; translate: 0 -86px; scale: .82; filter: blur(1.8px); }
+  64% { opacity: 1; translate: 0 7px; scale: 1.04; filter: blur(0); }
+  82% { opacity: 1; translate: 0 -2px; scale: 1.00; }
+  100% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
+}
+.jl-air-arc-overlay path {
+  stroke-width: 5.8px;
+  filter:
+    drop-shadow(0 0 10px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 0 30px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 30px 38px rgba(0,0,0,0.46));
+}
+
+
+/* v2.12 definitive pin-drop and globe culling polish */
+.maplibre-shell .maplibregl-canvas { cursor: grab; }
+.maplibre-shell .maplibregl-canvas:active { cursor: grabbing; }
+.jl-map-pin {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.jl-map-pin-inner {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgba(1, 8, 20, 0.94);
+  border: 1px solid color-mix(in srgb, var(--place-color, #00e5ff), white 36%);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--place-color, #00e5ff), transparent 42%),
+    0 10px 20px rgba(0, 0, 0, 0.62);
+  will-change: transform, opacity;
+}
+.jl-map-pin.is-dropping {
+  animation: none !important;
+}
+.jl-map-pin.is-dropping .jl-map-pin-inner {
+  animation: jl-map-pin-inner-drop-v212 1.08s cubic-bezier(.12,.82,.18,1) both;
+}
+@keyframes jl-map-pin-inner-drop-v212 {
+  0% { opacity: 0; transform: translateY(-92px) scale(.82); filter: blur(1.8px); }
+  62% { opacity: 1; transform: translateY(7px) scale(1.04); filter: blur(0); }
+  82% { opacity: 1; transform: translateY(-2px) scale(1.00); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}

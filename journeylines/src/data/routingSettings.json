@@ -7,9 +7,9 @@
     "overview": "full",
     "cacheInLocalStorage": true,
     "maxRoutesPerSession": 120,
-    "cacheVersion": "v2.10",
+    "cacheVersion": "v2.12",
     "concurrency": 4
   },
   "manualOverridesEnabled": true,
-  "notes": "v2.10 uses GitHub-secret Mapbox token support, persistent stylized HTML pins, no MapLibre text/glyph labels, and a higher glowing airplane air-arc overlay."
+  "notes": "v2.12 hardens pin-drop animation, globe backside culling for pins/vehicles, and drag-to-pause camera ownership."
 }

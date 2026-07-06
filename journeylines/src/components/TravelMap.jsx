@@ -46,7 +46,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, onUserInteractPause = null }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -63,6 +63,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const arrivalTimerRef = useRef(null);
   const routeRequestsRef = useRef(new Set());
   const currentOverlayStateRef = useRef(null);
+  const userCameraOverrideRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadStoredRouteCache());
 
@@ -148,14 +149,43 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const map = mapRef.current;
     if (!map) return;
     const navigationMethods = [map.dragPan, map.scrollZoom, map.boxZoom, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
+    // v2.11: interactions stay available. If the user drags/zooms while playback is running, App pauses.
     for (const method of navigationMethods) {
-      try { isPlaying ? method.disable() : method.enable(); } catch {}
+      try { method.enable(); } catch {}
     }
-    // v2.3: keep north-up orientation. Users can pan/zoom while paused, but not rotate the globe.
+    // Keep north-up orientation. Users can pan/zoom, but not rotate the globe.
     try { map.dragRotate.disable(); } catch {}
     try { map.touchZoomRotate.disableRotation(); } catch {}
     try { map.setBearing(0); } catch {}
   }, [isPlaying]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    // When playback starts/restarts, JourneyLines owns the camera again until the user touches the map.
+    if (isPlaying) userCameraOverrideRef.current = false;
+    const pauseForUser = () => {
+      if (!isPlaying) return;
+      userCameraOverrideRef.current = true;
+      if (typeof onUserInteractPause === 'function') onUserInteractPause();
+    };
+    const canvas = map.getCanvas();
+    const opts = { passive: true, capture: true };
+    canvas.addEventListener('pointerdown', pauseForUser, opts);
+    canvas.addEventListener('wheel', pauseForUser, opts);
+    canvas.addEventListener('touchstart', pauseForUser, opts);
+    map.on('dragstart', pauseForUser);
+    map.on('zoomstart', pauseForUser);
+    map.on('rotatestart', pauseForUser);
+    return () => {
+      canvas.removeEventListener('pointerdown', pauseForUser, opts);
+      canvas.removeEventListener('wheel', pauseForUser, opts);
+      canvas.removeEventListener('touchstart', pauseForUser, opts);
+      map.off('dragstart', pauseForUser);
+      map.off('zoomstart', pauseForUser);
+      map.off('rotatestart', pauseForUser);
+    };
+  }, [isPlaying, onUserInteractPause]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -191,7 +221,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const smoothing = scene.phase === 'settle' ? 0.006 : scene.phase === 'takeoff' ? 0.008 : 0.007;
     const camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
     lastCameraRef.current = camera;
-    map.jumpTo({ ...camera, essential: true });
+    if (!userCameraOverrideRef.current) {
+      map.jumpTo({ ...camera, essential: true });
+    }
 
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
@@ -268,7 +300,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     vehicleRef.current.dataset.mode = mode;
     vehicleRef.current.style.setProperty('--vehicle-color', color);
     vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) scale(${sceneState.vehicleScale})`;
-    vehicleRef.current.style.opacity = sceneState.vehicleVisible ? '1' : '0';
+    vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
 
     const destPt = map.project([leg.to.lon, leg.to.lat]);
     updatePulseOverlay(pulseRef.current, destPt, color, sceneState.pulseActive);
@@ -438,6 +470,11 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
   }
   const fromPt = map.project([leg.from.lon, leg.from.lat]);
   const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
+  if (!isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) || !isCoordinateVisibleOnGlobe(map, leg.from.lon, leg.from.lat)) {
+    pathEl.style.opacity = '0';
+    pathEl.setAttribute('d', '');
+    return;
+  }
   const heading = projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries);
   const rad = (heading - 90) * Math.PI / 180;
   const tailOffset = 23 * Math.max(0.55, sceneState.vehicleScale || 1);
@@ -446,9 +483,9 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
   const dy = tail.y - fromPt.y;
   const dist = Math.hypot(dx, dy);
   if (dist < 8) { pathEl.style.opacity = '0'; pathEl.setAttribute('d', ''); return; }
-  const lift = Math.min(310, Math.max(56, dist * 0.34));
+  const lift = Math.min(560, Math.max(86, dist * 0.58));
   const cx = (fromPt.x + tail.x) / 2 - dy / dist * lift;
-  const cy = (fromPt.y + tail.y) / 2 + dx / dist * lift - lift * 0.72;
+  const cy = (fromPt.y + tail.y) / 2 + dx / dist * lift - lift * 0.98;
   pathEl.setAttribute('d', `M ${fromPt.x.toFixed(1)} ${fromPt.y.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${tail.x.toFixed(1)} ${tail.y.toFixed(1)}`);
   pathEl.style.setProperty('--air-arc-color', color);
   pathEl.style.opacity = String(Math.min(1, 0.25 + sceneState.lineProgress * 1.1));
@@ -513,12 +550,15 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     }
 
     el.style.setProperty('--place-color', loc.color || color);
-    el.innerHTML = `<span class="jl-map-pin-dot"></span><span class="jl-map-pin-name">${escapeHtml(displayNameForLocation(loc))}</span><span class="jl-map-pin-tail"></span>`;
+    el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"></span><span class="jl-map-pin-name">${escapeHtml(displayNameForLocation(loc))}</span><span class="jl-map-pin-tail"></span></span>`;
     el.__jlLocation = loc;
-    el.classList.toggle('is-dropping', Boolean(isNew));
+    // v2.12: parent handles globe anchoring/culling; inner handles the visible drop animation.
     if (isNew) {
       droppedIdsRef.current.add(loc.id);
-      window.setTimeout(() => el?.classList?.remove('is-dropping'), 980);
+      el.classList.remove('is-dropping');
+      void el.offsetWidth;
+      el.classList.add('is-dropping');
+      window.setTimeout(() => el?.classList?.remove('is-dropping'), 1150);
     }
   }
 
@@ -538,21 +578,48 @@ function refreshPersistentPinPositions(map, labelsRef) {
   const canvas = map.getCanvas();
   const w = canvas?.clientWidth || window.innerWidth;
   const h = canvas?.clientHeight || window.innerHeight;
-  const center = { x: w / 2, y: h / 2 };
-  const globeRadius = Math.min(w, h) * 0.48;
 
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    const dx = pt.x - center.x;
-    const dy = pt.y - center.y;
-    const onScreen = pt.x > -160 && pt.x < w + 160 && pt.y > -120 && pt.y < h + 120;
-    // Approximate far-side culling for the globe. MapLibre still projects hidden positions, so this keeps pins from floating on the opposite side.
-    const nearVisibleHemisphere = Math.hypot(dx, dy) < globeRadius * 1.06;
+    const onScreen = pt.x > -180 && pt.x < w + 180 && pt.y > -140 && pt.y < h + 140;
+    const visibleHemisphere = isCoordinateVisibleOnGlobe(map, loc.lon, loc.lat);
     el.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) translate(-50%, calc(-100% - 10px))`;
-    el.style.opacity = onScreen && nearVisibleHemisphere ? '1' : '0';
+    el.style.opacity = onScreen && visibleHemisphere ? '1' : '0';
   }
+}
+
+function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 96) {
+  if (!map || lon == null || lat == null) return false;
+  try {
+    const center = map.getCenter();
+    const distance = angularDistanceDeg({ lon: center.lng, lat: center.lat }, { lon, lat });
+    return distance <= marginDeg;
+  } catch {
+    return true;
+  }
+}
+
+function isVisibleOnGlobe(map, point, margin = 1.06) {
+  if (!map || !point) return false;
+  const canvas = map.getCanvas();
+  const w = canvas?.clientWidth || window.innerWidth;
+  const h = canvas?.clientHeight || window.innerHeight;
+  const center = { x: w / 2, y: h / 2 };
+  const globeRadius = Math.min(w, h) * 0.48;
+  const onScreen = point.x > -180 && point.x < w + 180 && point.y > -140 && point.y < h + 140;
+  return onScreen && Math.hypot(point.x - center.x, point.y - center.y) < globeRadius * margin;
+}
+
+function angularDistanceDeg(a, b) {
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = r => r * 180 / Math.PI;
+  const lat1 = toRad(a.lat), lat2 = toRad(b.lat);
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return toDeg(2 * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h))));
 }
 
 function updatePulseOverlay(el, point, color, active) {
@@ -594,7 +661,7 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
-function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.10'; }
+function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.12'; }
 function routeCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }
@@ -622,8 +689,10 @@ function getManualRoute(leg) {
 }
 
 function getMapboxToken() {
+  const runtimeToken = typeof window !== 'undefined' ? window.JOURNEYLINES_CONFIG?.mapboxToken || '' : '';
   const viteToken = import.meta.env?.VITE_MAPBOX_TOKEN || '';
   return (
+    runtimeToken ||
     viteToken ||
     routingSettings?.mapbox?.publicToken ||
     localStorage.getItem('journeylines.mapboxToken') ||

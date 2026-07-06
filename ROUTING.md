@@ -23,6 +23,6 @@ Driving routes are cached in localStorage by cache version.
 Boat and train routes currently use manual waypoint overrides in `src/data/routeOverrides.json`. Cruise routing is represented by curated port/ocean waypoints for now. A future cruise-route database can be added as more exact itinerary port calls are known.
 
 
-## v2.11 Mapbox token runtime config
+## v2.12 Mapbox token runtime config
 
 GitHub Actions writes `journeylines/public/runtime-config.js` during deployment using the repository secret `VITE_MAPBOX_TOKEN`. The app checks `window.JOURNEYLINES_CONFIG.mapboxToken` first, then `import.meta.env.VITE_MAPBOX_TOKEN`, then `routingSettings.json`, then localStorage. This makes the deployed gh-pages site use the token without committing it to source.
