@@ -215,7 +215,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     }
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
 
-    const smoothing = scene.phase === 'settle' ? 0.0045 : scene.phase === 'predeparture' ? 0.0038 : scene.phase === 'takeoff' ? 0.0052 : 0.0048;
+    // v2.26: glide faster toward the route lead point. The old smoothing was so
+    // conservative that the camera could fall behind the vessel and then catch
+    // up in visible steps. These values still ease, but keep the camera ahead.
+    const smoothing = scene.phase === 'settle' ? 0.012 : scene.phase === 'predeparture' ? 0.010 : scene.phase === 'takeoff' ? 0.020 : scene.phase === 'arrival' ? 0.022 : 0.019;
     const camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
     lastCameraRef.current = camera;
     if (!userCameraOverrideRef.current) {
@@ -418,11 +421,12 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const routeProgress = takeoffCruiseLandingEase(p);
   const lineProgress = lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
   const vehicle = pointAtRouteProgress(leg, routeProgress, routedGeometries);
-  const future = pointAtRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p)), routedGeometries);
+  const future = pointAtRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode)), routedGeometries);
   const routeMid = pointAtRouteProgress(leg, 0.5, routedGeometries);
   const phase = raw > 1 ? 'settle' : visibleP < departureWarmup ? 'predeparture' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
   const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
-  let cinematicFocus = blendGeo(vehicle, future, phase === 'cruise' ? 0.62 : 0.36);
+  const leadBias = cameraLeadBias(leg.mode, distance, phase, p);
+  let cinematicFocus = blendGeo(vehicle, future, leadBias);
 
   if (phase === 'settle') {
     const nextFrom = nextActive?.leg?.from;
@@ -640,8 +644,10 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    const x = Math.round(pt.x);
-    const y = Math.round(pt.y);
+    // Use sub-pixel positioning for smooth camera motion. Whole-pixel rounding
+    // caused placards to visibly wobble as MapLibre eased the globe underneath.
+    const x = roundTo(pt.x, 0.1);
+    const y = roundTo(pt.y, 0.1);
     const distance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
     const onScreen = x > -80 && x < w + 80 && y > -80 && y < h + 80;
     const visibleHemisphere = distance <= horizonCutoffDeg(zoom);
@@ -663,7 +669,7 @@ function refreshPersistentPinPositions(map, labelsRef) {
 
   // At far/global zooms, show mostly the local/current cluster. Pins remain in
   // the map data, but expensive custom placards are aggressively capped.
-  const maxLabels = zoom < 1.75 ? 8 : zoom < 2.15 ? 14 : zoom < 2.8 ? 26 : 64;
+  const maxLabels = zoom < 1.75 ? 5 : zoom < 2.15 ? 8 : zoom < 2.8 ? 12 : zoom < 4.2 ? 18 : 38;
   visible.sort((a, b) => a.distance - b.distance || a.y - b.y);
   visible.forEach((item, idx) => {
     item.el.style.opacity = idx < maxLabels ? '1' : '0';
@@ -713,14 +719,17 @@ function horizonCutoffDeg(zoom) {
 }
 
 function labelFocusCutoffDeg(zoom) {
-  // Placards are more expensive and visually heavier than pins, so at far zooms
-  // keep them local to the current camera focus instead of showing every visible
-  // city across the globe. This clips Europe/Asia when the camera is focused on
-  // North America/Caribbean and also helps late-timeline playback performance.
-  if (zoom < 1.7) return 36;
-  if (zoom < 2.2) return 44;
-  if (zoom < 3.0) return 58;
-  return 72;
+  // v2.26: make placards highly local at cinematic/road-trip zoom levels.
+  // During a Florida drive, Chicago/New York should be out even though they may
+  // still project onto the pitched globe. Pins/routes can remain, but placards
+  // should only be near the camera's current focus region.
+  if (zoom < 1.7) return 22;
+  if (zoom < 2.2) return 28;
+  if (zoom < 3.0) return 34;
+  if (zoom < 4.2) return 18;
+  if (zoom < 5.2) return 10;
+  if (zoom < 6.2) return 6.5;
+  return 4.8;
 }
 
 function angularDistanceDeg(a, b) {
@@ -1011,10 +1020,24 @@ function takeoffCruiseLandingEase(t) {
   const mid = (u - 0.18) / 0.64;
   return 0.09 + mid * 0.82;
 }
-function lookAhead(distance, p) {
-  const base = distance > 4500 ? 0.055 : distance > 1500 ? 0.085 : 0.13;
+function lookAhead(distance, p, mode = 'plane') {
+  const isDrive = mode === 'drive';
+  const isBoat = mode === 'boat';
+  const isTrain = mode === 'train';
+  let base;
+  if (isDrive) base = distance > 700 ? 0.22 : distance > 250 ? 0.18 : 0.14;
+  else if (isBoat || isTrain) base = distance > 700 ? 0.16 : 0.12;
+  else base = distance > 4500 ? 0.070 : distance > 1500 ? 0.105 : 0.14;
   const endpoint = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
-  return base * (1 - 0.5 * endpoint);
+  return base * (1 - 0.40 * endpoint);
+}
+
+function cameraLeadBias(mode, distance, phase, p) {
+  if (phase === 'predeparture') return 0.04;
+  if (phase === 'settle') return 0.12;
+  if (mode === 'drive') return phase === 'cruise' ? 0.82 : 0.64;
+  if (mode === 'boat' || mode === 'train') return phase === 'cruise' ? 0.74 : 0.54;
+  return phase === 'cruise' ? 0.70 : 0.42;
 }
 function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode = 'plane') {
   const isDrive = legMode === 'drive';
@@ -1026,7 +1049,7 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   if (mode === 'route') return distance > 4500 ? 3.05 : distance > 1500 ? 4.0 : isDrive ? 6.2 : 5.2;
 
   if (phase === 'predeparture') {
-    if (isDrive) return distance > 500 ? 6.45 : 7.1;
+    if (isDrive) return distance > 500 ? 7.25 : 7.75;
     if (isBoat || isTrain) return distance > 500 ? 5.85 : 6.55;
     return distance > 4500 ? 4.45 : distance > 1500 ? 5.25 : distance > 500 ? 6.15 : 6.85;
   }
@@ -1034,8 +1057,10 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   let cruise;
   let close;
   if (isDrive) {
-    cruise = distance > 700 ? 5.65 : distance > 250 ? 6.25 : 6.85;
-    close = distance > 700 ? 6.65 : distance > 250 ? 7.15 : 7.65;
+    // v2.26: road trips should feel regional/local, not like a continent view.
+    // Destin, Key West, Palm Springs, etc. now stay much closer to the route.
+    cruise = distance > 700 ? 6.75 : distance > 250 ? 7.18 : 7.55;
+    close = distance > 700 ? 7.65 : distance > 250 ? 8.05 : 8.35;
   } else if (isBoat || isTrain) {
     cruise = distance > 1500 ? 3.95 : distance > 500 ? 5.2 : 6.1;
     close = distance > 1500 ? 4.9 : distance > 500 ? 6.05 : 6.85;
@@ -1192,4 +1217,5 @@ function displayNameForLocation(loc) {
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 function smoothstep(x) { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); }
 function lerp(a, b, t) { return a + (b - a) * t; }
+function roundTo(value, step = 1) { return Math.round(value / step) * step; }
 function lerpAngle(a, b, t) { let d = ((b - a + 540) % 360) - 180; return a + d * t; }
