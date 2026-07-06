@@ -17,6 +17,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
     </label>
     <label>Projection
       <select value={projection} onChange={e => setProjection(e.target.value)}>
+        <option value="globe">Globe</option>
         <option value="equalEarth">Equal Earth</option>
         <option value="gallPeters">Gall-Peters</option>
       </select>

@@ -83,10 +83,10 @@ export default function App() {
 
   const progress = legs.length ? Math.min(1, (Math.min(activeIndex, legs.length - 1) + legProgress) / legs.length) : 1;
 
-  return <main className="app">
+  return <main className={`app ${isPlaying ? 'is-playing' : ''}`}>
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="JourneyLines">JourneyLines</button>
-      <div className="tagline">Animated travel history across a flat world atlas</div>
+      <div className="tagline">Animated travel history across a living world atlas</div>
       <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
     <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} />
@@ -99,7 +99,7 @@ export default function App() {
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} />
     <section className="about glass">
-      <strong>About</strong> JourneyLines is an animated travel-history map that replays a lifetime of trips across a flat world atlas. Five-click the title to open Admin Mode.
+      <strong>About</strong> JourneyLines is an animated travel-history map that replays a lifetime of trips across a living world atlas. Five-click the title to open Admin Mode.
     </section>
     {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} />}
   </main>;
