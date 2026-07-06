@@ -1,13 +1,16 @@
 # JourneyLines
 
+**Current package:** v1.1 — Globe + GitHub Actions Fix
+
 JourneyLines is a public-facing GitHub Pages travel-history playback app. It opens on a completed route web, then plays the travel history from the beginning with animated routes, city reveals, traveler colors, projection toggles, camera modes, and a hidden admin editor.
 
 ## Current v1 features
 
 - React + Vite static site
+- Globe-first playback with projection toggles
 - Fullscreen travel-history playback
 - Completed route web opening state
-- Equal Earth and Gall-Peters projections
+- Globe, Equal Earth, and Gall-Peters projections
 - Global, Route, Follow, and Continent camera modes
 - Traveler filters: All, Joey only, Bonnie only, Trips together only
 - Traveler route colors: Joey orange, Bonnie pink, together cyan
@@ -37,18 +40,19 @@ npm run preview
 
 ## Deploy to GitHub Pages
 
-1. Create a new GitHub repo.
-2. Upload/push this project.
-3. In `vite.config.js`, set `base` if using a project page. Example: `base: '/journeylines/'`.
-4. Run:
+This repo uses GitHub Actions for deployment. The workflow lives at:
 
-```bash
-npm install
-npm run build
-npm run deploy
+```text
+.github/workflows/deploy.yml
 ```
 
-Or configure GitHub Actions to build and publish `dist`.
+In GitHub, set:
+
+```text
+Settings → Pages → Build and deployment → Source → GitHub Actions
+```
+
+Then every commit to `main` rebuilds and redeploys the site. The workflow intentionally uses `npm install --registry=https://registry.npmjs.org/` and does not rely on `package-lock.json` for this version.
 
 ## Data files
 
