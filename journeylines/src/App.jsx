@@ -24,6 +24,7 @@ export default function App() {
   const [speed, setSpeed] = useState(settings.playbackSpeed);
   const [filter, setFilter] = useState('all');
   const [admin, setAdmin] = useState(false);
+  const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const SETTLE_MS = settings.arrivalSettleMs || 3200;
@@ -41,6 +42,7 @@ export default function App() {
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), []);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), []);
   const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
+  const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, travById), [filteredTrips, legs, locById, travById]);
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
   const traveler = current ? travById[getTravelerKey(current.trip)] : null;
@@ -73,12 +75,39 @@ export default function App() {
   }, [isPlaying, activeIndex, legs, speed]);
 
   function play() {
-    if (!started || activeIndex >= legs.length - 1) { setActiveIndex(0); setLegProgress(0); setStarted(true); }
-    tRef.current = { last: null, elapsed: 0 };
+    if (!started || activeIndex >= legs.length - 1) {
+      setActiveIndex(0);
+      setLegProgress(0);
+      tRef.current = { last: null, elapsed: 0 };
+      setStarted(true);
+    } else {
+      const currentLeg = legs[Math.min(activeIndex, legs.length - 1)]?.leg;
+      const dur = legDurationMs(currentLeg?.miles || 500, speed);
+      tRef.current = { last: null, elapsed: Math.max(0, Math.min(1, legProgress)) * dur };
+    }
     setIsPlaying(true);
   }
   function pause() { setIsPlaying(false); }
   function reset() { setIsPlaying(false); setStarted(false); setActiveIndex(999999); setLegProgress(1); }
+  function jumpToLeg(index, progressWithinLeg = 0) {
+    if (!legs.length) return;
+    const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
+    const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
+    const dur = legDurationMs(legs[safeIndex]?.leg?.miles || 500, speed);
+    setStarted(true);
+    setIsPlaying(false);
+    setActiveIndex(safeIndex);
+    setLegProgress(safeProgress);
+    tRef.current = { last: null, elapsed: safeProgress * dur };
+  }
+  function seekTimeline(fraction) {
+    if (!legs.length) return;
+    const p = Math.max(0, Math.min(0.999999, Number(fraction) || 0));
+    const raw = p * legs.length;
+    const index = Math.max(0, Math.min(legs.length - 1, Math.floor(raw)));
+    const withinLeg = raw - index;
+    jumpToLeg(index, withinLeg);
+  }
   function titleClick() {
     clickRef.current += 1;
     setTimeout(() => { clickRef.current = 0; }, 900);
@@ -91,6 +120,7 @@ export default function App() {
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="JourneyLines">JourneyLines</button>
       <div className="tagline">Animated travel history across a living world atlas</div>
+      <button onClick={() => setTripDrawerOpen(v => !v)}>Trips</button>
       <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
     <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} />
@@ -101,10 +131,77 @@ export default function App() {
       <button className="primary big" onClick={play}>Play Travel History</button>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
-    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} />
+    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => setTripDrawerOpen(v => !v)} />
+    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0)} />
     <section className="about glass">
       <strong>About</strong> JourneyLines is an animated travel-history map that replays a lifetime of trips across a living world atlas. Five-click the title to open Admin Mode.
     </section>
     {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} />}
   </main>;
+}
+
+
+function buildTripTimeline(trips, legs, locById, travById) {
+  const firstLegByTrip = new Map();
+  for (let i = 0; i < legs.length; i++) {
+    const id = legs[i]?.trip?.id;
+    if (id && !firstLegByTrip.has(id)) firstLegByTrip.set(id, i);
+  }
+  return trips.map(trip => {
+    const firstIndex = firstLegByTrip.get(trip.id) ?? 0;
+    const tripLegs = legs.filter(l => l.trip.id === trip.id);
+    const from = tripLegs[0]?.leg?.from;
+    const to = tripLegs[0]?.leg?.to || locById[trip.toLocationId];
+    const traveler = travById[getTravelerKey(trip)];
+    return {
+      id: trip.id,
+      firstIndex,
+      title: trip.label || to?.name || 'Trip',
+      date: trip.displayDate || String(trip.year || ''),
+      mode: trip.mode || tripLegs[0]?.leg?.mode || 'plane',
+      traveler: traveler?.name || 'Travel',
+      color: traveler?.color || '#00e5ff',
+      route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
+      legCount: tripLegs.length
+    };
+  });
+}
+
+function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump }) {
+  return <aside className={`trip-drawer glass ${open ? 'is-open' : ''}`} aria-hidden={!open}>
+    <div className="trip-drawer__header">
+      <div>
+        <p className="eyebrow">Timeline</p>
+        <h2>Trips</h2>
+      </div>
+      <button onClick={onClose}>Close</button>
+    </div>
+    <div className="trip-drawer__list">
+      {rows.map(row => {
+        const active = activeIndex >= row.firstIndex && activeIndex < row.firstIndex + Math.max(1, row.legCount || 1);
+        return <button
+          key={row.id}
+          className={`trip-drawer__row ${active ? 'is-active' : ''}`}
+          style={{ '--accent': row.color }}
+          onClick={() => onJump(row.firstIndex)}
+        >
+          <span className="trip-drawer__date">{row.date}</span>
+          <span className="trip-drawer__main">
+            <strong>{row.title}</strong>
+            <small>{row.route}</small>
+          </span>
+          <span className="trip-drawer__meta">{row.mode}{row.legCount > 1 ? ` · ${row.legCount} legs` : ''}<br />{row.traveler}</span>
+        </button>;
+      })}
+    </div>
+  </aside>;
+}
+
+function formatLocation(loc) {
+  if (!loc) return '';
+  const abbr = {
+    Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE', Florida: 'FL', Georgia: 'GA', Hawaii: 'HI', Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA', Maine: 'ME', Maryland: 'MD', Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS', Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH', Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT', Virginia: 'VA', Washington: 'WA', 'Washington DC': 'DC', 'District of Columbia': 'DC', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY'
+  };
+  if (loc.country === 'United States' && loc.region) return `${loc.name}, ${abbr[loc.region] || loc.region}`;
+  return loc.name || '';
 }

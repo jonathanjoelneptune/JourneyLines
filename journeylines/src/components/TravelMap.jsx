@@ -287,7 +287,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
 
     const mode = leg.mode;
     const iconMode = mode === 'move' ? 'plane' : mode;
-    const rotation = mode === 'plane' || mode === 'move' ? projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries) : 0;
+    // v2.22: all top-down PNG vessel icons are authored nose-up. Rotate the icon so
+    // the nose points along the current projected route segment. This applies to
+    // plane/car/boat/train; the route itself remains north-up.
+    const rotation = projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries);
     const iconUrl = vesselIconUrl(iconMode, color);
     const nextMarkup = iconUrl ? `<img class="jl-vehicle-img" src="${escapeHtml(iconUrl)}" alt="" draggable="false" />` : vehicleSvg(iconMode);
     if (vehicleRef.current.__jlVehicleMarkup !== nextMarkup) {

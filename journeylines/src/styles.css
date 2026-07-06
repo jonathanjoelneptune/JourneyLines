@@ -930,3 +930,101 @@ body { background: #000; }
     drop-shadow(0 0 30px var(--air-arc-color, #00e5ff))
     drop-shadow(0 26px 34px rgba(0,0,0,.48));
 }
+
+/* v2.22 timeline scrubber + trip drawer */
+.timeline-scrubber {
+  flex: 1 1 100%;
+  display: grid !important;
+  grid-template-columns: auto minmax(180px, 1fr);
+  gap: 10px !important;
+  align-items: center;
+}
+.progress--scrubbable {
+  position: relative;
+  flex-basis: auto;
+  height: 9px;
+  overflow: visible;
+}
+.progress--scrubbable span {
+  border-radius: inherit;
+  box-shadow: 0 0 12px rgba(24,226,255,.44);
+}
+.progress--scrubbable input[type='range'] {
+  position: absolute;
+  inset: -9px -2px;
+  width: calc(100% + 4px);
+  opacity: 0;
+  cursor: pointer;
+}
+.trip-drawer {
+  position: absolute;
+  z-index: 7;
+  top: 72px;
+  right: 18px;
+  bottom: 98px;
+  width: min(460px, calc(100vw - 36px));
+  border-radius: 24px;
+  padding: 18px;
+  transform: translateX(calc(100% + 28px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .42s cubic-bezier(.18,.82,.22,1), opacity .28s ease;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.trip-drawer.is-open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.trip-drawer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 14px;
+  padding-bottom: 12px;
+}
+.trip-drawer__header h2 { margin: 2px 0 0; font-size: 2.1rem; line-height: 1; }
+.trip-drawer__list {
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  padding-right: 4px;
+}
+.trip-drawer__row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  border-radius: 16px;
+  padding: 10px 12px;
+  border-color: color-mix(in srgb, var(--accent, #00e5ff), transparent 70%);
+  background: rgba(255,255,255,.055);
+}
+.trip-drawer__row:hover,
+.trip-drawer__row.is-active {
+  background: color-mix(in srgb, var(--accent, #00e5ff), transparent 86%);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent, #00e5ff), transparent 80%);
+}
+.trip-drawer__date {
+  color: var(--accent, #00e5ff);
+  font-weight: 900;
+  font-size: .85rem;
+}
+.trip-drawer__main { display: grid; min-width: 0; }
+.trip-drawer__main strong { font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trip-drawer__main small { color: rgba(233,243,255,.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trip-drawer__meta { color: rgba(233,243,255,.72); font-size: .74rem; text-align: right; line-height: 1.25; }
+
+/* v2.22 larger imported PNG vessels; the parent rotation points the nose along the active segment. */
+.jl-vehicle-overlay:has(.jl-vehicle-img) {
+  width: 72px;
+  height: 72px;
+}
+.jl-vehicle-overlay[data-mode='plane']:has(.jl-vehicle-img),
+.jl-vehicle-overlay[data-mode='move']:has(.jl-vehicle-img) {
+  width: 86px;
+  height: 86px;
+}
