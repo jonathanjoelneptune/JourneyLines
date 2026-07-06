@@ -8,5 +8,5 @@
     "cacheInLocalStorage": true
   },
   "manualOverridesEnabled": true,
-  "notes": "Add a Mapbox public access token here or store one in browser localStorage as journeylines.mapboxToken. Driving routes use Mapbox Directions when a token is available; boat/train use manual overrides for now."
+  "notes": "Preferred token source is the GitHub Actions repository secret VITE_MAPBOX_TOKEN, injected at build time. publicToken remains empty by default. Browser localStorage key journeylines.mapboxToken is retained only as a fallback for local testing. Driving routes use Mapbox Directions when a token is available; boat/train use manual overrides for now."
 }

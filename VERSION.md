@@ -1,23 +1,30 @@
-# JourneyLines v2.6.0 — Mapbox Routing + Glide/Label Fix
+# JourneyLines v2.7 — GitHub Secret Mapbox Token
 
-This version reinforces the v2.5 animation and label behavior and adds the first Mapbox Directions integration path for driving routes.
+## Summary
+This update wires the Mapbox public token through the GitHub Actions repository secret `VITE_MAPBOX_TOKEN`.
 
-## Highlights
+## Key changes
+- Build workflow injects `VITE_MAPBOX_TOKEN` during `npm run build`.
+- App reads Mapbox token from `import.meta.env.VITE_MAPBOX_TOKEN` first.
+- `routingSettings.json` stays token-free for repo safety.
+- Browser `localStorage` token remains as a fallback for local testing only.
+- Keeps v2.6 Mapbox driving routing, manual boat/train overrides, cinematic glide updates, persistent labels, and the working `gh-pages` deployment workflow.
 
-- Adds optional Mapbox Directions routing for `drive` legs.
-- Adds route geometry caching through localStorage.
-- Adds manual route overrides for boat, train, and fallback drive paths.
-- Adds Carnival-style cruise waypoints for Bahamas/Jamaica/Cayman routes and Long Beach/Catalina routing.
-- Keeps visited dots and nameplates persistent after arrival.
-- Destination nameplates animate in only on arrival.
-- Keeps completed route legs visible instead of dimming them away.
-- Slows camera motion and adds a drifting settle/hold period after arrival.
-- Improves plane icon rotation by using projected screen-space route direction.
-- Keeps north-up camera orientation.
-- Keeps gh-pages branch deployment workflow.
+## GitHub setup
+Repo secret name must be exactly:
 
-## Mapbox token
+```text
+VITE_MAPBOX_TOKEN
+```
 
-Mapbox routing is optional. Add your public Mapbox token in `journeylines/src/data/routingSettings.json`, or set it in browser localStorage as `journeylines.mapboxToken`.
+The value should be your Mapbox public token beginning with `pk.`.
 
-No `package-lock.json` is included.
+## Expected repo shape
+
+```text
+.github/workflows/deploy.yml
+.gitignore
+VERSION.md
+ROUTING.md
+journeylines/
+```

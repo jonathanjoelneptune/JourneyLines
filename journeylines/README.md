@@ -50,3 +50,8 @@ Do not commit `package-lock.json` for this version. The workflow intentionally u
 
 ## v2.4
 Glide-focused playback polish: persistent visited dots, softer camera movement, arrival settle, landing ripple, vehicle grow/shrink, red home-base move routes, and first-pass waypoint routing for drive/boat/train modes.
+
+
+## Mapbox token
+
+For Mapbox Directions driving routes, create a GitHub repository secret named `VITE_MAPBOX_TOKEN` with your Mapbox public token. The GitHub Actions workflow injects it during `npm run build`. Do not commit a token into `routingSettings.json` unless you intentionally want it in the public repo.

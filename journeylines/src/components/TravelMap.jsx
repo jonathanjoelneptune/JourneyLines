@@ -500,7 +500,13 @@ function getManualRoute(leg) {
 }
 
 function getMapboxToken() {
-  return (routingSettings?.mapbox?.publicToken || localStorage.getItem('journeylines.mapboxToken') || '').trim();
+  const viteToken = import.meta.env?.VITE_MAPBOX_TOKEN || '';
+  return (
+    viteToken ||
+    routingSettings?.mapbox?.publicToken ||
+    localStorage.getItem('journeylines.mapboxToken') ||
+    ''
+  ).trim();
 }
 
 async function fetchMapboxRoute(leg, token) {
