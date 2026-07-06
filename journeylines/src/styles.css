@@ -1072,3 +1072,22 @@ body { background: #000; }
 .jl-vehicle-overlay {
   will-change: transform, opacity;
 }
+
+/* v2.25 aggressive culling + cinematic zoom polish */
+.jl-map-pin {
+  /* Position is owned entirely by JS projection. Avoid transform transitions that
+     can create wobble during continuous camera movement. */
+  transition: opacity .12s ease !important;
+  transform-origin: 50% calc(100% + 10px);
+  backface-visibility: hidden;
+}
+.jl-map-pin-inner {
+  transform-origin: 50% 100%;
+  backface-visibility: hidden;
+}
+.trip-drawer {
+  z-index: 120 !important;
+}
+.trip-card {
+  z-index: 45;
+}

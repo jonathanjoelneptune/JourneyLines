@@ -402,7 +402,7 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
       dash: dashForMode(leg.mode)
     },
-    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 36, routedGeometries) }
+    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 22, routedGeometries) }
   };
 }
 
@@ -448,7 +448,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
 
   const heading = headingAlongRoute(leg, routeProgress, routedGeometries);
   const bearing = 0; // North-up. No route-heading camera rotation.
-  const zoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT);
+  const zoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT, leg.mode);
   const pitch = cameraPitch(cameraMode, phase, distance, settleT);
   const arrived = routeProgress >= 0.995 || phase === 'settle';
 
@@ -640,17 +640,30 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
+    const x = Math.round(pt.x);
+    const y = Math.round(pt.y);
     const distance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
-    const onScreen = pt.x > -120 && pt.x < w + 120 && pt.y > -120 && pt.y < h + 120;
+    const onScreen = x > -80 && x < w + 80 && y > -80 && y < h + 80;
     const visibleHemisphere = distance <= horizonCutoffDeg(zoom);
-    el.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) translate(-50%, calc(-100% - 10px))`;
-    if (onScreen && visibleHemisphere) visible.push({ el, distance, y: pt.y });
+    const focusVisible = distance <= labelFocusCutoffDeg(zoom);
+    const nearScreenEdge = x < 18 || x > w - 18 || y < 18 || y > h - 18;
+
+    // Keep the outer wrapper anchored to an integer-pixel map projection. This
+    // avoids the placard wobble caused by sub-pixel camera interpolation while
+    // the inner pin remains responsible for the one-time drop animation.
+    const tx = `translate3d(${x}px, ${y}px, 0) translate(-50%, calc(-100% - 10px))`;
+    if (el.__jlTransform !== tx) {
+      el.style.transform = tx;
+      el.__jlTransform = tx;
+    }
+
+    if (onScreen && visibleHemisphere && focusVisible && !nearScreenEdge) visible.push({ el, distance, y });
     else el.style.opacity = '0';
   }
 
-  // Custom HTML placards are retained, but at far/global zooms we cap the number
-  // visible at once so completed history does not overload playback or clutter the globe.
-  const maxLabels = zoom < 1.75 ? 18 : zoom < 2.15 ? 28 : zoom < 2.8 ? 48 : 90;
+  // At far/global zooms, show mostly the local/current cluster. Pins remain in
+  // the map data, but expensive custom placards are aggressively capped.
+  const maxLabels = zoom < 1.75 ? 8 : zoom < 2.15 ? 14 : zoom < 2.8 ? 26 : 64;
   visible.sort((a, b) => a.distance - b.distance || a.y - b.y);
   visible.forEach((item, idx) => {
     item.el.style.opacity = idx < maxLabels ? '1' : '0';
@@ -658,7 +671,7 @@ function refreshPersistentPinPositions(map, labelsRef) {
 }
 
 
-function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 82) {
+function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 74) {
   if (!map || lon == null || lat == null) return false;
   try {
     const center = map.getCenter();
@@ -690,13 +703,24 @@ function angularDistanceFromMapCenter(map, lon, lat) {
 }
 
 function horizonCutoffDeg(zoom) {
-  // Hide labels before they reach the horizon. The lower the zoom, the more
-  // aggressive the culling, which keeps far-side labels like Tokyo/Seoul hidden
-  // when viewing the Atlantic face of the globe.
-  if (zoom < 1.7) return 72;
-  if (zoom < 2.2) return 76;
-  if (zoom < 3.0) return 80;
-  return 83;
+  // Hide overlays well before the visual horizon. A pitched globe can still
+  // project far-side points onto the screen, so labels need to be stricter than
+  // the mathematical 90-degree visible hemisphere.
+  if (zoom < 1.7) return 58;
+  if (zoom < 2.2) return 64;
+  if (zoom < 3.0) return 72;
+  return 78;
+}
+
+function labelFocusCutoffDeg(zoom) {
+  // Placards are more expensive and visually heavier than pins, so at far zooms
+  // keep them local to the current camera focus instead of showing every visible
+  // city across the globe. This clips Europe/Asia when the camera is focused on
+  // North America/Caribbean and also helps late-timeline playback performance.
+  if (zoom < 1.7) return 36;
+  if (zoom < 2.2) return 44;
+  if (zoom < 3.0) return 58;
+  return 72;
 }
 
 function angularDistanceDeg(a, b) {
@@ -992,18 +1016,37 @@ function lookAhead(distance, p) {
   const endpoint = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
   return base * (1 - 0.5 * endpoint);
 }
-function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0) {
-  if (mode === 'global') return distance > 3500 ? 1.62 : 2.35;
-  if (mode === 'continent') return distance > 3500 ? 2.35 : 3.65;
-  if (mode === 'route') return distance > 4500 ? 2.65 : distance > 1500 ? 3.55 : 4.75;
+function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode = 'plane') {
+  const isDrive = legMode === 'drive';
+  const isBoat = legMode === 'boat';
+  const isTrain = legMode === 'train';
+
+  if (mode === 'global') return distance > 3500 ? 1.9 : 2.75;
+  if (mode === 'continent') return distance > 3500 ? 2.65 : 4.0;
+  if (mode === 'route') return distance > 4500 ? 3.05 : distance > 1500 ? 4.0 : isDrive ? 6.2 : 5.2;
+
   if (phase === 'predeparture') {
-    return distance > 4500 ? 4.05 : distance > 1500 ? 4.9 : distance > 500 ? 5.85 : 6.55;
+    if (isDrive) return distance > 500 ? 6.45 : 7.1;
+    if (isBoat || isTrain) return distance > 500 ? 5.85 : 6.55;
+    return distance > 4500 ? 4.45 : distance > 1500 ? 5.25 : distance > 500 ? 6.15 : 6.85;
   }
-  const cruise = distance > 4500 ? 2.55 : distance > 1500 ? 3.45 : distance > 500 ? 4.75 : 5.95;
-  const close = distance > 4500 ? 4.05 : distance > 1500 ? 4.9 : distance > 500 ? 5.9 : 6.8;
-  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.12 : 0;
-  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.18 : 0;
-  const settleBreath = phase === 'settle' ? 0.22 * Math.sin(settleT * Math.PI) : 0;
+
+  let cruise;
+  let close;
+  if (isDrive) {
+    cruise = distance > 700 ? 5.65 : distance > 250 ? 6.25 : 6.85;
+    close = distance > 700 ? 6.65 : distance > 250 ? 7.15 : 7.65;
+  } else if (isBoat || isTrain) {
+    cruise = distance > 1500 ? 3.95 : distance > 500 ? 5.2 : 6.1;
+    close = distance > 1500 ? 4.9 : distance > 500 ? 6.05 : 6.85;
+  } else {
+    cruise = distance > 4500 ? 3.05 : distance > 1500 ? 3.9 : distance > 500 ? 5.15 : 6.25;
+    close = distance > 4500 ? 4.55 : distance > 1500 ? 5.35 : distance > 500 ? 6.25 : 7.05;
+  }
+
+  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;
+  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.22 : 0;
+  const settleBreath = phase === 'settle' ? 0.18 * Math.sin(settleT * Math.PI) : 0;
   return cruise + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop - settleBreath;
 }
 function cameraPitch(mode, phase, distance, settleT = 0) {

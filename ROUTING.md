@@ -1,7 +1,5 @@
 # JourneyLines routing notes
 
-Driving routes are generated privately during GitHub Actions using the `VITE_MAPBOX_TOKEN` repository secret. The browser does not publish or require the token. Generated driving route geometry is stored in `src/data/generatedRoutes.json` during the build.
+v2.25 keeps the private build-time Mapbox route cache approach for driving routes. The Mapbox token stays in GitHub Actions and is not published to GitHub Pages.
 
-Boat and train routes currently use manual route overrides in `src/data/routeOverrides.json`.
-
-v2.24 focuses on playback performance: completed routes become static map data and are rebuilt only when the completed timeline changes, while the active leg remains dynamic.
+This version focuses on culling and playback performance: completed routes are lighter once inactive, labels are aggressively culled when far from the camera focus/horizon, and the follow camera zooms closer for regional travel.

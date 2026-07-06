@@ -1,11 +1,9 @@
-# JourneyLines v2.24 — Globe Culling + Playback Performance
+# JourneyLines v2.25 — Aggressive Horizon Culling + Cinematic Zoom
 
-- Adds more aggressive horizon culling for labels, pins, vehicle, and active air arc.
-- Keeps the custom HTML placard approach but throttles and caps label visibility at far/global zooms.
-- Moves the trips drawer above all map placards and overlays.
-- Prevents completed route history from being rebuilt on every animation frame.
-- Updates visited pins/labels only when a new point is reached rather than every playback tick.
-- Reduces completed airplane route sampling so inactive history is lighter.
-- Throttles active route source updates while keeping the camera glide smooth.
-- Keeps custom vessel icons and timeline/trip drawer navigation from v2.22/v2.23.
-- Keeps private build-time Mapbox route cache architecture.
+- More aggressive globe horizon and camera-focus culling for custom city placards.
+- Reduced far-zoom label counts to improve late-timeline playback performance.
+- Rounded projected placard positions and removed transform transitions to reduce label wobble while the camera glides.
+- Tightened far-side vehicle/air-arc culling.
+- Increased follow-mode zoom, especially for car/boat/train and arrivals, so playback frames the destination/region instead of too much of the globe.
+- Completed routes use lighter inactive geometry sampling while active routes stay cinematic.
+- Keeps v2.24 route-cache, timeline, trips drawer, and icon behavior.
