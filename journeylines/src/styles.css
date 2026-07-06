@@ -700,3 +700,109 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
   0% { opacity: 0; transform: translate3d(0, -82px, 0) scale(.96); filter: blur(1.2px); }
   100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
 }
+
+/* v2.18 space globe + tile-preload polish */
+:root { background: #000; }
+body { background: #000; }
+.app { background: #000; }
+.maplibre-shell.space-mode {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(35, 150, 255, 0.10), transparent 31%),
+    radial-gradient(circle at 50% 48%, rgba(0, 229, 255, 0.05), transparent 46%),
+    #000000;
+}
+.jl-space-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 17% 18%, rgba(255,255,255,.88) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 67% 23%, rgba(185,229,255,.72) 0 1.2px, transparent 2.1px),
+    radial-gradient(circle at 82% 71%, rgba(255,255,255,.72) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 38% 79%, rgba(150,210,255,.70) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 76% 43%, rgba(255,255,255,.58) 0 .8px, transparent 1.6px),
+    radial-gradient(circle at 13% 63%, rgba(255,255,255,.52) 0 .8px, transparent 1.5px),
+    radial-gradient(circle at 50% 50%, rgba(9,26,62,.32), transparent 57%),
+    linear-gradient(180deg, #000 0%, #01040b 55%, #000 100%);
+}
+.star-layer {
+  position: absolute;
+  inset: -20%;
+  opacity: .78;
+  transform-origin: center;
+  background-repeat: repeat;
+  will-change: transform;
+}
+.star-layer-a {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.92) 0 1px, transparent 1.7px),
+    radial-gradient(circle, rgba(123,198,255,.68) 0 .8px, transparent 1.6px);
+  background-size: 137px 137px, 211px 211px;
+  background-position: 12px 28px, 71px 14px;
+  animation: jl-star-drift-a 180s linear infinite;
+}
+.star-layer-b {
+  opacity: .45;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.78) 0 .85px, transparent 1.7px),
+    radial-gradient(circle, rgba(255,255,255,.45) 0 .65px, transparent 1.5px);
+  background-size: 89px 89px, 173px 173px;
+  background-position: 47px 31px, 19px 96px;
+  animation: jl-star-drift-b 260s linear infinite;
+}
+.star-layer-c {
+  opacity: .18;
+  background:
+    radial-gradient(ellipse at 58% 46%, rgba(50,120,255,.42), transparent 32%),
+    radial-gradient(ellipse at 36% 62%, rgba(0,229,255,.22), transparent 38%);
+  filter: blur(12px);
+  animation: jl-nebula-breathe 28s ease-in-out infinite;
+}
+@keyframes jl-star-drift-a {
+  from { transform: translate3d(0,0,0) rotate(0deg); }
+  to { transform: translate3d(-80px, 42px,0) rotate(.001deg); }
+}
+@keyframes jl-star-drift-b {
+  from { transform: translate3d(0,0,0); }
+  to { transform: translate3d(64px, -44px,0); }
+}
+@keyframes jl-nebula-breathe {
+  0%, 100% { opacity: .13; transform: scale(1); }
+  50% { opacity: .24; transform: scale(1.035); }
+}
+.maplibre-shell.space-mode .maplibre-map {
+  z-index: 1;
+  filter: saturate(1.05) contrast(1.08) brightness(.96);
+}
+.maplibre-shell.space-mode::before {
+  content: '';
+  position: absolute;
+  inset: -4%;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, transparent 0 42%, rgba(65, 204, 255, .09) 46%, rgba(65, 204, 255, .035) 52%, transparent 59%),
+    radial-gradient(circle at 50% 50%, transparent 0 60%, rgba(0,0,0,.22) 78%, rgba(0,0,0,.94) 100%);
+  mix-blend-mode: screen;
+  opacity: .82;
+}
+.maplibre-shell.space-mode .cinema-vignette {
+  background:
+    radial-gradient(circle at 50% 48%, transparent 0 58%, rgba(0,0,0,.32) 84%, rgba(0,0,0,.86) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.20), transparent 18%, transparent 76%, rgba(0,0,0,.62));
+}
+.maplibre-shell.space-mode .maplibregl-canvas {
+  background: transparent !important;
+}
+.maplibre-shell.space-mode .maplibregl-control-container {
+  z-index: 30;
+}
+/* Make route glow a little more luminous against space without thickening the core line. */
+.jl-air-arc-overlay path {
+  filter:
+    drop-shadow(0 0 10px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 0 30px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 26px 34px rgba(0,0,0,.48));
+}

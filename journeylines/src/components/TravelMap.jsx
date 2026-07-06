@@ -36,7 +36,8 @@ const MAP_STYLE = {
         'raster-saturation': -0.18,
         'raster-contrast': 0.08,
         'raster-brightness-min': 0.0,
-        'raster-brightness-max': 0.72
+        'raster-brightness-max': 0.78,
+        'raster-fade-duration': 650
       }
     }
   ]
@@ -65,6 +66,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const routeRequestsRef = useRef(new Set());
   const currentOverlayStateRef = useRef(null);
   const userCameraOverrideRef = useRef(false);
+  const tilePreloadRef = useRef(new Set());
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
 
@@ -92,7 +94,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       pitch: 0,
       attributionControl: false,
       interactive: true,
-      renderWorldCopies: false
+      renderWorldCopies: false,
+      fadeDuration: 700,
+      maxTileCacheSize: 1200,
+      refreshExpiredTiles: false,
+      prefetchZoomDelta: 4
     });
 
     mapRef.current = map;
@@ -104,8 +110,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
         map.setFog({
           color: '#08172a',
           'horizon-blend': 0.08,
-          'space-color': '#020711',
-          'star-intensity': 0.24
+          'space-color': '#000000',
+          'star-intensity': 0.08
         });
       } catch {}
       addRouteSourcesAndLayers(map);
@@ -193,7 +199,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, color, scene.newArrivalId, droppedPinIdsRef);
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
 
-    const smoothing = scene.phase === 'settle' ? 0.006 : scene.phase === 'takeoff' ? 0.008 : 0.007;
+    const smoothing = scene.phase === 'settle' ? 0.0045 : scene.phase === 'predeparture' ? 0.0038 : scene.phase === 'takeoff' ? 0.0052 : 0.0048;
     const camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
     lastCameraRef.current = camera;
     if (!userCameraOverrideRef.current) {
@@ -215,6 +221,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     return () => clearTimeout(arrivalTimerRef.current);
   }, [mapReady, activeIndex, scene?.pulseActive, active, completedMode, travById]);
 
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map || completedMode) return;
+    preloadTilesForLeg(active?.leg, map, tilePreloadRef.current, 'active', routedGeometries);
+    preloadTilesForLeg(nextActive?.leg, map, tilePreloadRef.current, 'next', routedGeometries);
+  }, [mapReady, active?.trip?.id, active?.legIndex, nextActive?.trip?.id, nextActive?.legIndex, completedMode, routedGeometries]);
 
   useEffect(() => {
     if (!routingSettings?.mapbox?.enabled) return;
@@ -281,7 +294,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     updatePulseOverlay(pulseRef.current, destPt, color, sceneState.pulseActive);
   }
 
-  return <div className="maplibre-shell terrain-mode">
+  return <div className="maplibre-shell terrain-mode space-mode">
+    <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
     <div className="cinema-vignette" />
     <div className="map-overlay" ref={overlayRef}>
@@ -368,7 +382,10 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
 
 function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries = {}) {
   const raw = Math.max(0, rawProgress);
-  const p = Math.max(0, Math.min(1, raw));
+  const visibleP = Math.max(0, Math.min(1, raw));
+  const departureWarmup = 0.085;
+  const p = Math.max(0, Math.min(1, (visibleP - departureWarmup) / (1 - departureWarmup)));
+  const warmupT = Math.max(0, Math.min(1, visibleP / departureWarmup));
   const settleT = Math.max(0, Math.min(1, (raw - 1) / 0.28));
   const leg = active.leg;
   const distance = milesBetween(leg.from, leg.to);
@@ -377,7 +394,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const vehicle = pointAtRouteProgress(leg, routeProgress, routedGeometries);
   const future = pointAtRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p)), routedGeometries);
   const routeMid = pointAtRouteProgress(leg, 0.5, routedGeometries);
-  const phase = raw > 1 ? 'settle' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
+  const phase = raw > 1 ? 'settle' : visibleP < departureWarmup ? 'predeparture' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
   const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
   let cinematicFocus = blendGeo(vehicle, future, phase === 'cruise' ? 0.62 : 0.36);
 
@@ -391,6 +408,11 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
     cinematicFocus = nextFrom && nextFrom.id !== leg.to.id
       ? blendGeo(quietDrift, nextFrom, 0.16 * smoothstep(settleT))
       : quietDrift;
+  }
+
+  if (phase === 'predeparture') {
+    const smallOrbit = { lon: leg.from.lon + Math.sin(warmupT * Math.PI * 0.8) * 0.08, lat: leg.from.lat + Math.cos(warmupT * Math.PI * 0.7) * 0.045 };
+    cinematicFocus = blendGeo(smallOrbit, leg.to, 0.035 * smoothstep(warmupT));
   }
 
   let center = cinematicFocus;
@@ -412,7 +434,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
     heading,
     screenHeading: headingToScreenRotation(heading, bearing),
     vehicleScale: vehicleScale(leg.mode, phase, endpointBias, p),
-    vehicleVisible: raw <= 1 && p > 0.006 && p < 0.994,
+    vehicleVisible: raw <= 1 && phase !== 'predeparture' && p > 0.006 && p < 0.994,
     pulseActive: arrived,
     arrivalLabelVisible: arrived,
     newArrivalId: arrived ? leg.to.id : null,
@@ -762,6 +784,56 @@ const ROUTE_WAYPOINTS = {
   'nassau-bs->melbourne-fl:boat': [[-79.10, 25.65], [-80.12, 25.77]]
 };
 
+
+function preloadTilesForLeg(leg, map, cacheSet, label = 'leg', routedGeometries = {}) {
+  if (!leg || !map || !cacheSet) return;
+  const routePts = [
+    { lon: leg.from.lon, lat: leg.from.lat },
+    pointAtRouteProgress(leg, 0.25, routedGeometries),
+    pointAtRouteProgress(leg, 0.5, routedGeometries),
+    pointAtRouteProgress(leg, 0.75, routedGeometries),
+    { lon: leg.to.lon, lat: leg.to.lat }
+  ];
+  const distance = milesBetween(leg.from, leg.to);
+  const zBase = Math.max(2, Math.min(7, Math.round(distance > 4000 ? 3 : distance > 1500 ? 4 : distance > 450 ? 5 : 6)));
+  const zooms = [zBase, Math.max(2, zBase - 1), Math.min(8, zBase + 1)];
+  for (const pt of routePts) {
+    for (const z of zooms) {
+      preloadTileNeighborhood(pt.lon, pt.lat, z, cacheSet, label);
+    }
+  }
+}
+
+function preloadTileNeighborhood(lon, lat, z, cacheSet, label = 'leg') {
+  const t = lonLatToTile(lon, lat, z);
+  if (!t) return;
+  const radius = z <= 3 ? 0 : 1;
+  const max = Math.pow(2, z);
+  for (let dx = -radius; dx <= radius; dx++) {
+    for (let dy = -radius; dy <= radius; dy++) {
+      const x = ((t.x + dx) % max + max) % max;
+      const y = Math.max(0, Math.min(max - 1, t.y + dy));
+      const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+      if (cacheSet.has(url)) continue;
+      cacheSet.add(url);
+      const img = new Image();
+      img.decoding = 'async';
+      img.referrerPolicy = 'no-referrer';
+      img.src = url;
+    }
+  }
+}
+
+function lonLatToTile(lon, lat, z) {
+  if (lon == null || lat == null) return null;
+  const clampedLat = Math.max(-85.05112878, Math.min(85.05112878, lat));
+  const n = Math.pow(2, z);
+  const x = Math.floor((lon + 180) / 360 * n);
+  const latRad = clampedLat * Math.PI / 180;
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)) };
+}
+
 function samplePolyline(coords, progress = 1, n = 64) {
   const maxT = Math.max(0, Math.min(1, progress));
   if (maxT <= 0.001) return [coords[0], coords[0]];
@@ -829,20 +901,24 @@ function lookAhead(distance, p) {
   return base * (1 - 0.5 * endpoint);
 }
 function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0) {
-  if (mode === 'global') return distance > 3500 ? 1.75 : 2.65;
-  if (mode === 'continent') return distance > 3500 ? 2.65 : 4.15;
-  if (mode === 'route') return distance > 4500 ? 3.0 : distance > 1500 ? 4.1 : 5.4;
-  const cruise = distance > 4500 ? 3.1 : distance > 1500 ? 4.15 : distance > 500 ? 5.4 : 6.7;
-  const close = distance > 4500 ? 4.7 : distance > 1500 ? 5.7 : distance > 500 ? 6.7 : 7.6;
-  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.26 : 0;
-  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.34 : 0;
-  const settleBreath = phase === 'settle' ? 0.16 * Math.sin(settleT * Math.PI) : 0;
+  if (mode === 'global') return distance > 3500 ? 1.62 : 2.35;
+  if (mode === 'continent') return distance > 3500 ? 2.35 : 3.65;
+  if (mode === 'route') return distance > 4500 ? 2.65 : distance > 1500 ? 3.55 : 4.75;
+  if (phase === 'predeparture') {
+    return distance > 4500 ? 4.05 : distance > 1500 ? 4.9 : distance > 500 ? 5.85 : 6.55;
+  }
+  const cruise = distance > 4500 ? 2.55 : distance > 1500 ? 3.45 : distance > 500 ? 4.75 : 5.95;
+  const close = distance > 4500 ? 4.05 : distance > 1500 ? 4.9 : distance > 500 ? 5.9 : 6.8;
+  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.12 : 0;
+  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.18 : 0;
+  const settleBreath = phase === 'settle' ? 0.22 * Math.sin(settleT * Math.PI) : 0;
   return cruise + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop - settleBreath;
 }
 function cameraPitch(mode, phase, distance, settleT = 0) {
   if (mode === 'global') return 0;
-  if (phase === 'settle') return (distance > 1500 ? 54 : 60) - 4 * smoothstep(settleT);
-  if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 56 : 63;
+  if (phase === 'predeparture') return distance > 1500 ? 50 : 56;
+  if (phase === 'settle') return (distance > 1500 ? 50 : 56) - 3 * smoothstep(settleT);
+  if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 52 : 58;
   return mode === 'follow' ? 58 : 42;
 }
 function cameraBearing() { return 0; }
