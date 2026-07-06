@@ -85,3 +85,96 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 .vehicle--drive .vehicle-shape,
 .vehicle--boat .vehicle-shape,
 .vehicle--train .vehicle-shape { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--vehicle-color, #00e5ff), transparent 36%)); }
+
+/* v2.0 MapLibre cinematic globe renderer */
+.maplibre-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(0, 229, 255, 0.09), transparent 33%),
+    linear-gradient(180deg, #08162b 0%, #030711 100%);
+}
+.maplibre-map {
+  position: absolute;
+  inset: 0;
+  filter: saturate(1.08) contrast(1.08);
+}
+.maplibre-shell .maplibregl-canvas {
+  outline: none;
+}
+.maplibre-shell::before {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    radial-gradient(circle at 50% 48%, transparent 0 38%, rgba(0, 229, 255, 0.05) 43%, transparent 57%),
+    radial-gradient(circle at 50% 50%, transparent 0 60%, rgba(3, 7, 17, 0.72) 82%, rgba(3, 7, 17, 0.96) 100%);
+  mix-blend-mode: screen;
+  opacity: 0.68;
+}
+.cinema-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(3, 7, 17, 0.3), transparent 16%, transparent 72%, rgba(3, 7, 17, 0.5)),
+    radial-gradient(circle at 50% 45%, transparent 0 44%, rgba(1, 4, 11, 0.34) 78%, rgba(1, 4, 11, 0.86) 100%);
+}
+.cinema-hud {
+  position: absolute;
+  left: 18px;
+  bottom: 56px;
+  z-index: 4;
+  color: rgba(222, 247, 255, 0.42);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.maplibregl-ctrl-attrib {
+  opacity: 0.42;
+  transition: opacity 0.2s ease;
+}
+.maplibregl-ctrl-attrib:hover {
+  opacity: 1;
+}
+.jl-vehicle {
+  width: 44px;
+  height: 44px;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  will-change: transform;
+  filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 8px 10px rgba(0,0,0,0.45));
+}
+.jl-vehicle-glyph {
+  width: 44px;
+  height: 44px;
+  color: #00e5ff;
+  transform-origin: 50% 50%;
+  transition: transform 0.12s linear;
+}
+.jl-vehicle-glyph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.jl-vehicle-glyph svg path,
+.jl-vehicle-glyph svg rect,
+.jl-vehicle-glyph svg circle {
+  fill: currentColor;
+  stroke: #eafbff;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.jl-vehicle--drive .jl-vehicle-glyph,
+.jl-vehicle--boat .jl-vehicle-glyph,
+.jl-vehicle--train .jl-vehicle-glyph {
+  filter: drop-shadow(0 0 6px currentColor);
+}

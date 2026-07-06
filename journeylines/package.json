@@ -1,7 +1,7 @@
 {
   "name": "journeylines",
   "private": true,
-  "version": "1.2.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,8 @@
     "d3-geo-projection": "latest",
     "topojson-client": "latest",
     "world-atlas": "latest",
-    "lucide-react": "latest"
+    "lucide-react": "latest",
+    "maplibre-gl": "latest"
   },
   "devDependencies": {}
 }

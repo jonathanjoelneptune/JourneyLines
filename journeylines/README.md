@@ -1,79 +1,48 @@
 # JourneyLines
 
-**Current package:** v1.1 — Globe + GitHub Actions Fix
+JourneyLines is a public-facing animated travel-history site. It replays a lifetime of trips across a cinematic globe, then settles into a completed route web.
 
-JourneyLines is a public-facing GitHub Pages travel-history playback app. It opens on a completed route web, then plays the travel history from the beginning with animated routes, city reveals, traveler colors, projection toggles, camera modes, and a hidden admin editor.
+## v2.0 Renderer
 
-## Current v1 features
+v2.0 pivots the default globe view to MapLibre GL JS for a more Mult.dev-like experience:
 
-- React + Vite static site
-- Globe-first playback with projection toggles
-- Fullscreen travel-history playback
-- Completed route web opening state
-- Globe, Equal Earth, and Gall-Peters projections
-- Global, Route, Follow, and Continent camera modes
-- Traveler filters: All, Joey only, Bonnie only, Trips together only
-- Traveler route colors: Joey orange, Bonnie pink, together cyan
-- Plane, car, boat, and train route modes
-- Persistent trails with route styling by mode
-- City dots reveal as trips occur
-- Home bases with active date ranges
-- Move/home-base events are represented in `homeBases.json` and can be elevated later into custom timeline cards
-- Hidden admin mode: click the JourneyLines title 5 times
-- Admin can add, edit, delete trips
-- Download updated `trips.json`
-- Optional GitHub fine-grained token commit flow for `src/data/trips.json`
+- cinematic globe camera
+- route-following pan, zoom, pitch, and bearing
+- takeoff, cruise, and arrival phases
+- detailed raster basemap
+- route reveal and destination pulse
+- clean SVG vehicle markers
 
-## Run locally
+Equal Earth and Gall-Peters are still available as alternate SVG atlas projections.
+
+## Local development
 
 ```bash
-npm install
+cd journeylines
+npm install --no-audit --no-fund --registry=https://registry.npmjs.org/
 npm run dev
 ```
 
-## Build
+## GitHub Pages deployment
 
-```bash
-npm run build
-npm run preview
-```
+This repo uses a GitHub Actions workflow that builds the Vite app from `main` and publishes the built `dist` folder to the `gh-pages` branch.
 
-## Deploy to GitHub Pages
+GitHub Pages should be configured as:
 
-This repo uses GitHub Actions for deployment. The workflow lives at:
+- Source: Deploy from a branch
+- Branch: `gh-pages`
+- Folder: `/ root`
+
+## Repo structure
 
 ```text
 .github/workflows/deploy.yml
+VERSION.md
+journeylines/
+  index.html
+  package.json
+  vite.config.js
+  src/
 ```
 
-In GitHub, set:
-
-```text
-Settings → Pages → Build and deployment → Source → GitHub Actions
-```
-
-Then every commit to `main` rebuilds and redeploys the site. The workflow intentionally uses `npm install --registry=https://registry.npmjs.org/` and does not rely on `package-lock.json` for this version.
-
-## Data files
-
-- `src/data/trips.json`: trip archive
-- `src/data/locations.json`: city/location coordinates
-- `src/data/homeBases.json`: home-base date ranges
-- `src/data/travelers.json`: traveler colors
-- `src/data/settings.json`: default app settings
-
-## Admin mode
-
-Click the `JourneyLines` title 5 times to open Admin Mode.
-
-### Option A: download JSON
-
-Use the admin panel to add/edit/delete trips, then click **Download trips.json**. Replace `src/data/trips.json` in the repo and commit.
-
-### Option B: GitHub token commit
-
-Use a fine-grained GitHub token scoped only to this repo with Contents read/write access. Enter it in Admin Mode along with `owner/repo`. The token is stored only in this browser's local storage and can be cleared from the admin panel.
-
-## Notes
-
-The initial location coordinates are practical starter values for animation and can be refined. Broad places such as Bahamas, Alaska, Scotland, Swiss Alps, and Dominican Republic are mapped to representative travel points while preserving the public display name.
+Do not commit `package-lock.json` for this version. The workflow intentionally uses `npm install` against the public npm registry.

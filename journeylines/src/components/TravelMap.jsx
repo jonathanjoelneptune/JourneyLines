@@ -1,145 +1,257 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { geoPath, geoEqualEarth, geoOrthographic, geoInterpolate } from 'd3-geo';
-import { geoCylindricalEqualArea } from 'd3-geo-projection';
-import { feature } from 'topojson-client';
-import world from 'world-atlas/countries-110m.json';
+import { useEffect, useMemo, useRef } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { geoInterpolate } from 'd3-geo';
+import LegacySvgMap from './LegacySvgMap.jsx';
 import { expandTrip, getTravelerKey } from '../utils/tripExpansion.js';
 import { milesBetween } from '../utils/distanceUtils.js';
 
-const W = 1400, H = 760;
+const MAP_STYLE = {
+  version: 8,
+  name: 'JourneyLines Cinematic Dark Globe',
+  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+  sources: {
+    cartoDark: {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      ],
+      tileSize: 256,
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    }
+  },
+  layers: [
+    { id: 'background', type: 'background', paint: { 'background-color': '#07101f' } },
+    { id: 'carto-dark', type: 'raster', source: 'cartoDark', minzoom: 0, maxzoom: 19, paint: { 'raster-opacity': 0.92, 'raster-saturation': -0.14, 'raster-contrast': 0.1, 'raster-brightness-min': 0.03, 'raster-brightness-max': 0.83 } }
+  ]
+};
 
-export default function TravelMap({ trips, locations, homeBases, travelers, activeIndex, legProgress, projectionName, cameraMode, showTrails, trailOpacity, trailWidth }) {
+export default function TravelMap(props) {
+  if (props.projectionName !== 'globe') return <LegacySvgMap {...props} />;
+  return <MapLibreGlobe {...props} />;
+}
+
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55 }) {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const lastCameraRef = useRef(null);
+  const arrivalRef = useRef(null);
+
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
   const expanded = useMemo(() => trips.map(t => expandTrip(t, locById, homeBases)), [trips, locById, homeBases]);
   const legs = useMemo(() => expanded.flatMap(t => t.legs.map((leg, legIndex) => ({ trip: t, leg, legIndex }))), [expanded]);
-  const countries = useMemo(() => feature(world, world.objects.countries), []);
 
+  const completedMode = activeIndex >= legs.length;
   const safeActiveIndex = Math.min(activeIndex, Math.max(0, legs.length - 1));
   const active = legs[safeActiveIndex];
-  const completedMode = activeIndex >= legs.length;
-  const drawnLegs = legs.slice(0, Math.min(activeIndex, legs.length));
-  const progress = completedMode ? 1 : Math.max(0, Math.min(1, legProgress));
-  const motionProgress = travelEase(progress);
-  const currentPoint = active ? interpolateGeo(active.leg.from, active.leg.to, motionProgress) : null;
+  const scene = active && !completedMode ? getScene(active, legProgress, cameraMode) : null;
+  const completedLegs = completedMode ? legs : legs.slice(0, Math.max(0, activeIndex));
 
-  const globeCameraTarget = useMemo(() => {
-    if (projectionName !== 'globe') return null;
-    return getGlobeCameraTarget(cameraMode, active, motionProgress, completedMode);
-  }, [projectionName, cameraMode, active, motionProgress, completedMode]);
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: MAP_STYLE,
+      center: [-38, 26],
+      zoom: 1.35,
+      bearing: 0,
+      pitch: 0,
+      attributionControl: false,
+      dragRotate: true,
+      interactive: true
+    });
+    mapRef.current = map;
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
-  const smoothGlobeCamera = useSmoothGlobeCamera(globeCameraTarget);
+    map.on('load', () => {
+      try { map.setProjection({ type: 'globe' }); } catch {}
+      try { map.setFog({ color: '#07101f', 'horizon-blend': 0.08, 'space-color': '#020711', 'star-intensity': 0.14 }); } catch {}
+      addRouteSourcesAndLayers(map);
+      addPulseLayer(map);
+      syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth);
+    });
 
-  const projection = useMemo(() => {
-    if (projectionName === 'globe') {
-      const target = smoothGlobeCamera || globeCameraTarget || { lon: -35, lat: 25, scale: 520 };
-      return geoOrthographic()
-        .translate([W / 2, H / 2])
-        .scale(target.scale)
-        .rotate([-target.lon, -target.lat, 0])
-        .clipAngle(90)
-        .precision(0.35);
+    return () => { markerRef.current?.remove(); map.remove(); mapRef.current = null; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth);
+  }, [completedLegs, travById, showTrails, trailOpacity, trailWidth]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    if (!scene || !active) {
+      syncActiveRoute(map, null);
+      updateVehicle(null);
+      if (completedMode) {
+        map.easeTo({ center: [-38, 23], zoom: 1.35, bearing: 0, pitch: 0, duration: 900, essential: true });
+      }
+      return;
     }
-    const p = projectionName === 'gallPeters' ? geoCylindricalEqualArea().parallel(45) : geoEqualEarth();
-    return p.fitSize([W, H], { type: 'Sphere' });
-  }, [projectionName, smoothGlobeCamera, globeCameraTarget]);
 
-  const path = useMemo(() => geoPath(projection), [projection]);
-  const currentXY = currentPoint ? projection([currentPoint.lon, currentPoint.lat]) : null;
-  const viewTransform = projectionName === 'globe' ? '' : cameraTransform(cameraMode, active, currentXY, projection);
-  const visited = visitedLocations(expanded, activeIndex);
-  const activeIds = new Set(active ? [active.leg.from.id, active.leg.to.id] : []);
-  const vehicleHeading = active && currentPoint ? screenHeading(active.leg.from, active.leg.to, motionProgress, projection) : 0;
+    const color = travById[getTravelerKey(active.trip)]?.color || '#00e5ff';
+    syncActiveRoute(map, active, scene.routeProgress, color);
+    syncPulse(map, active.leg.to, scene.phase === 'arrival' ? color : 'transparent');
+    updateVehicle({ point: scene.vehicle, mode: active.leg.mode, color, heading: scene.heading, scale: scene.vehicleScale });
 
-  return <svg className={`map map--${projectionName}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="JourneyLines travel map">
-    <defs>
-      <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="terrainGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <radialGradient id="globeOcean" cx="40%" cy="26%" r="78%">
-        <stop offset="0" stopColor="#1f4b73"/>
-        <stop offset="0.48" stopColor="#102944"/>
-        <stop offset="1" stopColor="#050b17"/>
-      </radialGradient>
-      <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#09111f"/><stop offset="1" stopColor="#101b31"/></linearGradient>
-    </defs>
-    <rect width={W} height={H} fill="url(#ocean)" />
-    {projectionName === 'globe' && <circle cx={W/2} cy={H/2} r={projection.scale()} fill="url(#globeOcean)" className="globe-disc" />}
-    <g transform={viewTransform} className="camera-layer">
-      <path d={path({ type: 'Sphere' })} className="sphere" />
-      <g className="countries terrain">{countries.features.map((c, i) => <path key={i} d={path(c)} />)}</g>
-      {projectionName === 'globe' && <g className="terrain-shade">{countries.features.map((c, i) => <path key={`s-${i}`} d={path(c)} />)}</g>}
-      {showTrails && <g className="trails" opacity={trailOpacity} strokeWidth={trailWidth}>
-        {drawnLegs.map((l, i) => <Route key={`${l.trip.id}-${l.legIndex}-${i}`} leg={l.leg} projection={projection} color={travById[getTravelerKey(l.trip)]?.color} mode={l.leg.mode} globe={projectionName === 'globe'} />)}
-        {active && !completedMode && currentPoint && <Route leg={{...active.leg, to: currentPoint}} projection={projection} color={travById[getTravelerKey(active.trip)]?.color} mode={active.leg.mode} active globe={projectionName === 'globe'} progress={1} />}
-      </g>}
-      <g className="dots">
-        {[...visited].map(id => {
-          const l = locById[id];
-          if (!l) return null;
-          const xy = projection([l.lon, l.lat]);
-          if (!xy) return null;
-          const showLabel = !completedMode && activeIds.has(id);
-          return <g key={id} transform={`translate(${xy[0]},${xy[1]})`} className={showLabel ? 'dot dot--active' : 'dot'}><circle r={showLabel ? 5.8 : 3.6}/>{showLabel && <text y="-11">{l.name}</text>}</g>;
-        })}
-      </g>
-      {currentXY && active && !completedMode && <Vehicle xy={currentXY} heading={vehicleHeading} mode={active.leg.mode} color={travById[getTravelerKey(active.trip)]?.color || '#00e5ff'} projectionName={projectionName} progress={progress} />}
-    </g>
-    {projectionName === 'globe' && <circle cx={W/2} cy={H/2} r={projection.scale()} fill="none" className="atmosphere-rim" />}
-  </svg>;
+    const camera = smoothCamera(lastCameraRef.current, scene.camera, 0.72);
+    lastCameraRef.current = camera;
+    map.easeTo({ ...camera, duration: 160, easing: t => t, essential: true });
+  }, [scene?.frameKey, active, completedMode, travById]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    if (!active || completedMode || scene?.phase !== 'arrival') return;
+    const color = travById[getTravelerKey(active.trip)]?.color || '#00e5ff';
+    clearTimeout(arrivalRef.current);
+    syncPulse(map, active.leg.to, color);
+    arrivalRef.current = setTimeout(() => syncPulse(map, active.leg.to, 'transparent'), 900);
+    return () => clearTimeout(arrivalRef.current);
+  }, [activeIndex, scene?.phase, active, completedMode, travById]);
+
+  function updateVehicle(state) {
+    if (!mapRef.current) return;
+    if (!state) {
+      markerRef.current?.remove();
+      markerRef.current = null;
+      return;
+    }
+    if (!markerRef.current) {
+      markerRef.current = new maplibregl.Marker({ element: makeVehicleElement(), anchor: 'center', pitchAlignment: 'map', rotationAlignment: 'viewport' })
+        .setLngLat([state.point.lon, state.point.lat])
+        .addTo(mapRef.current);
+    }
+    const el = markerRef.current.getElement();
+    const glyph = el.querySelector('.jl-vehicle-glyph');
+    glyph.innerHTML = vehicleSvg(state.mode);
+    glyph.style.color = state.color;
+    glyph.style.transform = `rotate(${state.mode === 'plane' ? state.heading : 0}deg) scale(${state.scale})`;
+    el.className = `jl-vehicle jl-vehicle--${state.mode}`;
+    markerRef.current.setLngLat([state.point.lon, state.point.lat]);
+  }
+
+  return <div className="maplibre-shell">
+    <div className="cinema-vignette" />
+    <div className="maplibre-map" ref={containerRef} />
+    <div className="cinema-hud">Cinematic globe renderer · MapLibre GL</div>
+  </div>;
 }
 
-function Route({ leg, projection, color = '#00e5ff', mode = 'plane', active, globe, progress = 1 }) {
-  const dash = mode === 'drive' ? '6 7' : mode === 'boat' ? '2 10' : mode === 'train' ? '10 5' : '';
-  if (globe || mode === 'plane') {
-    const coords = routeSamples(leg.from, leg.to, active ? progress : 1, globe ? 70 : 30);
-    const d = geoPath(projection)({ type: 'LineString', coordinates: coords });
-    if (!d) return null;
-    return <path d={d} fill="none" stroke={color} strokeLinecap="round" strokeDasharray={dash} className={active ? 'route active' : 'route'} />;
+function addRouteSourcesAndLayers(map) {
+  if (!map.getSource('completed-routes')) {
+    map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
+    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 5 } });
+    map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] } });
   }
-  const a = projection([leg.from.lon, leg.from.lat]);
-  const b = projection([leg.to.lon, leg.to.lat]);
-  if (!a || !b) return null;
-  const dx = b[0]-a[0], dy = b[1]-a[1];
-  const curve = mode === 'boat' ? 25 : 8;
-  const mx = (a[0]+b[0])/2, my = (a[1]+b[1])/2 - curve;
-  return <path d={`M${a[0]},${a[1]} Q${mx},${my} ${b[0]},${b[1]}`} fill="none" stroke={color} strokeLinecap="round" strokeDasharray={dash} className={active ? 'route active' : 'route'} />;
+  if (!map.getSource('active-route')) {
+    map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
+    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 9, 'line-opacity': 0.34, 'line-blur': 7 } });
+    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 3.4, 'line-opacity': 0.96 } });
+  }
+  if (!map.getSource('visited-points')) {
+    map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
+    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 7, 'circle-color': '#061224', 'circle-opacity': 0.8 } });
+    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 3.8, 'circle-color': '#e7f7ff', 'circle-stroke-color': '#061224', 'circle-stroke-width': 1.4, 'circle-opacity': 0.95 } });
+    map.addLayer({ id: 'active-labels', type: 'symbol', source: 'visited-points', layout: { 'text-field': ['case', ['get', 'active'], ['get', 'name'], ''], 'text-font': ['Open Sans Regular'], 'text-size': 12, 'text-offset': [0, -1.45], 'text-anchor': 'bottom', 'text-allow-overlap': false }, paint: { 'text-color': '#ecfbff', 'text-halo-color': '#07101f', 'text-halo-width': 2 } });
+  }
 }
 
-function Vehicle({ xy, mode, color, projectionName, heading, progress }) {
-  const altitude = vehicleAltitude(progress);
-  const baseScale = projectionName === 'globe' ? 0.78 : 1.0;
-  const planeScale = mode === 'plane' ? (0.62 + 0.38 * altitude) : 0.82;
-  const rotate = mode === 'plane' ? heading : 0;
-  const lift = mode === 'plane' ? -8 * altitude : 0;
-  return <g className={`vehicle vehicle--${mode}`} transform={`translate(${xy[0]},${xy[1]}) rotate(${rotate}) translate(0,${lift}) scale(${baseScale * planeScale})`} filter="url(#glow)" style={{ '--vehicle-color': color }}>
-    <VehicleShape mode={mode} />
-  </g>;
+function addPulseLayer(map) {
+  if (map.getSource('arrival-pulse')) return;
+  map.addSource('arrival-pulse', { type: 'geojson', data: emptyCollection() });
+  map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 9, 6, 18], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
 }
 
-function VehicleShape({ mode }) {
-  if (mode === 'drive') {
-    return <g className="vehicle-shape vehicle-shape--car">
-      <path d="M-15 3 L-12 -5 L-4 -9 L7 -9 L14 -4 L17 3 L15 8 L-15 8 Z" />
-      <circle cx="-8" cy="8" r="3" /><circle cx="9" cy="8" r="3" />
-    </g>;
+function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width) {
+  const features = showTrails ? completedLegs.map((l, i) => {
+    const color = travelersById[getTravelerKey(l.trip)]?.color || '#00e5ff';
+    return routeFeature(l.leg, color, l.trip.id, i, opacity, width, false);
+  }) : [];
+  map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
+
+  const pointMap = new Map();
+  for (const l of completedLegs) {
+    pointMap.set(l.leg.from.id, l.leg.from);
+    pointMap.set(l.leg.to.id, l.leg.to);
   }
-  if (mode === 'boat') {
-    return <g className="vehicle-shape vehicle-shape--boat">
-      <path d="M-15 5 C-9 12 8 12 15 5 Z" />
-      <path d="M-1 5 L-1 -15 L11 2 Z" />
-      <path d="M-3 5 L-3 -12 L-12 3 Z" />
-    </g>;
-  }
-  if (mode === 'train') {
-    return <g className="vehicle-shape vehicle-shape--train">
-      <rect x="-10" y="-15" width="20" height="28" rx="5" />
-      <path d="M-6 -8 H6 M-6 0 H6" />
-      <circle cx="-5" cy="14" r="2.4" /><circle cx="5" cy="14" r="2.4" />
-    </g>;
-  }
-  return <g className="vehicle-shape vehicle-shape--plane">
-    <path d="M0 -18 L5 -3 L19 3 L19 8 L4 5 L2 16 L7 20 L7 23 L0 20 L-7 23 L-7 20 L-2 16 L-4 5 L-19 8 L-19 3 L-5 -3 Z" />
-  </g>;
+  map.getSource('visited-points')?.setData({
+    type: 'FeatureCollection',
+    features: [...pointMap.values()].map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name, active: false }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }))
+  });
+}
+
+function syncActiveRoute(map, active, progress = 1, color = '#00e5ff') {
+  if (!active) { map.getSource('active-route')?.setData(emptyCollection()); return; }
+  const feature = routeFeature(active.leg, color, active.trip.id, active.legIndex, 1, 2, true, progress);
+  map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [feature] });
+
+  const endpoints = [active.leg.from, active.leg.to].map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name, active: true }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }));
+  map.getSource('visited-points')?.setData({ type: 'FeatureCollection', features: endpoints });
+}
+
+function syncPulse(map, loc, color) {
+  if (!loc || color === 'transparent') { map.getSource('arrival-pulse')?.setData(emptyCollection()); return; }
+  map.getSource('arrival-pulse')?.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { color }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }] });
+}
+
+function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1) {
+  return {
+    type: 'Feature',
+    properties: {
+      tripId,
+      index,
+      color,
+      width: active ? 3.4 : width,
+      opacity: active ? 0.96 : opacity,
+      glowWidth: active ? 9 : width * 3.2,
+      glowOpacity: active ? 0.34 : opacity * 0.42,
+      dash: dashForMode(leg.mode)
+    },
+    geometry: { type: 'LineString', coordinates: routeSamples(leg.from, leg.to, progress, active ? 90 : 40) }
+  };
+}
+
+function getScene(active, rawProgress, cameraMode) {
+  const p = Math.max(0, Math.min(1, rawProgress));
+  const e = takeoffCruiseLandingEase(p);
+  const leg = active.leg;
+  const distance = milesBetween(leg.from, leg.to);
+  const vehicle = interpolateGeo(leg.from, leg.to, e);
+  const lead = interpolateGeo(leg.from, leg.to, Math.min(1, e + lookAhead(distance, p)));
+  const focus = blendGeo(vehicle, lead, p < 0.15 ? 0.34 : p > 0.83 ? 0.52 : 0.62);
+  const routeMid = interpolateGeo(leg.from, leg.to, 0.5);
+  const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.24);
+  const phase = p < 0.13 ? 'takeoff' : p > 0.88 ? 'arrival' : 'cruise';
+  const routeProgress = e;
+  const heading = bearingBetween(interpolateGeo(leg.from, leg.to, Math.max(0, e - 0.012)), interpolateGeo(leg.from, leg.to, Math.min(1, e + 0.012)));
+
+  let center = focus;
+  if (cameraMode === 'global') center = routeMid;
+  if (cameraMode === 'route' || cameraMode === 'continent') center = blendGeo(routeMid, focus, 0.28);
+
+  const zoom = cameraZoom(cameraMode, distance, endpointBias);
+  const pitch = cameraPitch(cameraMode, phase, distance);
+  const bearing = cameraBearing(cameraMode, heading, phase);
+
+  return {
+    phase,
+    routeProgress,
+    vehicle,
+    heading,
+    vehicleScale: vehicleScale(leg.mode, phase, endpointBias),
+    camera: { center: [center.lon, center.lat], zoom, pitch, bearing },
+    frameKey: `${active.trip.id}:${active.legIndex}:${Math.round(p * 1000)}:${cameraMode}`
+  };
 }
 
 function interpolateGeo(a, b, t) {
@@ -148,127 +260,83 @@ function interpolateGeo(a, b, t) {
   return { lon, lat };
 }
 
-function routeSamples(a, b, progress = 1, n = 32) {
+function routeSamples(a, b, progress = 1, n = 64) {
   const interp = geoInterpolate([a.lon, a.lat], [b.lon, b.lat]);
-  const steps = Math.max(2, Math.ceil(n * Math.max(0.05, progress)));
-  return Array.from({ length: steps + 1 }, (_, i) => interp((i / steps) * Math.max(0, Math.min(1, progress))));
+  const maxT = Math.max(0, Math.min(1, progress));
+  const steps = Math.max(2, Math.ceil(n * Math.max(0.06, maxT)));
+  return Array.from({ length: steps + 1 }, (_, i) => interp((i / steps) * maxT));
 }
 
-function visitedLocations(expanded, activeIndex) {
-  const out = new Set(); let count = 0;
-  for (const trip of expanded) {
-    for (const leg of trip.legs) {
-      if (count <= activeIndex) { out.add(leg.from.id); out.add(leg.to.id); }
-      count++;
-    }
-  }
-  return out;
+function blendGeo(a, b, amount) { return interpolateGeo(a, b, amount); }
+function emptyCollection() { return { type: 'FeatureCollection', features: [] }; }
+function smoothCamera(prev, next, amount) {
+  if (!prev) return next;
+  return {
+    center: [lerpAngle(prev.center[0], next.center[0], amount), lerp(prev.center[1], next.center[1], amount)],
+    zoom: lerp(prev.zoom, next.zoom, amount),
+    pitch: lerp(prev.pitch, next.pitch, amount),
+    bearing: lerpAngle(prev.bearing, next.bearing, amount)
+  };
 }
-
-function getGlobeCameraTarget(mode, active, progress, completedMode) {
-  if (completedMode) return { lon: -35, lat: 25, scale: 360 };
-  if (!active) return { lon: -35, lat: 25, scale: 520 };
-
-  const distance = milesBetween(active.leg.from, active.leg.to);
-  const mid = interpolateGeo(active.leg.from, active.leg.to, 0.5);
-  if (mode === 'global') return { lon: mid.lon, lat: mid.lat, scale: 430 };
-  if (mode === 'route' || mode === 'continent') return { lon: mid.lon, lat: mid.lat, scale: globeZoom(mode, distance, 0.5) };
-
-  // Mult.dev-like follow: keep the active vehicle slightly ahead of center, then glide the globe toward the destination.
-  const lookAhead = distance > 2500 ? 0.09 : distance > 700 ? 0.12 : 0.16;
-  const leadT = Math.max(0, Math.min(1, progress + lookAhead));
-  const lead = interpolateGeo(active.leg.from, active.leg.to, leadT);
-  const centerBlend = progress < 0.12 ? 0.45 : progress > 0.88 ? 0.72 : 0.62;
-  const current = interpolateGeo(active.leg.from, active.leg.to, progress);
-  const focus = blendGeo(current, lead, centerBlend);
-  return { lon: focus.lon, lat: focus.lat, scale: globeZoom(mode, distance, progress) };
-}
-
-function globeZoom(mode, distance, t) {
-  if (mode === 'global') return 430;
-  if (mode === 'continent') return 560;
-  if (mode === 'route') return distance > 4500 ? 560 : distance > 1500 ? 650 : 780;
-  const u = Math.max(0, Math.min(1, t));
-  const nearEndpoint = Math.max(0, 1 - Math.min(u, 1 - u) / 0.28);
-  const closeScale = distance > 4500 ? 780 : distance > 1500 ? 860 : 980;
-  const cruiseScale = distance > 4500 ? 560 : distance > 1500 ? 650 : 790;
-  return cruiseScale + (closeScale - cruiseScale) * smoothstep(nearEndpoint);
-}
-
-function useSmoothGlobeCamera(target) {
-  const [camera, setCamera] = useState(target);
-  const cameraRef = useRef(target);
-  const targetRef = useRef(target);
-
-  useEffect(() => { targetRef.current = target; if (!cameraRef.current && target) { cameraRef.current = target; setCamera(target); } }, [target]);
-
-  useEffect(() => {
-    let frame;
-    const tick = () => {
-      const target = targetRef.current;
-      if (target) {
-        const current = cameraRef.current || target;
-        const next = {
-          lon: lerpAngle(current.lon, target.lon, 0.052),
-          lat: lerp(current.lat, target.lat, 0.052),
-          scale: lerp(current.scale, target.scale, 0.05)
-        };
-        cameraRef.current = next;
-        setCamera(next);
-      }
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  return camera;
-}
-
-function screenHeading(a, b, t, projection) {
-  const delta = 0.01;
-  const p1 = interpolateGeo(a, b, Math.max(0, Math.min(1, t - delta)));
-  const p2 = interpolateGeo(a, b, Math.max(0, Math.min(1, t + delta)));
-  const xy1 = projection([p1.lon, p1.lat]);
-  const xy2 = projection([p2.lon, p2.lat]);
-  if (!xy1 || !xy2) return 0;
-  return Math.atan2(xy2[1] - xy1[1], xy2[0] - xy1[0]) * 180 / Math.PI + 90;
-}
-
-function travelEase(t) {
-  // Slow roll off the origin and slow into the destination, like a takeoff/cruise/landing pass.
+function takeoffCruiseLandingEase(t) {
   const u = Math.max(0, Math.min(1, t));
   return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
 }
-
-function vehicleAltitude(t) {
-  const u = Math.max(0, Math.min(1, t));
-  return Math.sin(Math.PI * u);
+function lookAhead(distance, p) {
+  const base = distance > 4500 ? 0.05 : distance > 1500 ? 0.075 : 0.11;
+  const endpoints = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
+  return base * (1 - 0.45 * endpoints);
 }
-
-function blendGeo(a, b, amount) {
-  return interpolateGeo(a, b, amount);
+function cameraZoom(mode, distance, endpointBias) {
+  if (mode === 'global') return distance > 3500 ? 1.25 : 2.15;
+  if (mode === 'continent') return distance > 3500 ? 2.05 : 3.25;
+  if (mode === 'route') return distance > 4500 ? 2.35 : distance > 1500 ? 3.15 : 4.25;
+  const cruise = distance > 4500 ? 2.15 : distance > 1500 ? 3.05 : distance > 500 ? 4.15 : 5.55;
+  const close = distance > 4500 ? 3.05 : distance > 1500 ? 4.05 : distance > 500 ? 5.05 : 6.15;
+  return cruise + (close - cruise) * smoothstep(endpointBias);
 }
-
-function smoothstep(x) {
-  const u = Math.max(0, Math.min(1, x));
-  return u * u * (3 - 2 * u);
+function cameraPitch(mode, phase, distance) {
+  if (mode === 'global') return 0;
+  if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 48 : 58;
+  return mode === 'follow' ? 45 : 32;
 }
-
+function cameraBearing(mode, heading, phase) {
+  if (mode === 'global') return 0;
+  if (mode === 'route') return heading * 0.35;
+  return phase === 'cruise' ? heading * 0.75 : heading * 0.9;
+}
+function vehicleScale(mode, phase, endpointBias) {
+  const base = mode === 'plane' ? 0.9 : 0.74;
+  return base + (phase === 'cruise' ? 0.12 : 0.26) * smoothstep(endpointBias);
+}
+function bearingBetween(a, b) {
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = r => r * 180 / Math.PI;
+  const lat1 = toRad(a.lat), lat2 = toRad(b.lat), dLon = toRad(b.lon - a.lon);
+  const y = Math.sin(dLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+function dashForMode(mode) {
+  if (mode === 'drive') return [1.4, 1.4];
+  if (mode === 'boat') return [0.8, 2.2];
+  if (mode === 'train') return [2.5, 1.2];
+  return [1, 0];
+}
+function makeVehicleElement() {
+  const el = document.createElement('div');
+  el.className = 'jl-vehicle';
+  const glyph = document.createElement('div');
+  glyph.className = 'jl-vehicle-glyph';
+  el.appendChild(glyph);
+  return el;
+}
+function vehicleSvg(mode) {
+  if (mode === 'drive') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 3 L-14 -8 L-6 -13 L8 -13 L16 -7 L20 3 L17 10 L-17 10 Z"/><circle cx="-9" cy="10" r="4"/><circle cx="10" cy="10" r="4"/></svg>';
+  if (mode === 'boat') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 6 C-10 16 10 16 18 6 Z"/><path d="M-1 6 L-1 -18 L14 3 Z"/><path d="M-4 6 L-4 -14 L-15 4 Z"/></svg>';
+  if (mode === 'train') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><rect x="-12" y="-18" width="24" height="34" rx="6"/><path d="M-7 -10 H7 M-7 0 H7"/><circle cx="-6" cy="18" r="3"/><circle cx="6" cy="18" r="3"/></svg>';
+  return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M0 -22 L6 -4 L23 3 L23 9 L5 6 L2 18 L8 22 L8 25 L0 21 L-8 25 L-8 22 L-2 18 L-5 6 L-23 9 L-23 3 L-6 -4 Z"/></svg>';
+}
+function smoothstep(x) { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); }
 function lerp(a, b, t) { return a + (b - a) * t; }
-function lerpAngle(a, b, t) {
-  let delta = ((b - a + 540) % 360) - 180;
-  return a + delta * t;
-}
-
-function cameraTransform(mode, active, currentXY, projection) {
-  if (!active || !currentXY || mode === 'global') return '';
-  let scale = mode === 'follow' ? 2.4 : mode === 'route' ? 1.75 : 1.35;
-  let cx = currentXY[0], cy = currentXY[1];
-  if (mode === 'route' || mode === 'continent') {
-    const a = projection([active.leg.from.lon, active.leg.from.lat]);
-    const b = projection([active.leg.to.lon, active.leg.to.lat]);
-    cx = (a[0]+b[0])/2; cy = (a[1]+b[1])/2;
-  }
-  return `translate(${W/2},${H/2}) scale(${scale}) translate(${-cx},${-cy})`;
-}
+function lerpAngle(a, b, t) { let d = ((b - a + 540) % 360) - 180; return a + d * t; }
