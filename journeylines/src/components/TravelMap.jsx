@@ -9,6 +9,9 @@ import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
 
+const VESSEL_ICON_MODULES = import.meta.glob('../Icons/**/*.png', { eager: true, query: '?url', import: 'default' });
+const VESSEL_ICON_INDEX = buildVesselIconIndex(VESSEL_ICON_MODULES);
+
 const MAP_STYLE = {
   version: 8,
   name: 'JourneyLines Terrain Globe',
@@ -283,9 +286,16 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
 
     const mode = leg.mode;
+    const iconMode = mode === 'move' ? 'plane' : mode;
     const rotation = mode === 'plane' || mode === 'move' ? projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries) : 0;
-    vehicleRef.current.innerHTML = vehicleSvg(mode === 'move' ? 'plane' : mode);
-    vehicleRef.current.dataset.mode = mode;
+    const iconUrl = vesselIconUrl(iconMode, color);
+    const nextMarkup = iconUrl ? `<img class="jl-vehicle-img" src="${escapeHtml(iconUrl)}" alt="" draggable="false" />` : vehicleSvg(iconMode);
+    if (vehicleRef.current.__jlVehicleMarkup !== nextMarkup) {
+      vehicleRef.current.innerHTML = nextMarkup;
+      vehicleRef.current.__jlVehicleMarkup = nextMarkup;
+    }
+    vehicleRef.current.dataset.mode = iconMode;
+    vehicleRef.current.dataset.iconColor = colorToIconName(color) || 'Blue';
     vehicleRef.current.style.setProperty('--vehicle-color', color);
     vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
@@ -950,6 +960,65 @@ function dashForMode(mode) {
   if (mode === 'train') return [2.5, 1.2];
   return [1, 0];
 }
+
+function buildVesselIconIndex(modules) {
+  const index = new Map();
+  for (const [rawPath, url] of Object.entries(modules || {})) {
+    const normalized = rawPath
+      .replace(/^\.\.\//, '')
+      .replace(/\\/g, '/')
+      .toLowerCase();
+    const file = normalized.split('/').pop()?.replace(/\.png$/, '') || '';
+    const folder = normalized.split('/').slice(-2, -1)[0] || '';
+    const key = `${folder}/${file}`.replace(/\s+/g, ' ').trim();
+    index.set(key, url);
+  }
+  return index;
+}
+function vesselIconUrl(mode, color) {
+  const family = vesselFamilyForMode(mode);
+  const preferredColor = colorToIconName(color) || 'Blue';
+  const candidates = [
+    vesselIconKey(family, preferredColor),
+    vesselIconKey(family, 'Blue'),
+    'icons/vessel - blue',
+    'icons/vessels/vessel - blue',
+    'vessels/vessel - blue'
+  ];
+  for (const key of candidates) {
+    const found = VESSEL_ICON_INDEX.get(key.toLowerCase());
+    if (found) return found;
+  }
+  return '';
+}
+function vesselFamilyForMode(mode) {
+  if (mode === 'drive' || mode === 'car') return 'Car';
+  if (mode === 'boat') return 'Boat';
+  if (mode === 'train') return 'Train';
+  return 'Airplane';
+}
+function vesselIconKey(family, colorName) {
+  const folder = `${family}s`.toLowerCase();
+  return `icons/${folder}/${family} - ${colorName}`.toLowerCase();
+}
+function colorToIconName(color) {
+  const value = String(color || '').trim().toLowerCase();
+  const aliases = {
+    '#00e5ff': 'Cyan', '#00ffff': 'Cyan', cyan: 'Cyan',
+    '#ff8a00': 'Orange', '#ffa500': 'Orange', orange: 'Orange',
+    '#ff4fb8': 'Pink', '#ff69b4': 'Pink', pink: 'Pink',
+    '#000000': 'Black', black: 'Black',
+    '#808080': 'Gray', '#888888': 'Gray', gray: 'Gray', grey: 'Gray',
+    '#ffd700': 'Gold', gold: 'Gold',
+    '#ffff00': 'Yellow', yellow: 'Yellow',
+    '#00ff00': 'Green', green: 'Green',
+    '#800080': 'Purple', '#a020f0': 'Purple', purple: 'Purple',
+    '#ff0000': 'Red', red: 'Red',
+    '#0000ff': 'Blue', '#007bff': 'Blue', blue: 'Blue'
+  };
+  return aliases[value] || null;
+}
+
 function vehicleSvg(mode) {
   if (mode === 'drive') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 3 L-14 -8 L-6 -13 L8 -13 L16 -7 L20 3 L17 10 L-17 10 Z"/><circle cx="-9" cy="10" r="4"/><circle cx="10" cy="10" r="4"/></svg>';
   if (mode === 'boat') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 6 C-10 16 10 16 18 6 Z"/><path d="M-1 6 L-1 -18 L14 3 Z"/><path d="M-4 6 L-4 -14 L-15 4 Z"/></svg>';

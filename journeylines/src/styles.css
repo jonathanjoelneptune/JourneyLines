@@ -293,8 +293,8 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
   position: absolute;
   left: 0;
   top: 0;
-  width: 54px;
-  height: 54px;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
   color: var(--vehicle-color, #00e5ff);
@@ -312,6 +312,14 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
   display: block;
   overflow: visible;
 }
+.jl-vehicle-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
 .jl-vehicle-overlay svg path,
 .jl-vehicle-overlay svg rect,
 .jl-vehicle-overlay svg circle {
@@ -325,8 +333,8 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 .jl-vehicle-overlay[data-mode='boat'],
 .jl-vehicle-overlay[data-mode='train'],
 .jl-vehicle-overlay[data-mode='move'] {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
 }
 .jl-place-label-overlay {
   position: absolute;
