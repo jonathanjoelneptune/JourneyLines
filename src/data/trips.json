@@ -83,11 +83,10 @@
     "month": null,
     "day": null,
     "displayDate": "2013",
-    "sortKey": "2013-005",
+    "sortKey": "2013-13-99-004",
     "label": "Bahamas",
     "travelers": [
-      "joey",
-      "bonnie"
+      "joey"
     ],
     "mode": "boat",
     "roundTrip": true,
