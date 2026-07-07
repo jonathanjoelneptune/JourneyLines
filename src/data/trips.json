@@ -960,8 +960,7 @@
     "sortKey": "2019-10-99-001",
     "label": "Seattle",
     "travelers": [
-      "joey",
-      "bonnie"
+      "joey"
     ],
     "mode": "plane",
     "roundTrip": true,
@@ -969,7 +968,11 @@
     "toLocationId": "seattle-wa",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": ""
   },
   {
     "id": "2019-048-las-vegas",
