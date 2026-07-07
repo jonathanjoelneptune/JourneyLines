@@ -353,7 +353,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         <p className="eyebrow">GlobeHoppers Studio</p>
         <StudioViewTypeSelector value={viewType} onChange={onViewTypeChange} />
         <button className="studio-close drawer-close-button" onClick={requestCloseStudio}>Close</button>
-        <h2>Edit Travel History</h2>
+        <h2>Edit Travel Timeline</h2>
       </div>
 
       <div className="studio-actions-main">

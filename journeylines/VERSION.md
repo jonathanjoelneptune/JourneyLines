@@ -1,12 +1,13 @@
-# GlobeHoppers v3.18
+# GlobeHoppers v3.19
 
-Timeline playback and UI polish:
-- continent mode is now the default playback camera mode
-- playing from globe/idle mode switches out of global view into continent playback
-- queued-card timeline arrow is pinned to the right side of the queue stack
-- queued-card hover uses a dark highlight
-- Trips/Edit scroll areas contain wheel scrolling more reliably during playback
-- compact Edit Trips rows move Edit/Delete controls farther right
-- globe view keeps location circles and placards visible while rotating
-- timeline jumps snap to the selected leg start instead of gliding across the globe
+Route mode and timeline controls polish:
+- Route mode is now the default playback camera mode
+- Switching from globe/idle back to playback returns to route mode
+- View Globe preserves the current timeline position so Play resumes where it left off
+- Removed the 5-second placard hidden-settle rule
+- Edit Trips top button renamed to Edit Travel Timeline
+- Trips top button renamed to Travel Timeline
+- Fullscreen is now a square icon and toggles enter/exit fullscreen
+- Edit Trips drawer title changed to Edit Travel Timeline
+- Edit Trips drawer width matches the Travel Timeline drawer
 - package intentionally omits src/data/trips.json and package-lock.json

@@ -105,7 +105,6 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const tilePreloadRef = useRef(new Set());
   const lastActiveRouteUpdateRef = useRef(0);
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
-  const labelHiddenUntilRef = useRef(new Map());
   const introLaunchRef = useRef({ active: false, key: null });
   const resetAnimatingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
@@ -252,7 +251,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       updateAirArcOverlay(map, airArcRef.current, state.active, state.scene, state.color);
       const destPt = state.active?.leg?.to ? map.project([state.active.leg.to.lon, state.active.leg.to.lat]) : null;
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
-      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef, labelHiddenUntilRef);
+      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef);
     };
     map.on('move', refresh);
     map.on('render', refresh);
@@ -878,7 +877,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       droppedIdsRef.current.delete(id);
     }
   }
-  refreshPersistentPinPositions(map, labelsRef, null, null);
+  refreshPersistentPinPositions(map, labelsRef);
 }
 
 function updateVisitTicks(container, visitColors = []) {
@@ -907,16 +906,16 @@ function updateVisitTicks(container, visitColors = []) {
   container.__jlTickColors = colors;
 }
 
-function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, hiddenUntilRef) {
+function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef) {
   const now = performance.now();
   // Marker positions are now owned by MapLibre. We only update opacity/culling,
   // so this can run at a moderate cadence without causing placard wobble.
   if (throttleRef?.current?.t && now - throttleRef.current.t < 80) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
-  refreshPersistentPinPositions(map, labelsRef, hiddenUntilRef, throttleRef);
+  refreshPersistentPinPositions(map, labelsRef);
 }
 
-function refreshPersistentPinPositions(map, labelsRef, hiddenUntilRef, throttleRef) {
+function refreshPersistentPinPositions(map, labelsRef) {
   if (!map || !labelsRef?.current) return;
   const canvas = map.getCanvas();
   const w = canvas?.clientWidth || window.innerWidth;
@@ -950,17 +949,7 @@ function refreshPersistentPinPositions(map, labelsRef, hiddenUntilRef, throttleR
     const closeEnough = wasVisible
       ? milesFromFocus <= maxMiles + milesHysteresis
       : milesFromFocus <= maxMiles - milesHysteresis;
-    const rawVisible = Boolean(onScreen && frontSide && closeEnough);
-    const now = performance.now();
-    const hiddenUntil = hiddenUntilRef?.current?.get?.(loc.id) || 0;
-    let visible = rawVisible && now >= hiddenUntil;
-
-    if (!rawVisible) {
-      hiddenUntilRef?.current?.set?.(loc.id, now + 5000);
-      visible = false;
-    } else if (visible) {
-      hiddenUntilRef?.current?.delete?.(loc.id);
-    }
+    const visible = Boolean(onScreen && frontSide && closeEnough);
 
     el.classList.toggle('is-culled', !visible);
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');

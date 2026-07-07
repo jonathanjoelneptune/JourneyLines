@@ -20,7 +20,7 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(999999);
   const [legProgress, setLegProgress] = useState(1);
   const [projection, setProjection] = useState(settings.defaultProjection);
-  const [cameraMode, setCameraMode] = useState('continent');
+  const [cameraMode, setCameraMode] = useState('route');
   const [showTrails, setShowTrails] = useState(settings.showTrails);
   const [speed, setSpeed] = useState(settings.playbackSpeed);
   const [filter, setFilter] = useState('all');
@@ -98,7 +98,7 @@ export default function App() {
   }, [isPlaying, activeIndex, legs, speed]);
 
   function play() {
-    setCameraMode(prev => prev === 'global' ? 'continent' : (prev || 'continent'));
+    setCameraMode(prev => prev === 'global' ? 'route' : (prev || 'route'));
     setShowHero(false);
     setAdmin(false);
     setTripDrawerOpen(false);
@@ -139,13 +139,19 @@ export default function App() {
     setCameraMode('global');
     setIsPlaying(false);
     setIntroLaunching(false);
+    setShowHero(false);
+    setResetNonce(n => n + 1);
+  }
+  function reset() {
+    setIsPlaying(false);
+    setIntroLaunching(false);
     setStarted(false);
     setShowHero(false);
     setActiveIndex(999999);
     setLegProgress(1);
+    setCameraMode('global');
     setResetNonce(n => n + 1);
   }
-  function reset() { viewGlobe(); }
   function jumpToLeg(index, progressWithinLeg = 0, autoPlay = false) {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
@@ -192,9 +198,9 @@ export default function App() {
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
-      <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Trips</button>
-      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Trips</button>
-      <button className="topbar-pill" onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
+      <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Travel Timeline</button>
+      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Travel Timeline</button>
+      <button className="topbar-pill topbar-icon-pill" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}>□</button>
       <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
