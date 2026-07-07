@@ -2686,10 +2686,10 @@
   {
     "id": "2026-128-charlotte",
     "year": 2026,
-    "month": null,
+    "month": 2,
     "day": null,
-    "displayDate": "2026",
-    "sortKey": "2026-128",
+    "displayDate": "February 2026",
+    "sortKey": "2026-02-99-011",
     "label": "Charlotte",
     "travelers": [
       "joey",
