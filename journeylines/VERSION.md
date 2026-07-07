@@ -1,13 +1,12 @@
-# GlobeHoppers v3.17
+# GlobeHoppers v3.18
 
-Queue navigation, placard, and camera polish:
-- queued trip cards are clickable and jump directly to that trip
-- added a timeline arrow under the queued cards
-- top-right play button becomes pause while playing
-- play buttons use the same intro launch behavior
-- home placard arrow now has a gray border
-- restored stronger arrival pin-drop animation
-- added 5-second hidden settle period for edge/far-side placards to reduce flicker
-- compact Studio rows push Edit/Delete controls farther right
-- car follow camera is pulled back slightly to help keep the vehicle onscreen
+Timeline playback and UI polish:
+- continent mode is now the default playback camera mode
+- playing from globe/idle mode switches out of global view into continent playback
+- queued-card timeline arrow is pinned to the right side of the queue stack
+- queued-card hover uses a dark highlight
+- Trips/Edit scroll areas contain wheel scrolling more reliably during playback
+- compact Edit Trips rows move Edit/Delete controls farther right
+- globe view keeps location circles and placards visible while rotating
+- timeline jumps snap to the selected leg start instead of gliding across the globe
 - package intentionally omits src/data/trips.json and package-lock.json

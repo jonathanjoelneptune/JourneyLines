@@ -20,7 +20,7 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(999999);
   const [legProgress, setLegProgress] = useState(1);
   const [projection, setProjection] = useState(settings.defaultProjection);
-  const [cameraMode, setCameraMode] = useState(settings.defaultCameraMode);
+  const [cameraMode, setCameraMode] = useState('continent');
   const [showTrails, setShowTrails] = useState(settings.showTrails);
   const [speed, setSpeed] = useState(settings.playbackSpeed);
   const [filter, setFilter] = useState('all');
@@ -98,6 +98,7 @@ export default function App() {
   }, [isPlaying, activeIndex, legs, speed]);
 
   function play() {
+    setCameraMode(prev => prev === 'global' ? 'continent' : (prev || 'continent'));
     setShowHero(false);
     setAdmin(false);
     setTripDrawerOpen(false);
@@ -149,7 +150,13 @@ export default function App() {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
     const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
-    const dur = legDurationMs(legs[safeIndex]?.leg?.miles || 500, speed);
+    const selectedLeg = legs[safeIndex]?.leg;
+    const dur = legDurationMs(selectedLeg?.miles || 500, speed);
+    if (selectedLeg?.from) {
+      window.dispatchEvent(new CustomEvent('globehoppers-jump-to-leg-start', {
+        detail: { lon: selectedLeg.from.lon, lat: selectedLeg.from.lat, mode: selectedLeg.mode }
+      }));
+    }
     setStarted(true);
     setIsPlaying(Boolean(autoPlay));
     setActiveIndex(safeIndex);
@@ -278,7 +285,7 @@ function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollSt
         <button className="drawer-close-button" onClick={() => { setMenu(null); onClose(); }}>Close</button>
         <h2>Travel Timeline</h2>
       </div>
-      <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
+      <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onWheel={(e) => e.stopPropagation()} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
         {viewType === 'card' ? grouped.map(group => <section className="timeline-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid">

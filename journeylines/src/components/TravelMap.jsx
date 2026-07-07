@@ -158,7 +158,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = !isStarted && !introLaunching && !isPlaying ? [] : buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
+      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
       setMapReady(true);
@@ -186,6 +186,24 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       window.setTimeout(() => { resetAnimatingRef.current = false; }, 1925);
     } catch { resetAnimatingRef.current = false; }
   }, [resetNonce, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    function handleJumpToLegStart(event) {
+      const { lon, lat, mode } = event.detail || {};
+      if (lon == null || lat == null) return;
+      try {
+        userCameraOverrideRef.current = false;
+        lastCameraRef.current = null;
+        const zoom = mode === 'drive' ? 6.4 : mode === 'boat' || mode === 'train' ? 5.2 : 4.6;
+        map.stop();
+        map.jumpTo({ center: [lon, lat], zoom, pitch: 52, bearing: 0, essential: true });
+      } catch {}
+    }
+    window.addEventListener('globehoppers-jump-to-leg-start', handleJumpToLegStart);
+    return () => window.removeEventListener('globehoppers-jump-to-leg-start', handleJumpToLegStart);
+  }, [mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -274,7 +292,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!mapReady || !map) return;
     // Visited points and labels change only when the timeline reaches a new
     // destination, not on every animation frame.
-    const visited = !isStarted && !introLaunching && !isPlaying ? [] : buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
+    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), scene?.newArrivalId || null, droppedPinIdsRef);
   }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, completedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying]);

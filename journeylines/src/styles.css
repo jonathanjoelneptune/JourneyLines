@@ -3858,3 +3858,68 @@ option {
   72% { opacity: 1; transform: translate3d(0, 2px, 0) scale(1.01); filter: blur(0); }
   100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
 }
+
+
+/* GlobeHoppers v3.18 timeline playback and drawer polish */
+.trip-card-stack__timeline-link {
+  justify-self: end !important;
+  align-self: end !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  background: rgba(2, 7, 14, .88) !important;
+}
+.trip-card--queued-clickable:hover,
+.trip-card--queued-clickable:focus-visible {
+  background: #02070e !important;
+  color: #eef8ff !important;
+  opacity: .9 !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent, #00e5ff), transparent 34%),
+    0 14px 34px rgba(0,0,0,.46),
+    0 0 20px color-mix(in srgb, var(--accent, #00e5ff), transparent 76%) !important;
+}
+
+/* Keep scrolling stable while the timeline is actively playing. */
+.trip-drawer__list,
+.studio-trip-list {
+  overscroll-behavior: contain !important;
+  scroll-behavior: auto !important;
+}
+.app.is-playing .trip-drawer,
+.app.is-playing .studio-shell,
+.app.is-playing .studio-panel {
+  transition-timing-function: cubic-bezier(.18,.82,.22,1) !important;
+}
+
+/* More right-side room for compact Edit Trips actions. */
+.studio-trip-list--compact .studio-trip-row {
+  grid-template-columns: 78px minmax(0, 1fr) 138px !important;
+  padding-right: 8px !important;
+}
+.studio-trip-list--compact .studio-trip-buttons {
+  justify-self: end !important;
+  justify-content: flex-end !important;
+  width: 138px !important;
+}
+
+/* Slightly calmer car follow: visual route context matters more than extreme close-up. */
+.jl-vehicle-overlay[data-mode='drive']:has(.jl-vehicle-img) {
+  transform-origin: center center !important;
+}
+
+/* Keep placards and point circles visible in globe attractor mode. */
+.maplibregl-marker.jl-map-pin[aria-hidden='false'] {
+  display: block;
+}
+
+/* Make the compact queue cards feel like a dark stack, not white UI buttons. */
+.trip-card--queued-clickable,
+.trip-card--queued-clickable:active {
+  background: rgba(2, 7, 14, .62) !important;
+}
+
+/* Keep top-right play/pause button stable. */
+.topbar-icon-pill[title='Pause'] {
+  background: rgba(38,244,255,.14) !important;
+  border-color: rgba(38,244,255,.38) !important;
+}
