@@ -1,6 +1,8 @@
-# GlobeHoppers v2.40 — Play Launch + Edit CTA
+# GlobeHoppers v3.1 — Studio Save + Sticky Modal Polish
 
-- Added an intro launch transition: clicking **Play Travel History** now glides/zooms from the hero globe into the first trip start instead of snapping directly there.
-- Added an **Edit Travel History** button next to Play Travel History on the hero card.
-- Edit Travel History opens Admin/Edit mode directly while keeping the repository/path/deploy structure unchanged.
-- Kept GlobeHoppers front-facing branding and the existing `/JourneyLines/` GitHub Pages path.
+- Added Save and commit controls to the top of the Add/Edit Trip modal.
+- Made the trip title/date fields sticky so they remain visible while scrolling.
+- Raised Studio/modal layering so the current trip card no longer appears above edit mode.
+- Reworked GitHub saving to commit trips and locations together through an atomic Git commit, with retries for branch conflicts.
+- Kept a fallback Contents API save path with retry handling.
+- Improved dark dropdown/input styling for Studio controls.

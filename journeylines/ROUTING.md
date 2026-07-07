@@ -1,9 +1,5 @@
 # GlobeHoppers Routing Notes
 
-v2.36 keeps the private build-time Mapbox route cache architecture from prior versions. The Mapbox token remains in GitHub Actions and is not published to GitHub Pages.
+This version does not change playback routing. It keeps the existing private build-time Mapbox driving route cache and manual boat/train route overrides.
 
-This update is focused on visual parity for non-globe projections:
-- Equal Earth
-- Gall-Peters
-
-Those projections still use the lightweight D3/SVG renderer, but now match the darker terrain/space style more closely and use the same vessel icon assets when present in `src/Icons`.
+Studio save behavior was updated so edits to `src/data/trips.json` and `src/data/locations.json` are committed together, reducing stale SHA conflicts when saving multiple edits.

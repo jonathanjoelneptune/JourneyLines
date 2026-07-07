@@ -1479,3 +1479,95 @@ select, option { background-color: #06111f; color: #f2fbff; }
   .studio-form-grid { grid-template-columns: 1fr 1fr; }
   .leg-row { grid-template-columns: 1fr; }
 }
+
+/* GlobeHoppers Studio v3.1 save polish */
+.studio-shell {
+  z-index: 20000 !important;
+}
+.studio-panel {
+  z-index: 20010 !important;
+}
+.studio-modal-backdrop {
+  z-index: 20100 !important;
+  background: rgba(0, 0, 0, .58);
+}
+.studio-modal {
+  position: relative;
+  overflow: auto;
+  padding: 0;
+  max-height: min(900px, calc(100vh - 48px));
+}
+.studio-modal-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20200;
+  padding: 24px 24px 16px;
+  background:
+    linear-gradient(180deg, rgba(5,13,25,.98), rgba(5,13,25,.94)),
+    radial-gradient(circle at 15% 0%, rgba(38,244,255,.12), transparent 44%);
+  border-bottom: 1px solid rgba(0,229,255,.16);
+  backdrop-filter: blur(22px) saturate(1.25);
+  box-shadow: 0 18px 30px rgba(0,0,0,.22);
+}
+.studio-modal-scroll-content {
+  padding: 0 24px 24px;
+}
+.studio-modal-header--with-actions {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.studio-title-block {
+  min-width: 0;
+}
+.studio-title-block h2 {
+  max-width: 560px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.studio-modal-top-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.studio-form-grid--sticky-fields {
+  margin-top: 14px;
+}
+.app:has(.studio-shell) .trip-card,
+.app:has(.studio-modal-backdrop) .trip-card,
+.studio-shell ~ .trip-card {
+  z-index: 10 !important;
+  pointer-events: none;
+}
+.studio-modal input,
+.studio-modal textarea,
+.studio-modal select,
+.repo-grid input,
+select,
+option {
+  background-color: #04101f !important;
+  color: #f3fbff !important;
+  border-color: rgba(0, 229, 255, .18) !important;
+}
+.studio-modal select:focus,
+.studio-modal input:focus,
+.studio-modal textarea:focus,
+.repo-grid input:focus {
+  border-color: rgba(38,244,255,.72) !important;
+  box-shadow: 0 0 0 3px rgba(38,244,255,.12);
+}
+.studio-modal-actions {
+  position: sticky;
+  bottom: 0;
+  margin-left: -24px;
+  margin-right: -24px;
+  padding: 16px 24px 4px;
+  background: linear-gradient(0deg, rgba(5,13,25,.98), rgba(5,13,25,.84), transparent);
+  backdrop-filter: blur(12px);
+}
+@media (max-width: 800px) {
+  .studio-modal-header--with-actions { flex-direction: column; }
+  .studio-modal-top-actions { width: 100%; justify-content: flex-end; }
+  .studio-title-block h2 { max-width: calc(100vw - 96px); }
+}
