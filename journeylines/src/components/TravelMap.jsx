@@ -84,7 +84,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, introLaunching = false, onIntroLaunchComplete = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -105,6 +105,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const tilePreloadRef = useRef(new Set());
   const lastActiveRouteUpdateRef = useRef(0);
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
+  const introLaunchRef = useRef({ active: false, key: null });
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
 
@@ -241,6 +242,31 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     }
 
     const color = colorForLeg(active, travById);
+
+    if (introLaunching) {
+      const launchKey = `${active.trip.id}:${active.legIndex}`;
+      if (introLaunchRef.current.key !== launchKey || !introLaunchRef.current.active) {
+        introLaunchRef.current = { active: true, key: launchKey };
+        syncActiveRoute(map, null);
+        syncPulse(map, null, 'transparent');
+        currentOverlayStateRef.current = null;
+        setOverlayVisibility(false);
+        lastCameraRef.current = null;
+        map.stop();
+        map.easeTo({ ...scene.camera, duration: 2400, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+        window.clearTimeout(introLaunchRef.current.timer);
+        introLaunchRef.current.timer = window.setTimeout(() => {
+          lastCameraRef.current = scene.camera;
+          introLaunchRef.current.active = false;
+          onIntroLaunchComplete?.();
+        }, 2450);
+      }
+      return;
+    } else if (introLaunchRef.current.active) {
+      window.clearTimeout(introLaunchRef.current.timer);
+      introLaunchRef.current.active = false;
+    }
+
     const now = performance.now();
     if (now - lastActiveRouteUpdateRef.current > 45 || scene.lineProgress >= 0.995) {
       syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries);
@@ -261,7 +287,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
     updateAirArcOverlay(map, airArcRef.current, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete]);
 
   useEffect(() => {
     const map = mapRef.current;

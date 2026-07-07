@@ -1,7 +1,6 @@
-# GlobeHoppers v2.39 — US-Centered Intro Globe
+# GlobeHoppers v2.40 — Play Launch + Edit CTA
 
-- Keeps the repository, folder, and GitHub Pages path unchanged.
-- Starts the idle/intro completed-globe view centered over the United States.
-- Zooms the initial globe in further so it feels closer and more cinematic behind the hero card.
-- Leaves the hero card sizing from v2.38 in place.
-- Leaves playback, routing, culling, icons, Mapbox build-time cache, and projection behavior unchanged from v2.38.
+- Added an intro launch transition: clicking **Play Travel History** now glides/zooms from the hero globe into the first trip start instead of snapping directly there.
+- Added an **Edit Travel History** button next to Play Travel History on the hero card.
+- Edit Travel History opens Admin/Edit mode directly while keeping the repository/path/deploy structure unchanged.
+- Kept GlobeHoppers front-facing branding and the existing `/JourneyLines/` GitHub Pages path.

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TravelMap from './components/TravelMap.jsx';
 import PlaybackControls from './components/PlaybackControls.jsx';
 import TripCard from './components/TripCard.jsx';
@@ -25,6 +25,7 @@ export default function App() {
   const [filter, setFilter] = useState('all');
   const [admin, setAdmin] = useState(false);
   const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
+  const [introLaunching, setIntroLaunching] = useState(false);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
@@ -85,15 +86,29 @@ export default function App() {
       setLegProgress(0);
       tRef.current = { last: null, elapsed: 0 };
       setStarted(true);
+      setIsPlaying(false);
+      setIntroLaunching(true);
     } else {
       const currentLeg = legs[Math.min(activeIndex, legs.length - 1)]?.leg;
       const dur = legDurationMs(currentLeg?.miles || 500, speed);
       tRef.current = { last: null, elapsed: Math.max(0, Math.min(1, legProgress)) * dur };
+      setIsPlaying(true);
     }
+  }
+  const completeIntroLaunch = useCallback(() => {
+    setIntroLaunching(false);
+    tRef.current = { last: null, elapsed: 0 };
+    setLegProgress(0);
     setIsPlaying(true);
+  }, []);
+  function editTravelHistory() {
+    setAdmin(true);
+    setStarted(true);
+    setIntroLaunching(false);
+    setIsPlaying(false);
   }
   function pause() { setIsPlaying(false); }
-  function reset() { setIsPlaying(false); setStarted(false); setActiveIndex(999999); setLegProgress(1); }
+  function reset() { setIsPlaying(false); setIntroLaunching(false); setStarted(false); setActiveIndex(999999); setLegProgress(1); }
   function jumpToLeg(index, progressWithinLeg = 0, autoPlay = false) {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
@@ -128,12 +143,15 @@ export default function App() {
       <button onClick={() => setTripDrawerOpen(v => !v)}>Trips</button>
       <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} />
     {!started && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
       <h1>GlobeHoppers</h1>
       <p>All your hops, skips & jumps, replayed across a living globe.</p>
-      <button className="primary big" onClick={play}>Play Travel History</button>
+      <div className="hero-actions">
+        <button className="primary big" onClick={play}>Play Travel History</button>
+        <button className="secondary big" onClick={editTravelHistory}>Edit Travel History</button>
+      </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => setTripDrawerOpen(v => !v)} />
