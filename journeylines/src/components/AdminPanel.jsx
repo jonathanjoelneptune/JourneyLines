@@ -128,7 +128,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const set = new Set(draft.travelers || []);
     if (set.has(id)) set.delete(id); else set.add(id);
     const next = Array.from(set);
-    setDraft({ ...draft, travelers: next.length ? next : [id] });
+    setDraft({ ...draft, travelers: next });
   }
 
   function chooseDestination(location) {
@@ -163,6 +163,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     try {
       setBusy(true);
       if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
+      if (!draft.travelers?.length) throw new Error('Select at least one traveler before saving.');
       const currentScroll = studioListRef.current?.scrollTop ?? null;
       const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases);
       const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
@@ -698,6 +699,7 @@ function AutocompleteField({ label, value, onChange, matches, onChoose, compact,
 
 function normalizeTrip(draft, trips, locations, homeBases) {
   if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
+  if (!draft.travelers?.length) throw new Error('Select at least one traveler before saving.');
   let nextLocations = locations;
   let toLocationId = draft.toLocationId;
   if (!toLocationId && draft.toLocationText) {
@@ -761,7 +763,7 @@ function normalizeTrip(draft, trips, locations, homeBases) {
     displayEndDate: formatEndDisplayDate(draft),
     sortKey: draft.id && draft.sortKey && String(draft.sortKey).startsWith(bucketKey(draft)) ? draft.sortKey : buildSortKey(draft, count),
     label,
-    travelers: draft.travelers?.length ? draft.travelers : ['joey','bonnie'],
+    travelers: draft.travelers || [],
     mode: draft.mode || 'plane',
     roundTrip: !!draft.roundTrip,
     returnMode: draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : '',
@@ -800,14 +802,15 @@ function tripAccent(trip) {
   const hasB = trip.travelers?.includes('bonnie');
   if (hasJ && hasB) return '#00e5ff';
   if (hasB) return '#ff4fd8';
-  return '#ff8a00';
+  if (hasJ) return '#ff8a00';
+  return '#5d7288';
 }
 
 
 function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }
 function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }
-function travelerSummary(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); return hasJ && hasB ? 'Joey + Bonnie' : hasB ? 'Bonnie' : 'Joey'; }
-function groupNameForTravelers(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); return hasJ && hasB ? 'Group: Joey + Bonnie' : hasB ? 'Solo trip' : 'Solo trip'; }
+function travelerSummary(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); if (!hasJ && !hasB) return 'No travelers selected'; return hasJ && hasB ? 'Joey + Bonnie' : hasB ? 'Bonnie' : 'Joey'; }
+function groupNameForTravelers(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); if (!hasJ && !hasB) return 'Required'; return hasJ && hasB ? 'Group: Joey + Bonnie' : 'Solo trip'; }
 function formatDateRangeLabel(t) {
   const start = toDateInputValue(t.year, t.month, t.day);
   const end = toDateInputValue(t.endYear, t.endMonth, t.endDay);

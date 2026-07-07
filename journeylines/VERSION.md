@@ -1,12 +1,12 @@
-# GlobeHoppers v3.14 — Timeline Drawer + Modal Alignment Polish
+# GlobeHoppers v3.15 — Interaction + Placard Queue Polish
 
-- Standardized Trips and Edit Travel History drawer headers.
-- Trips card view now matches the Studio card look and removes the visible ellipsis button while keeping right-click edit.
-- Studio card view opens Edit Trip directly when a card is clicked or right-clicked.
-- Compact rows are vertically centered with right-justified actions.
-- Mode of Transportation and Trip Type use matching compact tile sizing on the same row.
-- Trip preview date formatting now uses Month Day, Year and omits placeholder month text when no month is selected.
-- Required pills are aligned inline with Year and Month labels.
-- Date range calendar is anchored under the Trip Dates control.
-- Queued playback cards are more compact and secondary, with simpler year/title content and entry animation.
-- Map placard pointer clipping/tilt regression was tightened with a dedicated vertical tail treatment.
+- Centered Trip Type icons vertically.
+- Clicking the map closes open Trips or GlobeHoppers Studio drawers.
+- Added shaded left-edge treatment to Trips rows in expanded, compact, and card modes.
+- Made the Trips context edit menu smaller and less padded.
+- Travelers can now be deselected, but Save requires at least one traveler.
+- Empty traveler selection shows as an unfilled/muted preview state.
+- Queued playback cards now stack by width and fade more strongly.
+- Active playback card uses a solid black background.
+- Active card visit text now reads like “1st visit to Atlanta”.
+- Reworked map placard pointer geometry so the carrot stays vertical, connected, and less clipped.

@@ -3401,3 +3401,143 @@ option {
   .transport-triptype-row { grid-template-columns: 1fr !important; }
   .drawer-header-unified > h2 { white-space: normal; }
 }
+
+/* GlobeHoppers v3.15 interaction, queue, and placard polish */
+.trip-type-tile,
+.mode-tile {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.trip-type-tile span,
+.mode-tile span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+}
+
+/* Add the same shaded left edge language to Trips rows across all view modes. */
+.trip-drawer__row::before,
+.studio-trip-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, var(--accent, #00e5ff), color-mix(in srgb, var(--accent, #00e5ff), transparent 78%));
+  opacity: .92;
+  pointer-events: none;
+}
+.trip-drawer__row,
+.studio-trip-row { position: relative; overflow: hidden; }
+.trip-drawer--card .trip-drawer__row::before,
+.studio-trip-row--card::before { width: 4px; }
+
+/* Compact context edit menu. */
+.trip-context-menu {
+  padding: 5px !important;
+  border-radius: 12px !important;
+  min-width: 72px !important;
+}
+.trip-context-menu button {
+  min-height: 26px !important;
+  padding: 4px 10px !important;
+  font-size: .76rem !important;
+  border-radius: 10px !important;
+}
+
+/* Empty traveler state: preview/chips are intentionally muted/unfilled until required travelers are selected. */
+.route-preview-meta:has(span:last-child b[style*="5d7288"]) b,
+.traveler-pill:not(.is-selected) .traveler-dot { box-shadow: none !important; }
+
+/* Playback queue: active card solid, queued cards smaller, more faded, more stacked. */
+.trip-card-stack { width: min(390px, calc(100vw - 48px)); align-items: end; }
+.trip-card-stack .trip-card--stack-0 {
+  width: 100% !important;
+  opacity: 1 !important;
+  background: #02070e !important;
+  box-shadow: 0 18px 42px rgba(0,0,0,.42), 0 0 0 1px color-mix(in srgb, var(--accent), transparent 48%) !important;
+}
+.trip-card-stack .trip-card--stack-1 {
+  width: 75% !important;
+  opacity: .30 !important;
+  margin-left: auto !important;
+  transform: translateY(-2px) !important;
+}
+.trip-card-stack .trip-card--stack-2 {
+  width: 50% !important;
+  opacity: .22 !important;
+  margin-left: auto !important;
+  transform: translateY(-4px) !important;
+}
+.trip-card-stack .trip-card--stack-3 {
+  width: 25% !important;
+  opacity: .16 !important;
+  margin-left: auto !important;
+  transform: translateY(-6px) !important;
+}
+.trip-card-stack:hover .trip-card--stack-1 { opacity: .62 !important; transform: translateY(-3px) scale(1.01) !important; }
+.trip-card-stack:hover .trip-card--stack-2 { opacity: .48 !important; transform: translateY(-5px) scale(1.01) !important; }
+.trip-card-stack:hover .trip-card--stack-3 { opacity: .36 !important; transform: translateY(-7px) scale(1.01) !important; }
+.trip-card-stack .trip-card--stack-1,
+.trip-card-stack .trip-card--stack-2,
+.trip-card-stack .trip-card--stack-3 {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.trip-card-stack .trip-card--stack-1 h2,
+.trip-card-stack .trip-card--stack-2 h2,
+.trip-card-stack .trip-card--stack-3 h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+}
+
+/* Placard geometry: pointer connected, vertical, and no clipped top corners. */
+.maplibregl-marker.jl-map-pin,
+.jl-map-pin {
+  overflow: visible !important;
+  padding: 8px 12px 16px !important;
+  z-index: 2450 !important;
+}
+.jl-map-pin-inner {
+  overflow: visible !important;
+  position: relative !important;
+  transform: none !important;
+  border-radius: 18px !important;
+}
+.jl-map-pin-tail {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: -10px !important;
+  width: 18px !important;
+  height: 12px !important;
+  transform: translateX(-50%) !important;
+  transform-origin: center top !important;
+  clip-path: polygon(50% 100%, 0 0, 100% 0) !important;
+  background: var(--pin-tail-color, var(--place-color, #00e5ff)) !important;
+  border: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+.jl-map-pin-dot,
+.jl-map-pin-text { position: relative; z-index: 2; }
+.jl-map-pin-inner::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 8px;
+  transform: translateX(-50%);
+  background: rgba(3, 12, 24, .96);
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  z-index: 1;
+  pointer-events: none;
+}
+.maplibregl-marker.jl-map-pin[aria-hidden='true'],
+.jl-map-pin[aria-hidden='true'],
+.maplibregl-marker.jl-map-pin.is-culled,
+.jl-map-pin.is-culled { opacity: 0 !important; visibility: hidden !important; display: none !important; }
