@@ -59,6 +59,26 @@
     "occasion": ""
   },
   {
+    "id": "2013-006-chicago",
+    "year": 2013,
+    "month": null,
+    "day": null,
+    "displayDate": "2013",
+    "sortKey": "2013-006",
+    "label": "Chicago",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
     "id": "2013-004-bahamas",
     "year": 2013,
     "month": null,
@@ -93,26 +113,6 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "nassau-bs",
-    "route": [],
-    "notes": "",
-    "occasion": ""
-  },
-  {
-    "id": "2013-006-chicago",
-    "year": 2013,
-    "month": null,
-    "day": null,
-    "displayDate": "2013",
-    "sortKey": "2013-006",
-    "label": "Chicago",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "chicago-il",
     "route": [],
     "notes": "",
     "occasion": ""
@@ -1190,6 +1190,26 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-juan-pr",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-136-seattle",
+    "year": 2019,
+    "month": 10,
+    "day": null,
+    "displayDate": "October 2019",
+    "sortKey": "2019-10-99-012",
+    "label": "Seattle",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "seattle-wa",
     "route": [],
     "notes": "",
     "occasion": ""
@@ -2794,26 +2814,6 @@
     "occasion": ""
   },
   {
-    "id": "2026-133-boston",
-    "year": 2026,
-    "month": null,
-    "day": null,
-    "displayDate": "2026",
-    "sortKey": "2026-136",
-    "label": "Boston",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "boston-ma",
-    "route": [],
-    "notes": "",
-    "occasion": ""
-  },
-  {
     "id": "2026-134-dominican-republic",
     "year": 2026,
     "month": null,
@@ -2848,6 +2848,26 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cabo-san-lucas-mx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-133-boston",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-136",
+    "label": "Boston",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "boston-ma",
     "route": [],
     "notes": "",
     "occasion": ""
