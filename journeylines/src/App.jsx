@@ -147,8 +147,9 @@ export default function App() {
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
-      <button onClick={() => setTripDrawerOpen(v => !v)}>Trips</button>
-      <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
+      <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Trips</button>
+      <button className="topbar-pill" onClick={() => setTripDrawerOpen(v => !v)}>Trips</button>
+      <button className="topbar-pill" onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
     <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} />
     {!started && <section className="hero glass">

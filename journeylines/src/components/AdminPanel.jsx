@@ -10,8 +10,23 @@ const TRAVELER_OPTIONS = [
   { id: 'joey', label: 'Joey', color: '#ff8a00' },
   { id: 'bonnie', label: 'Bonnie', color: '#ff4fd8' }
 ];
+const MONTH_OPTIONS = [
+  { value: '', label: 'Unknown month' },
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' }
+];
 const empty = {
-  year: new Date().getFullYear(), month: null, day: null, label: '', travelers: ['joey','bonnie'], mode: 'plane',
+  year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: ['joey','bonnie'], mode: 'plane',
   roundTrip: true, fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
@@ -247,6 +262,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       <div className={`studio-trip-list ${reorderMode ? 'is-reordering' : ''}`}>
         {(reorderMode ? orderDraft : sortedTrips).map(trip => <div
           className="studio-trip-row"
+          style={{ '--accent': tripAccent(trip) }}
           key={trip.id}
           draggable={reorderMode}
           onDragStart={() => setDragId(trip.id)}
@@ -289,14 +305,20 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onSetExtraLeg={setExtraLeg}
       onAddLeg={addLeg}
       onRemoveLeg={removeLeg}
+      homeBases={homeBases}
     />}
   </section>;
 }
 
-function TripModal({ mode, draft, setDraft, busy, locs, locById, onClose, onSave, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg }) {
+function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg }) {
   const destinationMatches = filterLocations(locs, draft.toLocationText || '');
   const fromMatches = filterLocations(locs, draft.fromLocationText || '');
   const title = mode === 'add' ? 'Add a trip' : draft.label || draft.toLocationText || 'Edit trip';
+  const defaultFromId = activeHomeBaseId(homeBases, draft);
+  const defaultFrom = locById[defaultFromId];
+  const yearOptions = buildYearOptions(locs, draft.year);
+  const startDateValue = toDateInputValue(draft.year, draft.month, draft.day);
+  const endDateValue = toDateInputValue(draft.endYear, draft.endMonth, draft.endDay);
   return <div className="studio-modal-backdrop">
     <div className="studio-modal glass">
       <div className="studio-modal-sticky">
@@ -311,11 +333,12 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, onClose, onSave
           </div>
         </div>
 
-        <div className="studio-form-grid studio-form-grid--sticky-fields">
-          <label>Trip title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
-          <label>Year<input type="number" value={draft.year || ''} onChange={e => setDraft({...draft, year:Number(e.target.value)})} /></label>
-          <label>Month<input type="number" min="1" max="12" value={draft.month || ''} onChange={e => setDraft({...draft, month:e.target.value ? Number(e.target.value) : null})} placeholder="Optional" /></label>
-          <label>Day<input type="number" min="1" max="31" value={draft.day || ''} onChange={e => setDraft({...draft, day:e.target.value ? Number(e.target.value) : null})} placeholder="Optional" /></label>
+        <div className="studio-form-grid studio-form-grid--sticky-fields studio-form-grid--dates">
+          <label className="title-field">Trip title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
+          <label>Year<select value={draft.year || ''} onChange={e => setDraft({...draft, year:Number(e.target.value)})}>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></label>
+          <label>Month<select value={draft.month || ''} onChange={e => setDraft({...draft, month:e.target.value ? Number(e.target.value) : null, day:e.target.value ? draft.day : null})}>{MONTH_OPTIONS.map(m => <option key={m.value || 'unknown'} value={m.value}>{m.label}</option>)}</select></label>
+          <label>Start date<input type="date" value={startDateValue} onChange={e => setDraft({...draft, ...datePartsFromInput(e.target.value)})} /></label>
+          <label>End date<input type="date" value={endDateValue} onChange={e => setDraft({...draft, ...datePartsFromInput(e.target.value, 'end')})} /></label>
         </div>
       </div>
 
@@ -337,7 +360,14 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, onClose, onSave
         <section className="studio-pick-section">
           <h3>Route</h3>
           <div className="route-form">
-            <label className="check premium-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override from location</label>
+            <div className="default-start-row">
+              <div className="default-start-card">
+                <span>Start location</span>
+                <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
+                <small>Auto-derived from trip date and active home base</small>
+              </div>
+              <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start</label>
+            </div>
             {draft.overrideFrom && <AutocompleteField label="From" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />}
             <AutocompleteField label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
             <label className="check premium-check"><input type="checkbox" checked={!!draft.roundTrip} onChange={e => setDraft({...draft, roundTrip:e.target.checked})}/> Round trip</label>
@@ -432,7 +462,11 @@ function normalizeTrip(draft, trips, locations, homeBases) {
     year: Number(draft.year),
     month: draft.month ? Number(draft.month) : null,
     day: draft.day ? Number(draft.day) : null,
+    endYear: draft.endYear ? Number(draft.endYear) : null,
+    endMonth: draft.endMonth ? Number(draft.endMonth) : null,
+    endDay: draft.endDay ? Number(draft.endDay) : null,
     displayDate: formatDisplayDate(draft),
+    displayEndDate: formatEndDisplayDate(draft),
     sortKey: buildSortKey(draft, count),
     label,
     travelers: draft.travelers?.length ? draft.travelers : ['joey','bonnie'],
@@ -446,6 +480,36 @@ function normalizeTrip(draft, trips, locations, homeBases) {
   };
   return { trip: clean, nextLocations };
 }
+
+function buildYearOptions(locs, currentYear) {
+  const thisYear = new Date().getFullYear();
+  const years = [];
+  for (let y = 2012; y <= thisYear + 5; y++) years.push(y);
+  if (currentYear && !years.includes(Number(currentYear))) years.push(Number(currentYear));
+  return years.sort((a,b) => b - a);
+}
+function toDateInputValue(year, month, day) {
+  if (!year || !month || !day) return '';
+  return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+function datePartsFromInput(value, prefix = '') {
+  if (!value) return prefix === 'end' ? { endYear: null, endMonth: null, endDay: null } : { year: new Date().getFullYear(), month: null, day: null };
+  const [year, month, day] = value.split('-').map(Number);
+  if (prefix === 'end') return { endYear: year, endMonth: month, endDay: day };
+  return { year, month, day };
+}
+function formatEndDisplayDate(t) {
+  if (!t.endYear) return '';
+  return formatDisplayDate({ year: t.endYear, month: t.endMonth, day: t.endDay });
+}
+function tripAccent(trip) {
+  const hasJ = trip.travelers?.includes('joey');
+  const hasB = trip.travelers?.includes('bonnie');
+  if (hasJ && hasB) return '#00e5ff';
+  if (hasB) return '#ff4fd8';
+  return '#ff8a00';
+}
+
 function insertChronologically(trips) { return sortTripsForEditor(trips).map((t, i) => ({ ...t, sortKey: t.sortKey || buildSortKey(t, i + 1) })); }
 function applyBucketOrder(rows) {
   const counters = new Map();

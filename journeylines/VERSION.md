@@ -1,8 +1,8 @@
-# GlobeHoppers v3.1 — Studio Save + Sticky Modal Polish
+# GlobeHoppers v3.2 — Studio Date + Route Polish
 
-- Added Save and commit controls to the top of the Add/Edit Trip modal.
-- Made the trip title/date fields sticky so they remain visible while scrolling.
-- Raised Studio/modal layering so the current trip card no longer appears above edit mode.
-- Reworked GitHub saving to commit trips and locations together through an atomic Git commit, with retries for branch conflicts.
-- Kept a fallback Contents API save path with retry handling.
-- Improved dark dropdown/input styling for Studio controls.
+- Added topbar **Edit Trips** button next to Trips.
+- Year and month are now dropdowns; months use month names.
+- Start/end date calendar inputs added to Add/Edit Trip modal.
+- Route section now shows the dynamic default start location based on trip date and active home base, with an Override start checkbox.
+- Studio trip list now follows traveler color conventions for border, year/date, and trip name.
+- Dropdown/date input styling polished for the dark GlobeHoppers Studio theme.

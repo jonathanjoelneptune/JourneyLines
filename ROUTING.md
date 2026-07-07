@@ -1,5 +1,3 @@
-# GlobeHoppers Routing Notes
+# Routing Notes
 
-This version does not change playback routing. It keeps the existing private build-time Mapbox driving route cache and manual boat/train route overrides.
-
-Studio save behavior was updated so edits to `src/data/trips.json` and `src/data/locations.json` are committed together, reducing stale SHA conflicts when saving multiple edits.
+GlobeHoppers keeps Mapbox driving route generation private in GitHub Actions and uses generated route cache data in the browser. Studio route editing now shows the dynamic default start/home-base location for the selected trip date, with optional override and additional legs for chain trips.
