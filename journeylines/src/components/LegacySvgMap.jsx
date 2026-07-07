@@ -6,7 +6,11 @@ import world from 'world-atlas/countries-110m.json';
 import { expandTrip, getTravelerKey } from '../utils/tripExpansion.js';
 import { milesBetween } from '../utils/distanceUtils.js';
 
+const VESSEL_ICON_MODULES = import.meta.glob('../Icons/**/*.png', { eager: true, query: '?url', import: 'default' });
+const VESSEL_ICON_INDEX = buildVesselIconIndex(VESSEL_ICON_MODULES);
+
 const W = 1400, H = 760;
+const STAR_POINTS = makeStars(185);
 
 export default function TravelMap({ trips, locations, homeBases, travelers, activeIndex, legProgress, projectionName, cameraMode, showTrails, trailOpacity, trailWidth }) {
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
@@ -51,18 +55,27 @@ export default function TravelMap({ trips, locations, homeBases, travelers, acti
   const activeIds = new Set(active ? [active.leg.from.id, active.leg.to.id] : []);
   const vehicleHeading = active && currentPoint ? screenHeading(active.leg.from, active.leg.to, motionProgress, projection) : 0;
 
-  return <svg className={`map map--${projectionName}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="JourneyLines travel map">
+  return <svg className={`map map--${projectionName} map--terrain-flat`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="JourneyLines travel map">
     <defs>
       <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       <filter id="terrainGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="flatLandTexture" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.034" numOctaves="3" seed="12" result="noise"/>
+        <feColorMatrix in="noise" type="matrix" values="0.22 0 0 0 0.05  0 0.27 0 0 0.12  0 0 0.18 0 0.08  0 0 0 0.32 0" result="tint"/>
+        <feBlend in="SourceGraphic" in2="tint" mode="screen"/>
+      </filter>
       <radialGradient id="globeOcean" cx="40%" cy="26%" r="78%">
         <stop offset="0" stopColor="#1f4b73"/>
         <stop offset="0.48" stopColor="#102944"/>
         <stop offset="1" stopColor="#050b17"/>
       </radialGradient>
-      <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#09111f"/><stop offset="1" stopColor="#101b31"/></linearGradient>
+      <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#02040b"/><stop offset="0.45" stopColor="#071529"/><stop offset="1" stopColor="#01030a"/></linearGradient>
+      <radialGradient id="flatOceanGlow" cx="52%" cy="44%" r="70%"><stop offset="0" stopColor="rgba(33,139,190,.22)"/><stop offset="0.56" stopColor="rgba(10,37,74,.18)"/><stop offset="1" stopColor="rgba(0,0,0,0)"/></radialGradient>
     </defs>
+    <rect width={W} height={H} fill="#01030a" />
+    <g className="svg-space-stars">{STAR_POINTS.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />)}</g>
     <rect width={W} height={H} fill="url(#ocean)" />
+    <rect width={W} height={H} fill="url(#flatOceanGlow)" className="flat-ocean-glow" />
     {projectionName === 'globe' && <circle cx={W/2} cy={H/2} r={projection.scale()} fill="url(#globeOcean)" className="globe-disc" />}
     <g transform={viewTransform} className="camera-layer">
       <path d={path({ type: 'Sphere' })} className="sphere" />
@@ -108,11 +121,15 @@ function Route({ leg, projection, color = '#00e5ff', mode = 'plane', active, glo
 function Vehicle({ xy, mode, color, projectionName, heading, progress }) {
   const altitude = vehicleAltitude(progress);
   const baseScale = projectionName === 'globe' ? 0.78 : 1.0;
-  const planeScale = mode === 'plane' ? (0.62 + 0.38 * altitude) : 0.82;
-  const rotate = mode === 'plane' ? heading : 0;
+  const planeScale = mode === 'plane' ? (0.62 + 0.38 * altitude) : 0.92;
+  const iconUrl = vesselIconUrl(mode, color);
+  // Imported PNG icons are authored nose-up, so rotate the icon toward the current segment.
+  // The legacy fallback SVGs keep the older behavior for compatibility.
+  const rotate = iconUrl ? heading : (mode === 'plane' ? heading : 0);
   const lift = mode === 'plane' ? -8 * altitude : 0;
-  return <g className={`vehicle vehicle--${mode}`} transform={`translate(${xy[0]},${xy[1]}) rotate(${rotate}) translate(0,${lift}) scale(${baseScale * planeScale})`} filter="url(#glow)" style={{ '--vehicle-color': color }}>
-    <VehicleShape mode={mode} />
+  const scale = baseScale * planeScale;
+  return <g className={`vehicle vehicle--${mode} legacy-vehicle`} transform={`translate(${xy[0]},${xy[1]}) rotate(${rotate}) translate(0,${lift}) scale(${scale})`} style={{ '--vehicle-color': color }}>
+    {iconUrl ? <image className="legacy-vehicle-img" href={iconUrl} x="-30" y="-30" width="60" height="60" preserveAspectRatio="xMidYMid meet" /> : <VehicleShape mode={mode} />}
   </g>;
 }
 
@@ -239,6 +256,87 @@ function travelEase(t) {
   // Slow roll off the origin and slow into the destination, like a takeoff/cruise/landing pass.
   const u = Math.max(0, Math.min(1, t));
   return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+}
+
+
+function buildVesselIconIndex(modules) {
+  const index = new Map();
+  for (const [rawPath, url] of Object.entries(modules || {})) {
+    const normalized = rawPath.replace(/\\/g, '/').replace(/^\.\.\//, '').replace(/^\.\//, '').toLowerCase();
+    const parts = normalized.split('/').filter(Boolean);
+    const file = parts.at(-1)?.replace(/\.png$/, '') || '';
+    const folder = parts.at(-2) || '';
+    const fullNoExt = normalized.replace(/\.png$/, '');
+    const keys = [
+      `${folder}/${file}`,
+      `icons/${folder}/${file}`,
+      fullNoExt,
+      fullNoExt.replace(/^icons\//, ''),
+      fullNoExt.replace(/^src\//, ''),
+      fullNoExt.replace(/^src\/icons\//, ''),
+    ];
+    for (const key of keys) {
+      const cleanKey = key.replace(/\s+/g, ' ').trim().toLowerCase();
+      if (cleanKey) index.set(cleanKey, url);
+    }
+  }
+  return index;
+}
+function vesselIconUrl(mode, color) {
+  const family = vesselFamilyForMode(mode);
+  const preferredColor = colorToIconName(color) || 'Blue';
+  const candidates = [
+    vesselIconKey(family, preferredColor),
+    vesselIconKey(family, 'Blue'),
+    `icons/${vesselIconKey(family, preferredColor)}`,
+    `icons/${vesselIconKey(family, 'Blue')}`,
+    'vessel - blue',
+    'vessels/vessel - blue',
+    'icons/vessel - blue',
+    'icons/vessels/vessel - blue'
+  ];
+  for (const key of candidates) {
+    const found = VESSEL_ICON_INDEX.get(key.toLowerCase());
+    if (found) return found;
+  }
+  return '';
+}
+function vesselFamilyForMode(mode) {
+  if (mode === 'drive' || mode === 'car') return 'Car';
+  if (mode === 'boat') return 'Boat';
+  if (mode === 'train') return 'Train';
+  return 'Airplane';
+}
+function vesselIconKey(family, colorName) {
+  const folder = `${family}s`.toLowerCase();
+  return `${folder}/${family} - ${colorName}`.toLowerCase();
+}
+function colorToIconName(color) {
+  const value = String(color || '').trim().toLowerCase();
+  const aliases = {
+    '#00e5ff': 'Cyan', '#00ffff': 'Cyan', cyan: 'Cyan',
+    '#ff8a00': 'Orange', '#ffa500': 'Orange', orange: 'Orange',
+    '#ff4fb8': 'Pink', '#ff69b4': 'Pink', pink: 'Pink',
+    '#000000': 'Black', black: 'Black',
+    '#808080': 'Gray', '#888888': 'Gray', gray: 'Gray', grey: 'Gray',
+    '#ffd700': 'Gold', gold: 'Gold',
+    '#ffff00': 'Yellow', yellow: 'Yellow',
+    '#00ff00': 'Green', green: 'Green',
+    '#800080': 'Purple', '#a020f0': 'Purple', purple: 'Purple',
+    '#ff0000': 'Red', red: 'Red',
+    '#0000ff': 'Blue', '#007bff': 'Blue', blue: 'Blue'
+  };
+  return aliases[value] || null;
+}
+function makeStars(count) {
+  let seed = 24681357;
+  const rand = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+  return Array.from({ length: count }, () => ({
+    x: Math.round(rand() * W),
+    y: Math.round(rand() * H),
+    r: 0.35 + rand() * rand() * 1.25,
+    o: 0.12 + rand() * 0.55,
+  }));
 }
 
 function vehicleAltitude(t) {

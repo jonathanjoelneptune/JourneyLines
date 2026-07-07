@@ -1,7 +1,7 @@
-# JourneyLines v2.35 — Home Base Layering + Distance Culling
+# JourneyLines v2.36 — Flat Projection Terrain + Icon Parity
 
-- Home-base return arrivals no longer re-trigger the pin drop animation.
-- Home-base placards now layer above nearby regular destination placards.
-- Home-base placards use a black fill with a gray border/tail treatment.
-- Added a hard distance-based placard culling guard in addition to horizon culling.
-- This should prevent Alaska, Seoul, Tokyo, and other far-side placards from showing while focused on Europe or another distant local region.
+- Equal Earth and Gall-Peters now use the darker terrain/space visual language instead of the older simple atlas look.
+- Added star/space background and terrain texture styling to the legacy flat projections.
+- Equal Earth and Gall-Peters now use the same `src/Icons` vessel PNG selection logic as globe mode.
+- Airplane/car/boat/train icons in flat projections now follow the active route heading when matching PNG icons are available.
+- Globe mode and existing Mapbox routing/performance behavior are unchanged.

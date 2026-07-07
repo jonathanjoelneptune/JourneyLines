@@ -1250,3 +1250,70 @@ body { background: #000; }
   border-right-color: #9aa4ad !important;
   border-bottom-color: #9aa4ad !important;
 }
+
+/* v2.36 flat projection terrain/icon parity */
+.map--terrain-flat {
+  background: #01030a;
+}
+.svg-space-stars circle {
+  fill: rgba(235, 250, 255, .92);
+  filter: drop-shadow(0 0 2px rgba(210,245,255,.45));
+}
+.map--equalEarth .sphere,
+.map--gallPeters .sphere {
+  fill: rgba(4, 13, 27, .76);
+  stroke: rgba(120, 190, 220, .18);
+  stroke-width: 1.1;
+}
+.map--equalEarth .terrain path,
+.map--gallPeters .terrain path {
+  fill: rgba(49, 89, 78, .88);
+  stroke: rgba(218, 248, 255, .16);
+  stroke-width: .42;
+  filter: url(#flatLandTexture) drop-shadow(0 0 1.5px rgba(71, 207, 190, .10));
+}
+.map--equalEarth .route,
+.map--gallPeters .route {
+  opacity: .84;
+  stroke-width: 2.1;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+.map--equalEarth .route.active,
+.map--gallPeters .route.active {
+  opacity: 1;
+  stroke-width: 3.4;
+  filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 14px currentColor);
+}
+.map--equalEarth .dot circle,
+.map--gallPeters .dot circle {
+  fill: rgba(235, 248, 255, .92);
+  stroke: rgba(5, 9, 18, .95);
+  stroke-width: 1.8;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.6));
+}
+.map--equalEarth .dot--active circle,
+.map--gallPeters .dot--active circle {
+  fill: #fff;
+  stroke: #030711;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,.72));
+}
+.map--equalEarth .dots text,
+.map--gallPeters .dots text {
+  fill: #f4fbff;
+  paint-order: stroke;
+  stroke: rgba(0,0,0,.8);
+  stroke-width: 3px;
+  font-weight: 800;
+}
+.legacy-vehicle {
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.95)) drop-shadow(0 10px 14px rgba(0,0,0,.55));
+}
+.legacy-vehicle-img {
+  filter: drop-shadow(0 0 1.5px rgba(0,0,0,.95)) drop-shadow(0 6px 8px rgba(0,0,0,.55));
+}
+.map--equalEarth .vehicle-shape,
+.map--gallPeters .vehicle-shape {
+  stroke: #030303;
+  stroke-width: 2.2;
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,.55));
+}
