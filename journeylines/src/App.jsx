@@ -38,6 +38,7 @@ export default function App() {
   const [resetNonce, setResetNonce] = useState(0);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
+  const resumeAfterStudioRef = useRef(false);
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
   const FRAME_MS = 33.333; // cap playback state updates around 30fps for smoother wall-display playback
 
@@ -46,7 +47,13 @@ export default function App() {
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
   useEffect(() => {
-    const closeStudio = () => setAdmin(false);
+    const closeStudio = () => {
+      setAdmin(false);
+      if (resumeAfterStudioRef.current) {
+        resumeAfterStudioRef.current = false;
+        setIsPlaying(true);
+      }
+    };
     window.addEventListener('globehoppers-close-studio', closeStudio);
     return () => window.removeEventListener('globehoppers-close-studio', closeStudio);
   }, []);
@@ -100,6 +107,7 @@ export default function App() {
   }, [isPlaying, activeIndex, legs, speed]);
 
   function play() {
+    const wasGlobeOverview = globeOverview;
     setGlobeOverview(false);
     setCameraMode(prev => prev === 'global' ? 'route' : (prev || 'route'));
     setShowHero(false);
@@ -116,7 +124,12 @@ export default function App() {
       const currentLeg = legs[Math.min(activeIndex, legs.length - 1)]?.leg;
       const dur = legDurationMs(currentLeg?.miles || 500, speed);
       tRef.current = { last: null, elapsed: Math.max(0, Math.min(1, legProgress)) * dur };
-      setIsPlaying(true);
+      if (wasGlobeOverview) {
+        setIsPlaying(false);
+        setIntroLaunching(true);
+      } else {
+        setIsPlaying(true);
+      }
     }
   }
   const completeIntroLaunch = useCallback(() => {
@@ -126,6 +139,7 @@ export default function App() {
     setIsPlaying(true);
   }, []);
   function editTravelHistory() {
+    resumeAfterStudioRef.current = isPlaying;
     setGlobeOverview(false);
     setShowHero(false);
     setTripDrawerOpen(false);
@@ -136,6 +150,7 @@ export default function App() {
     setIsPlaying(false);
   }
   function addTravelTimelineEntry() {
+    resumeAfterStudioRef.current = isPlaying;
     setGlobeOverview(false);
     setShowHero(false);
     setTripDrawerOpen(false);

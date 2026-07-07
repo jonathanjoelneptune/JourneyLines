@@ -26,7 +26,7 @@ const MONTH_OPTIONS = [
   { value: 12, label: 'December' }
 ];
 const empty = {
-  year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: ['joey','bonnie'], mode: 'plane',
+  year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: [], mode: 'plane',
   roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
@@ -104,7 +104,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   function openAdd() {
     setModalClosing(false);
     setEditingId(null);
-    setDraft({ ...empty, year: new Date().getFullYear(), month: null, toLocationText: '' });
+    setDraft({ ...empty, travelers: [], year: new Date().getFullYear(), month: null, toLocationText: '' });
     setModal('add');
   }
   function openEdit(trip) {

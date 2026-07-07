@@ -1,12 +1,11 @@
-# GlobeHoppers v3.21
+# GlobeHoppers v3.22
 
-Repackaged Add Hop/Skip/Jump and animation polish:
-- top-bar green Add Hop/Add Skip/Add Jump button is restored
-- Studio Add button uses the same session-stable Hop/Skip/Jump label
-- all Add labels open the same New Trip modal
-- Globe overview shows full travel history and preserves timeline resume position
-- fullscreen button uses a four-corner icon
-- home-base placards use a more playful home emoji marker
-- global placard culling refreshes during globe rotation and is less aggressive for front-facing Pacific/Asia locations
-- airplane takeoff/landing attitude is more pronounced
+Playback resume and marker polish:
+- opening Edit Travel Timeline pauses playback and remembers whether it should resume
+- clicking out of Edit Travel Timeline closes it and resumes playback if it was playing before
+- globe overview zooms out, shows full travel history, and keeps spinning even when the timeline had already started
+- Play from globe overview eases/zooms back into the current timeline location instead of appearing there instantly
+- new trips start with no travelers selected
+- home placards show a clearer home emoji marker instead of a black dot
+- airplane takeoff/landing pitch is more pronounced
 - package intentionally omits src/data/trips.json and package-lock.json

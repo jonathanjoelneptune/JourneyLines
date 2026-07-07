@@ -4012,3 +4012,43 @@ option {
   transform-style: preserve-3d;
   will-change: transform, opacity;
 }
+
+
+/* GlobeHoppers v3.22 playback resume, home emoji visibility, and stronger aircraft attitude */
+.jl-map-pin[data-home-base='true'] .jl-map-pin-dot {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-home-icon {
+  display: grid !important;
+  position: absolute;
+  inset: -3px;
+  place-items: center;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 1;
+  overflow: visible !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-home-icon::before {
+  content: '🏠';
+  font-size: 16px;
+  line-height: 1;
+  color: initial;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.92)) drop-shadow(0 0 5px rgba(255,255,255,.22));
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-dot::before {
+  content: none !important;
+}
+
+/* Stronger aircraft attitude should be visible on the PNG itself. */
+.jl-vehicle-overlay[data-mode='plane'] .jl-vehicle-img,
+.jl-vehicle-overlay[data-mode='move'] .jl-vehicle-img {
+  transform-origin: 50% 62% !important;
+  transform-style: preserve-3d !important;
+  filter: drop-shadow(0 8px 5px rgba(0,0,0,.38));
+}

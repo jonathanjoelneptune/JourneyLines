@@ -224,7 +224,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    if (isPlaying || introLaunching || isStarted) return;
+    if (isPlaying || introLaunching || (isStarted && !globeOverview)) return;
     let raf;
     let last;
     const spin = (ts) => {
@@ -241,7 +241,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     };
     raf = requestAnimationFrame(spin);
     return () => cancelAnimationFrame(raf);
-  }, [mapReady, isPlaying, introLaunching, isStarted]);
+  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1456,11 +1456,11 @@ function vehicleScale(mode, phase, endpointBias, progress) {
 }
 function vehiclePitchDeg(mode, phase, progress) {
   if (!(mode === 'plane' || mode === 'move')) return 0;
-  const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.76) / 0.24)));
-  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.18)));
-  // Negative on takeoff raises the nose; positive on landing tips the nose down
-  // and visually lifts the tail for the top-down PNG airplane.
-  return Math.round((landing * 46 - takeoff * 30) * 10) / 10;
+  const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.70) / 0.30)));
+  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.24)));
+  // More pronounced aircraft attitude: nose-high on takeoff, nose-down/tail-up
+  // on landing. This applies at home bases and normal destinations alike.
+  return Math.round((landing * 68 - takeoff * 48) * 10) / 10;
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
