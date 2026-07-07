@@ -1,0 +1,2856 @@
+[
+  {
+    "id": "2012-001-kentucky",
+    "year": 2012,
+    "month": null,
+    "day": null,
+    "displayDate": "2012",
+    "sortKey": "2012-001",
+    "label": "Kentucky",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "louisville-ky",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2012-002-key-west",
+    "year": 2012,
+    "month": null,
+    "day": null,
+    "displayDate": "2012",
+    "sortKey": "2012-002",
+    "label": "Key West",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "key-west-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2012-003-atlanta",
+    "year": 2012,
+    "month": null,
+    "day": null,
+    "displayDate": "2012",
+    "sortKey": "2012-003",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2013-004-bahamas",
+    "year": 2013,
+    "month": null,
+    "day": null,
+    "displayDate": "2013",
+    "sortKey": "2013-004",
+    "label": "Bahamas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "boat",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "nassau-bs",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2013-005-bahamas",
+    "year": 2013,
+    "month": null,
+    "day": null,
+    "displayDate": "2013",
+    "sortKey": "2013-005",
+    "label": "Bahamas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "boat",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "nassau-bs",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2013-006-chicago",
+    "year": 2013,
+    "month": null,
+    "day": null,
+    "displayDate": "2013",
+    "sortKey": "2013-006",
+    "label": "Chicago",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2014-007-atlanta",
+    "year": 2014,
+    "month": null,
+    "day": null,
+    "displayDate": "2014",
+    "sortKey": "2014-007",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2014-008-new-york",
+    "year": 2014,
+    "month": null,
+    "day": null,
+    "displayDate": "2014",
+    "sortKey": "2014-008",
+    "label": "New York",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "new-york-ny",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2014-009-destin",
+    "year": 2014,
+    "month": null,
+    "day": null,
+    "displayDate": "2014",
+    "sortKey": "2014-009",
+    "label": "Destin",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "destin-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2014-010-bahamas",
+    "year": 2014,
+    "month": null,
+    "day": null,
+    "displayDate": "2014",
+    "sortKey": "2014-010",
+    "label": "Bahamas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "boat",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "nassau-bs",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2014-011-st-lucia",
+    "year": 2014,
+    "month": null,
+    "day": null,
+    "displayDate": "2014",
+    "sortKey": "2014-011",
+    "label": "St. Lucia",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "castries-lc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2015-012-atlanta",
+    "year": 2015,
+    "month": null,
+    "day": null,
+    "displayDate": "2015",
+    "sortKey": "2015-012",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2015-013-san-diego",
+    "year": 2015,
+    "month": null,
+    "day": null,
+    "displayDate": "2015",
+    "sortKey": "2015-013",
+    "label": "San Diego",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "san-diego-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2015-014-augusta",
+    "year": 2015,
+    "month": null,
+    "day": null,
+    "displayDate": "2015",
+    "sortKey": "2015-014",
+    "label": "Augusta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "augusta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2015-015-aruba",
+    "year": 2015,
+    "month": null,
+    "day": null,
+    "displayDate": "2015",
+    "sortKey": "2015-015",
+    "label": "Aruba",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "oranjestad-aw",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2015-016-atlanta",
+    "year": 2015,
+    "month": null,
+    "day": null,
+    "displayDate": "2015",
+    "sortKey": "2015-016",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2015-017-knoxville",
+    "year": 2015,
+    "month": null,
+    "day": null,
+    "displayDate": "2015",
+    "sortKey": "2015-017",
+    "label": "Knoxville",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "knoxville-tn",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-018-cayman-islands",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-018",
+    "label": "Cayman Islands",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "boat",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "george-town-ky",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-019-jamaica",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-019",
+    "label": "Jamaica",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "boat",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "montego-bay-jm",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-020-jekyll-island",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-020",
+    "label": "Jekyll Island",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "jekyll-island-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-021-san-diego",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-021",
+    "label": "San Diego",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "san-diego-ca",
+    "route": [],
+    "notes": "Move-related trip",
+    "occasion": ""
+  },
+  {
+    "id": "2016-022-chicago",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-022",
+    "label": "Chicago",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-023-miami",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-023",
+    "label": "Miami",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-024-bahamas",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-024",
+    "label": "Bahamas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "boat",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "nassau-bs",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-025-atlanta",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-025",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-026-knoxville",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-026",
+    "label": "Knoxville",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "knoxville-tn",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-027-phoenix",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-027",
+    "label": "Phoenix",
+    "travelers": [
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "phoenix-az",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2016-028-fort-lauderdale",
+    "year": 2016,
+    "month": null,
+    "day": null,
+    "displayDate": "2016",
+    "sortKey": "2016-028",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2017-029-san-diego",
+    "year": 2017,
+    "month": null,
+    "day": null,
+    "displayDate": "2017",
+    "sortKey": "2017-029",
+    "label": "San Diego",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "san-diego-ca",
+    "route": [],
+    "notes": "Move-related trip",
+    "occasion": ""
+  },
+  {
+    "id": "2017-030-las-vegas",
+    "year": 2017,
+    "month": null,
+    "day": null,
+    "displayDate": "2017",
+    "sortKey": "2017-030",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2017-031-miami",
+    "year": 2017,
+    "month": null,
+    "day": null,
+    "displayDate": "2017",
+    "sortKey": "2017-031",
+    "label": "Miami",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2017-032-knoxville",
+    "year": 2017,
+    "month": null,
+    "day": null,
+    "displayDate": "2017",
+    "sortKey": "2017-032",
+    "label": "Knoxville",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "knoxville-tn",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2017-033-malibu",
+    "year": 2017,
+    "month": null,
+    "day": null,
+    "displayDate": "2017",
+    "sortKey": "2017-033",
+    "label": "Malibu",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "malibu-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2017-034-las-vegas",
+    "year": 2017,
+    "month": null,
+    "day": null,
+    "displayDate": "2017",
+    "sortKey": "2017-034",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2017-035-fort-lauderdale",
+    "year": 2017,
+    "month": null,
+    "day": null,
+    "displayDate": "2017",
+    "sortKey": "2017-035",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-036-denver",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-036",
+    "label": "Denver",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "denver-co",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-037-san-francisco-and-oakland",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-037",
+    "label": "San Francisco and Oakland",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "mixed",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "oakland-ca",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "san-francisco-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "oakland-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "San Diego to San Francisco, drive to Oakland, then home.",
+    "occasion": ""
+  },
+  {
+    "id": "2018-038-rosarito",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-038",
+    "label": "Rosarito",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "rosarito-mx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-039-las-vegas",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-039",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-040-cabo",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-040",
+    "label": "Cabo",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "cabo-san-lucas-mx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-041-honolulu",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-041",
+    "label": "Honolulu",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "honolulu-hi",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-042-las-vegas",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-042",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-043-seattle",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-043",
+    "label": "Seattle",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "seattle-wa",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-044-atlanta",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-044",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-045-tokyo",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-045",
+    "label": "Tokyo",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "tokyo-jp",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-046-philadelphia",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-046",
+    "label": "Philadelphia",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "philadelphia-pa",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2018-047-fort-lauderdale",
+    "year": 2018,
+    "month": null,
+    "day": null,
+    "displayDate": "2018",
+    "sortKey": "2018-047",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-048-las-vegas",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-048",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-049-denver",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-049",
+    "label": "Denver",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "denver-co",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-050-honolulu",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-050",
+    "label": "Honolulu",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "honolulu-hi",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-051-atlanta",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-051",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-052-chicago",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-052",
+    "label": "Chicago",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-053-london-scotland-versailles-and-paris",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-053",
+    "label": "London, Scotland, Versailles, and Paris",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "mixed",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "paris-fr",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "london-uk",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "edinburgh-uk",
+        "modeFromPrevious": "train"
+      },
+      {
+        "locationId": "versailles-fr",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "paris-fr",
+        "modeFromPrevious": "train"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "San Diego to London, train to Scotland, plane to Versailles, train to Paris, then home.",
+    "occasion": ""
+  },
+  {
+    "id": "2019-054-las-vegas",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-054",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-055-seoul",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-055",
+    "label": "Seoul",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "seoul-kr",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-056-atlanta",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-056",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-057-fort-lauderdale",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-057",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2019-058-puerto-rico",
+    "year": 2019,
+    "month": null,
+    "day": null,
+    "displayDate": "2019",
+    "sortKey": "2019-058",
+    "label": "Puerto Rico",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "san-juan-pr",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2020-059-mammoth",
+    "year": 2020,
+    "month": null,
+    "day": null,
+    "displayDate": "2020",
+    "sortKey": "2020-059",
+    "label": "Mammoth",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "mammoth-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2020-060-melbourne",
+    "year": 2020,
+    "month": null,
+    "day": null,
+    "displayDate": "2020",
+    "sortKey": "2020-060",
+    "label": "Melbourne",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "melbourne-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2020-061-las-vegas",
+    "year": 2020,
+    "month": null,
+    "day": null,
+    "displayDate": "2020",
+    "sortKey": "2020-061",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2020-062-las-vegas",
+    "year": 2020,
+    "month": null,
+    "day": null,
+    "displayDate": "2020",
+    "sortKey": "2020-062",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2020-063-palm-springs",
+    "year": 2020,
+    "month": null,
+    "day": null,
+    "displayDate": "2020",
+    "sortKey": "2020-063",
+    "label": "Palm Springs",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "palm-springs-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2020-064-las-vegas",
+    "year": 2020,
+    "month": null,
+    "day": null,
+    "displayDate": "2020",
+    "sortKey": "2020-064",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-065-honolulu",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-065",
+    "label": "Honolulu",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "honolulu-hi",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-066-fort-lauderdale",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-066",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-067-atlanta",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-067",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-068-cape-canaveral",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-068",
+    "label": "Cape Canaveral",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "cape-canaveral-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-069-san-francisco",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-069",
+    "label": "San Francisco",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "san-francisco-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-070-atlanta",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-070",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-071-fort-lauderdale",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-071",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2021-072-las-vegas",
+    "year": 2021,
+    "month": null,
+    "day": null,
+    "displayDate": "2021",
+    "sortKey": "2021-072",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-073-cape-canaveral",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-073",
+    "label": "Cape Canaveral",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "cape-canaveral-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-074-honolulu",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-074",
+    "label": "Honolulu",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "honolulu-hi",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-075-las-vegas",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-075",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-076-catalina",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-076",
+    "label": "Catalina",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "catalina-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-077-alaska",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-077",
+    "label": "Alaska",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "anchorage-ak",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-078-buffalo",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-078",
+    "label": "Buffalo",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "buffalo-ny",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-079-cape-canaveral",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-079",
+    "label": "Cape Canaveral",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "cape-canaveral-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2022-080-fort-lauderdale",
+    "year": 2022,
+    "month": null,
+    "day": null,
+    "displayDate": "2022",
+    "sortKey": "2022-080",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-081-cape-canaveral",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-081",
+    "label": "Cape Canaveral",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "cape-canaveral-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-082-italy-switzerland-and-evian",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-082",
+    "label": "Italy, Switzerland, and Evian",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "mixed",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "geneva-ch",
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "rome-it",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "florence-it",
+        "modeFromPrevious": "train"
+      },
+      {
+        "locationId": "venice-it",
+        "modeFromPrevious": "train"
+      },
+      {
+        "locationId": "geneva-ch",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "interlaken-ch",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "locationId": "evian-fr",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "locationId": "geneva-ch",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "Los Angeles to Rome, Florence, Venice, Geneva, Swiss Alps, Evian, back to Geneva, then home.",
+    "occasion": ""
+  },
+  {
+    "id": "2023-083-miami",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-083",
+    "label": "Miami",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-084-las-vegas",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-084",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-085-tampa",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-085",
+    "label": "Tampa",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "tampa-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-086-las-vegas",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-086",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-087-starbase",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-087",
+    "label": "Starbase",
+    "travelers": [
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "starbase-tx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-088-austin",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-088",
+    "label": "Austin",
+    "travelers": [
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "austin-tx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-089-barcelona",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-089",
+    "label": "Barcelona",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "barcelona-es",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-090-atlanta",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-090",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-091-orlando",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-091",
+    "label": "Orlando",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "orlando-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-092-fort-lauderdale",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-092",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-093-cancun",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "2023-093",
+    "label": "Cancun",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "cancun-mx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-094-indianapolis",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-094",
+    "label": "Indianapolis",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "indianapolis-in",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-095-greenville",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-095",
+    "label": "Greenville",
+    "travelers": [
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "greenville-sc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-096-west-palm-beach",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-096",
+    "label": "West Palm Beach",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "west-palm-beach-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-097-las-vegas",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-097",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-098-washington-dc",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-098",
+    "label": "Washington DC",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-099-baltimore",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-099",
+    "label": "Baltimore",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "baltimore-md",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-100-west-palm-beach",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-100",
+    "label": "West Palm Beach",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "west-palm-beach-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-101-toronto",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-101",
+    "label": "Toronto",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "toronto-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-102-las-vegas",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-102",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-103-montreal",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-103",
+    "label": "Montreal",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "montreal-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-104-seattle-vancouver-and-philadelphia",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-104",
+    "label": "Seattle, Vancouver, and Philadelphia",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "mixed",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "philadelphia-pa",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "vancouver-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "locationId": "philadelphia-pa",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "Bonnie flew home after Seattle; Joey continued to Philadelphia.",
+    "occasion": ""
+  },
+  {
+    "id": "2024-105-san-jose",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-105",
+    "label": "San Jose",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "san-jose-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-106-maui",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-106",
+    "label": "Maui",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "maui-hi",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-107-atlanta",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-107",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2024-108-fort-lauderdale",
+    "year": 2024,
+    "month": null,
+    "day": null,
+    "displayDate": "2024",
+    "sortKey": "2024-108",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-109-atlanta-and-washington-dc-split-return",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-109",
+    "label": "Atlanta and Washington DC split return",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "Bonnie returned from Atlanta; Joey continued to Washington DC, then San Diego.",
+    "occasion": ""
+  },
+  {
+    "id": "2025-110-washington-dc",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-110",
+    "label": "Washington DC",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-111-chicago-and-st-louis",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-111",
+    "label": "Chicago and St. Louis",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "st-louis-mo",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "st-louis-mo",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "San Diego to Chicago to St. Louis to San Diego.",
+    "occasion": ""
+  },
+  {
+    "id": "2025-112-seoul-and-tokyo",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-112",
+    "label": "Seoul and Tokyo",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "tokyo-jp",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "seoul-kr",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "tokyo-jp",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "San Diego to Seoul to Tokyo to San Diego.",
+    "occasion": ""
+  },
+  {
+    "id": "2025-113-miami",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-113",
+    "label": "Miami",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-114-washington-dc",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-114",
+    "label": "Washington DC",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-115-fort-lauderdale",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-115",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-116-houston",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-116",
+    "label": "Houston",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "houston-tx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-117-scottsdale",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-117",
+    "label": "Scottsdale",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "scottsdale-az",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-118-las-vegas",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-118",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-119-seattle",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-119",
+    "label": "Seattle",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "seattle-wa",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-120-las-vegas",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-120",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-121-montreal",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-121",
+    "label": "Montreal",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "montreal-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-122-washington-dc",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-122",
+    "label": "Washington DC",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-123-grand-forks",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-123",
+    "label": "Grand Forks",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "grand-forks-nd",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-124-atlanta",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-124",
+    "label": "Atlanta",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2025-125-fort-lauderdale",
+    "year": 2025,
+    "month": null,
+    "day": null,
+    "displayDate": "2025",
+    "sortKey": "2025-125",
+    "label": "Fort Lauderdale",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-126-washington-dc",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-126",
+    "label": "Washington DC",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-127-chicago",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-127",
+    "label": "Chicago",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-128-charlotte",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-128",
+    "label": "Charlotte",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "charlotte-nc",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-129-san-francisco",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-129",
+    "label": "San Francisco",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "san-francisco-ca",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-130-london-and-amsterdam",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-130",
+    "label": "London and Amsterdam",
+    "travelers": [
+      "bonnie"
+    ],
+    "mode": "mixed",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "amsterdam-nl",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "london-uk",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "amsterdam-nl",
+        "modeFromPrevious": "train"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "San Diego to London, train to Amsterdam, then home.",
+    "occasion": ""
+  },
+  {
+    "id": "2026-131-syracuse-and-lakeland",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-131",
+    "label": "Syracuse and Lakeland",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": false,
+    "fromLocationId": null,
+    "toLocationId": "lakeland-fl",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "syracuse-ny",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "lakeland-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "San Diego to Syracuse to Lakeland to San Diego.",
+    "occasion": ""
+  },
+  {
+    "id": "2026-132-detroit",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-132",
+    "label": "Detroit",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "detroit-mi",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-133-boston",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-133",
+    "label": "Boston",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "boston-ma",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-134-dominican-republic",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-134",
+    "label": "Dominican Republic",
+    "travelers": [
+      "joey"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "puerto-plata-do",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2026-135-cabo",
+    "year": 2026,
+    "month": null,
+    "day": null,
+    "displayDate": "2026",
+    "sortKey": "2026-135",
+    "label": "Cabo",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "cabo-san-lucas-mx",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  }
+]
