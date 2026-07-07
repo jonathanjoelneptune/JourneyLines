@@ -1,9 +1,11 @@
-# GlobeHoppers v3.11 — Compact Studio + Theme Options
+# GlobeHoppers v3.12 — Timeline View Modes + Reset/Placard Polish
 
-- Further tightens Add/Edit Trip modal spacing while preserving section clarity.
-- Adds GlobeHoppers theme selector with Bold Dark Neon, Bold Light Neon, Dark Pastel, and Light Pastel options.
-- Reset now glides the globe back to the intro US-centered globe and resumes idle rotation.
-- Keeps the initial/paused globe rotation flourish.
-- Improves hard-hide behavior for culled placards so dimmed backside markers do not linger.
-- Moves map placards slightly upward and prevents pointer clipping at destination dots.
-- Keeps Studio route preview map fly-to behavior when locations are selected.
+- Adds shared travel-history view modes for Trips and GlobeHoppers Studio: Expanded, Compact, and Card.
+- Card view groups trips by year and lays them out in a multi-card grid.
+- Compact view collapses rows to a tighter one-line timeline style.
+- Adds matching view selectors to the right side of both drawer headers.
+- Refines Mode of Transportation and Trip Type buttons to use the compact return-home style.
+- Reset now glides back to the intro globe position before resuming continuous idle rotation.
+- Idle/paused globe rotation continues indefinitely.
+- Makes hidden/backside placards fully invisible instead of dimmed.
+- Raises map placards above route overlays while keeping vessel icons above placards.

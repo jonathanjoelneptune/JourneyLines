@@ -106,6 +106,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const lastActiveRouteUpdateRef = useRef(0);
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
   const introLaunchRef = useRef({ active: false, key: null });
+  const resetAnimatingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
 
@@ -177,8 +178,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!map || !mapReady) return;
     try {
       userCameraOverrideRef.current = false;
-      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, easing: t => t * (2 - t) });
-    } catch {}
+      resetAnimatingRef.current = true;
+      lastCameraRef.current = null;
+      map.stop();
+      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1850, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+      window.setTimeout(() => { resetAnimatingRef.current = false; }, 1925);
+    } catch { resetAnimatingRef.current = false; }
   }, [resetNonce, mapReady]);
 
   useEffect(() => {
@@ -207,8 +212,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       const dt = Math.min(48, ts - last);
       last = ts;
       try {
-        const c = map.getCenter();
-        map.setCenter([c.lng + dt * 0.0014, c.lat]);
+        if (!resetAnimatingRef.current) {
+          const c = map.getCenter();
+          map.setCenter([c.lng + dt * 0.0014, c.lat]);
+        }
       } catch {}
       raf = requestAnimationFrame(spin);
     };
@@ -794,7 +801,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       // Use MapLibre's marker transform for the outer wrapper. This anchors the
       // placard to the globe on the same render path as the map and removes the
       // projection-vs-camera wobble caused by manually setting translate3d().
-      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -34], occludedOpacity: 0 })
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -44], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       labelsRef.current.set(loc.id, el);
@@ -813,7 +820,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     el.dataset.activeHomeBase = loc.isActiveHomeBase ? 'true' : 'false';
     // Keep home-base placards visually above nearby destination pins. This is
     // important for clustered places such as San Diego / Rosarito.
-    el.style.zIndex = loc.isHomeBase ? (loc.isActiveHomeBase ? '95' : '88') : '42';
+    el.style.zIndex = loc.isHomeBase ? (loc.isActiveHomeBase ? '1950' : '1900') : '1800';
     el.__jlLocation = loc;
 
     let inner = el.querySelector('.jl-map-pin-inner');

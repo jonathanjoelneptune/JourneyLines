@@ -30,7 +30,7 @@ const empty = {
   roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -338,14 +338,17 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
 
   return <section className={`studio-shell ${closing ? 'is-closing' : ''}`}>
-    <aside className="studio-panel glass">
+    <aside className={`studio-panel glass studio-panel--${viewType}`}>
       <div className="studio-header">
         <div>
           <p className="eyebrow">GlobeHoppers Studio</p>
           <h2>Edit Travel History</h2>
           <p>Curate trips, reorder timeline entries, and commit updates directly to GitHub.</p>
         </div>
-        <button className="studio-close" onClick={requestCloseStudio}>Close</button>
+        <div className="drawer-header-controls">
+          <StudioViewTypeSelector value={viewType} onChange={onViewTypeChange} />
+          <button className="studio-close" onClick={requestCloseStudio}>Close</button>
+        </div>
       </div>
 
       <div className="studio-actions-main">
@@ -354,22 +357,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         {reorderMode && <><button className="primary" onClick={saveReorder} disabled={busy}>Save order</button><button onClick={() => setReorderMode(false)}>Cancel reorder</button></>}
       </div>
 
-      <div ref={studioListRef} className={`studio-trip-list ${reorderMode ? 'is-reordering' : ''}`} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
-        {(reorderMode ? orderDraft : sortedTrips).map(trip => <div
-          className="studio-trip-row"
-          style={{ '--accent': tripAccent(trip) }}
-          key={trip.id}
-          draggable={reorderMode}
-          onDragStart={() => setDragId(trip.id)}
-          onDragOver={e => e.preventDefault()}
-          onDrop={() => { moveTrip(dragId, trip.id); setDragId(null); }}
-        >
-          <span className="studio-trip-date">{formatTripDate(trip)}</span>
-          <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById)}</small></span>
-          <span className="studio-trip-buttons">
-            {reorderMode ? <span className="drag-handle">↕</span> : <><button onClick={() => openEdit(trip)}>Edit</button><button onClick={() => del(trip.id)}>Delete</button></>}
-          </span>
-        </div>)}
+      <div ref={studioListRef} className={`studio-trip-list ${reorderMode ? 'is-reordering' : ''} studio-trip-list--${viewType}`} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
+        {viewType === 'card' ? groupTripsByYear(reorderMode ? orderDraft : sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
+          <h3>{group.year}</h3>
+          <div className="timeline-card-grid studio-card-grid">
+            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} />)}
+          </div>
+        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} />)}
       </div>
 
       <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
@@ -409,6 +403,41 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   </section>;
 }
 
+
+
+function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete }) {
+  return <div
+    className={`studio-trip-row studio-trip-row--${viewType}`}
+    style={{ '--accent': tripAccent(trip) }}
+    draggable={reorderMode}
+    onDragStart={() => setDragId(trip.id)}
+    onDragOver={e => e.preventDefault()}
+    onDrop={() => { moveTrip(dragId, trip.id); setDragId(null); }}
+  >
+    <span className="studio-trip-date">{formatTripDate(trip)}</span>
+    <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById)}</small></span>
+    <span className="studio-trip-buttons">
+      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? <button className="studio-card-more" onClick={() => onEdit(trip)}>⋯</button> : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
+    </span>
+  </div>;
+}
+
+function StudioViewTypeSelector({ value, onChange }) {
+  return <div className="view-type-selector" role="group" aria-label="Travel history view type">
+    {[['expanded','Expanded'], ['compact','Compact'], ['card','Card']].map(([id, label]) => <button key={id} type="button" className={value === id ? 'is-selected' : ''} onClick={() => onChange?.(id)}>{label}</button>)}
+  </div>;
+}
+
+function groupTripsByYear(trips = []) {
+  const groups = [];
+  const byYear = new Map();
+  for (const trip of trips) {
+    const year = String(trip.year || 'Trips');
+    if (!byYear.has(year)) { const group = { year, rows: [] }; byYear.set(year, group); groups.push(group); }
+    byYear.get(year).rows.push(trip);
+  }
+  return groups;
+}
 
 function BubbleSelect({ label, value, display, options, open, setOpen, onChoose, required, variant }) {
   const ref = useRef(null);

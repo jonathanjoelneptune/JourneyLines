@@ -31,6 +31,7 @@ export default function App() {
   const studioDrawerScrollRef = useRef(0);
   const [introLaunching, setIntroLaunching] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('globehoppers.theme') || 'bold-dark');
+  const [timelineView, setTimelineView] = useState(() => localStorage.getItem('globehoppers.timelineView') || 'expanded');
   const [resetNonce, setResetNonce] = useState(0);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
@@ -40,6 +41,7 @@ export default function App() {
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
   useEffect(() => localStorage.setItem('journeylines.locations', JSON.stringify(locations)), [locations]);
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
+  useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
   useEffect(() => {
     const closeStudio = () => setAdmin(false);
     window.addEventListener('globehoppers-close-studio', closeStudio);
@@ -189,11 +191,11 @@ export default function App() {
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
-    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} />
+    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} />}
   </main>;
 }
 
@@ -219,12 +221,13 @@ function buildTripTimeline(trips, legs, locById, travById) {
       traveler: traveler?.name || 'Travel',
       color: traveler?.color || '#00e5ff',
       route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
-      legCount: tripLegs.length
+      legCount: tripLegs.length,
+      year: trip.year || String(trip.date || '').slice(0, 4) || ''
     };
   });
 }
 
-function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollStore, onClose, onJump, onEditTrip }) {
+function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollStore, onClose, onJump, onEditTrip, viewType = 'expanded', onViewTypeChange }) {
   const [menu, setMenu] = useState(null);
   const listRef = useRef(null);
   useEffect(() => {
@@ -250,44 +253,71 @@ function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollSt
     setMenu(null);
     if (id) onEditTrip?.(id);
   }
+  const grouped = groupRowsByYear(rows);
   return <>
-    <aside className={`trip-drawer glass ${open ? 'is-open' : ''}`} aria-hidden={!open}>
+    <aside className={`trip-drawer glass ${open ? 'is-open' : ''} trip-drawer--${viewType}`} aria-hidden={!open}>
       <div className="trip-drawer__header">
         <div>
           <p className="eyebrow">GlobeHoppers Studio</p>
           <h2>Travel Timeline</h2>
         </div>
-        <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
+        <div className="drawer-header-controls">
+          <ViewTypeSelector value={viewType} onChange={onViewTypeChange} />
+          <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
+        </div>
       </div>
-      <div ref={listRef} className="trip-drawer__list" onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
-        {rows.map(row => {
-          const active = activeIndex >= row.firstIndex && activeIndex < row.firstIndex + Math.max(1, row.legCount || 1);
-          return <div
-            key={row.id}
-            role="button"
-            tabIndex={0}
-            className={`trip-drawer__row ${active ? 'is-active' : ''}`}
-            style={{ '--accent': row.color }}
-            onClick={() => onJump(row.firstIndex)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onJump(row.firstIndex); } }}
-            onContextMenu={(e) => openMenu(e, row)}
-            title="Click to play from here. Right-click or use ⋯ to edit."
-          >
-            <span className="trip-drawer__date">{row.date}</span>
-            <span className="trip-drawer__main">
-              <strong>{row.title}</strong>
-              <small>{row.route}</small>
-            </span>
-            <span className="trip-drawer__meta">{row.mode}{row.legCount > 1 ? ` · ${row.legCount} legs` : ''}<br />{row.traveler}</span>
-            <button className="trip-drawer__more" type="button" aria-label={`Edit ${row.title}`} onClick={(e) => openMenu(e, row)}>⋯</button>
-          </div>;
-        })}
+      <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
+        {viewType === 'card' ? grouped.map(group => <section className="timeline-year-section" key={group.year}>
+          <h3>{group.year}</h3>
+          <div className="timeline-card-grid">
+            {group.rows.map(row => <TripDrawerRow key={row.id} row={row} activeIndex={activeIndex} onJump={onJump} openMenu={openMenu} viewType={viewType} />)}
+          </div>
+        </section>) : rows.map(row => <TripDrawerRow key={row.id} row={row} activeIndex={activeIndex} onJump={onJump} openMenu={openMenu} viewType={viewType} />)}
       </div>
     </aside>
     {menu && <div className="trip-context-menu glass" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()} onContextMenu={(e) => e.preventDefault()}>
       <button onClick={editFromMenu}>Edit</button>
     </div>}
   </>;
+}
+
+function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
+  const active = activeIndex >= row.firstIndex && activeIndex < row.firstIndex + Math.max(1, row.legCount || 1);
+  return <div
+    role="button"
+    tabIndex={0}
+    className={`trip-drawer__row ${active ? 'is-active' : ''} trip-row-view--${viewType}`}
+    style={{ '--accent': row.color }}
+    onClick={() => onJump(row.firstIndex)}
+    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onJump(row.firstIndex); } }}
+    onContextMenu={(e) => openMenu(e, row)}
+    title="Click to play from here. Right-click or use ⋯ to edit."
+  >
+    <span className="trip-drawer__date">{row.date}</span>
+    <span className="trip-drawer__main">
+      <strong>{row.title}</strong>
+      <small>{row.route}</small>
+    </span>
+    <span className="trip-drawer__meta">{row.mode}{row.legCount > 1 ? ` · ${row.legCount} legs` : ''}<br />{row.traveler}</span>
+    <button className="trip-drawer__more" type="button" aria-label={`Edit ${row.title}`} onClick={(e) => openMenu(e, row)}>⋯</button>
+  </div>;
+}
+
+function ViewTypeSelector({ value, onChange }) {
+  return <div className="view-type-selector" role="group" aria-label="Timeline view type">
+    {[['expanded','Expanded'], ['compact','Compact'], ['card','Card']].map(([id, label]) => <button key={id} type="button" className={value === id ? 'is-selected' : ''} onClick={() => onChange?.(id)}>{label}</button>)}
+  </div>;
+}
+
+function groupRowsByYear(rows = []) {
+  const groups = [];
+  const byYear = new Map();
+  for (const row of rows) {
+    const year = String(row.year || row.date || 'Trips').match(/\d{4}/)?.[0] || 'Trips';
+    if (!byYear.has(year)) { const group = { year, rows: [] }; byYear.set(year, group); groups.push(group); }
+    byYear.get(year).rows.push(row);
+  }
+  return groups;
 }
 
 function formatLocation(loc) {
