@@ -86,7 +86,8 @@
     "sortKey": "2013-13-99-004",
     "label": "Bahamas",
     "travelers": [
-      "joey"
+      "joey",
+      "bonnie"
     ],
     "mode": "boat",
     "roundTrip": true,
