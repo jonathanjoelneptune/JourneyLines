@@ -2706,10 +2706,10 @@
   {
     "id": "2026-129-san-francisco",
     "year": 2026,
-    "month": null,
-    "day": null,
-    "displayDate": "2026",
-    "sortKey": "2026-129",
+    "month": 3,
+    "day": 7,
+    "displayDate": "March 7, 2026",
+    "sortKey": "2026-03-07-011",
     "label": "San Francisco",
     "travelers": [
       "joey"
