@@ -10,7 +10,7 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
   const stack = rows.length ? rows : [{ title: trip.label, date: displayDate(trip), mode, traveler: traveler?.name || 'Travel', color: traveler?.color || '#00e5ff' }];
   return <aside className="trip-card-stack" style={{ '--accent': traveler?.color || '#00e5ff' }}>
     {stack.map((row, index) => <article key={`${row.id || row.title}-${index}`} className={`trip-card trip-card--stack-${index}`} style={{ '--accent': row.color || traveler?.color || '#00e5ff' }}>
-      <div className="trip-card__eyebrow">{index === 0 ? displayDate(trip) : row.date}</div>
+      <div className="trip-card__eyebrow">{index === 0 ? displayDate(trip) : (String(row.year || row.date || '').match(/\d{4}/)?.[0] || row.date)}</div>
       <h2>{index === 0 ? trip.label : row.title}</h2>
       {index === 0 ? <>
         <p>{mode} · {returnText} · {miles.toLocaleString()} miles</p>
@@ -18,7 +18,7 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
         <p className="trip-card__stats">Trip {activeRow?.totalIndex || '—'} of {activeRow?.totalTrips || '—'} · {activeRow?.year ? `Trip ${activeRow.tripOfYear || '—'} of ${activeRow.year}` : ''}{activeRow?.visitCount ? ` · ${ordinal(activeRow.visitCount)} visit to ${activeRow.visitDestination || trip.label}` : ''}</p>
         {trip.notes && <p className="trip-card__notes">{trip.notes}</p>}
       </> : <>
-        <p className="trip-card__queued-date">{row.date}</p>
+        <p className="trip-card__queued-date">{String(row.year || row.date || '').match(/\d{4}/)?.[0] || row.date}</p>
       </>}
     </article>)}
   </aside>;

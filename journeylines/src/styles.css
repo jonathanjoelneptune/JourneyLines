@@ -3541,3 +3541,211 @@ option {
 .jl-map-pin[aria-hidden='true'],
 .maplibregl-marker.jl-map-pin.is-culled,
 .jl-map-pin.is-culled { opacity: 0 !important; visibility: hidden !important; display: none !important; }
+
+/* GlobeHoppers v3.16 globe controls, drawer parity, and placard motion polish */
+.topbar-icon-pill {
+  min-width: 40px !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1rem !important;
+}
+
+.controls {
+  gap: 12px !important;
+  align-items: center !important;
+}
+.controls-play-pill {
+  min-width: 86px !important;
+  font-weight: 850 !important;
+}
+.timeline-scrubber {
+  flex: 1 1 320px !important;
+  min-width: 240px;
+}
+.timeline-scrubber .progress { margin-top: 2px; }
+.controls-advanced-wrap {
+  position: relative;
+  margin-left: auto;
+}
+.controls-advanced-toggle {
+  min-width: 42px !important;
+  width: 42px !important;
+  height: 42px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.5rem !important;
+  line-height: 1 !important;
+}
+.controls-advanced-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: min(320px, calc(100vw - 44px));
+  padding: 12px;
+  border-radius: 18px;
+  display: grid;
+  gap: 10px;
+  z-index: 40;
+}
+.controls-advanced-panel label {
+  display: grid !important;
+  grid-template-columns: 72px minmax(0,1fr);
+  align-items: center !important;
+  gap: 8px !important;
+}
+.controls-advanced-panel .check {
+  grid-template-columns: 1fr !important;
+  justify-items: start;
+}
+.controls-advanced-panel select {
+  width: 100%;
+}
+.controls-advanced-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.controls-advanced-actions button { flex: 1 1 auto; }
+
+/* Trips drawer rows should use the same left-edge shading treatment as Edit Trips. */
+.trip-drawer__row::before { display: none !important; }
+.trip-drawer__row,
+.studio-trip-row {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent, #00e5ff), transparent 15%) !important;
+}
+.trip-drawer__date,
+.trip-drawer__main,
+.trip-drawer__meta,
+.studio-trip-date,
+.studio-trip-main,
+.studio-trip-buttons {
+  position: relative;
+  z-index: 1;
+}
+
+/* Expanded trips rows explicit reset to prevent clipping/regression. */
+.trip-drawer--expanded .trip-drawer__list {
+  gap: 9px !important;
+}
+.trip-drawer--expanded .trip-drawer__row {
+  min-height: 44px !important;
+  grid-template-columns: 96px minmax(0, 1fr) 88px !important;
+  align-items: center !important;
+  align-content: center !important;
+  padding: 9px 44px 9px 12px !important;
+  overflow: hidden !important;
+}
+.trip-drawer--expanded .trip-drawer__date {
+  align-self: center !important;
+  font-size: .84rem !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+}
+.trip-drawer--expanded .trip-drawer__main {
+  align-self: center !important;
+  display: grid !important;
+  gap: 2px !important;
+}
+.trip-drawer--expanded .trip-drawer__main strong {
+  display: block !important;
+  line-height: 1.12 !important;
+  font-size: .98rem !important;
+}
+.trip-drawer--expanded .trip-drawer__main small {
+  display: block !important;
+  line-height: 1.1 !important;
+}
+.trip-drawer--expanded .trip-drawer__meta {
+  align-self: center !important;
+  display: block !important;
+  line-height: 1.12 !important;
+  font-size: .72rem !important;
+  text-align: right !important;
+}
+.trip-drawer--expanded .trip-drawer__more {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  right: 8px !important;
+  font-size: 17px !important;
+}
+
+/* Year separators in card view should read like real section breaks. */
+.timeline-year-section > h3,
+.studio-year-section > h3 {
+  display: block !important;
+  width: 100%;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(38,244,255,.18) !important;
+  background: linear-gradient(90deg, rgba(38,244,255,.18), rgba(38,244,255,.08) 45%, rgba(255,255,255,.02) 100%) !important;
+  color: rgba(228,247,255,.94) !important;
+  letter-spacing: .12em !important;
+  font-size: .74rem !important;
+  margin: 0 0 8px !important;
+}
+
+/* Queue cards: slightly stronger fade and stack depth. */
+.trip-card-stack .trip-card--stack-1 { opacity: .26 !important; }
+.trip-card-stack .trip-card--stack-2 { opacity: .18 !important; }
+.trip-card-stack .trip-card--stack-3 { opacity: .12 !important; }
+
+/* Placards: lower them closer to the point, restore animated drop, and show a home icon. */
+.maplibregl-marker.jl-map-pin,
+.jl-map-pin {
+  padding: 6px 12px 10px !important;
+  overflow: visible !important;
+}
+.jl-map-pin-inner {
+  overflow: visible !important;
+  position: relative !important;
+  border-radius: 18px !important;
+  transform-origin: center bottom !important;
+}
+.jl-map-pin .jl-map-pin-inner.is-dropping {
+  animation: gh-pin-drop-v316 .78s cubic-bezier(.18,.82,.22,1) both !important;
+}
+@keyframes gh-pin-drop-v316 {
+  0% { opacity: 0; transform: translate3d(0, -34px, 0) scale(.92); filter: blur(1px); }
+  65% { opacity: 1; transform: translate3d(0, 3px, 0) scale(1.01); filter: blur(0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+}
+.jl-map-pin-tail {
+  bottom: -8px !important;
+  width: 16px !important;
+  height: 10px !important;
+}
+.jl-map-pin-inner::after {
+  bottom: -5px !important;
+}
+.jl-map-pin-dot {
+  position: relative;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-dot {
+  background: rgba(255,255,255,.08) !important;
+  border: 1.7px solid #9aa4ad !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-dot::before {
+  content: '⌂';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #eef7ff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+@media (max-width: 760px) {
+  .controls { left: 14px; right: 14px; }
+  .topbar { gap: 8px; }
+  .topbar-icon-pill { width: 36px !important; min-width: 36px !important; height: 36px !important; }
+  .controls-advanced-panel { width: min(290px, calc(100vw - 28px)); }
+}

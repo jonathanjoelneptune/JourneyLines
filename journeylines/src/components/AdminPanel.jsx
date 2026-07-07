@@ -78,6 +78,15 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    function handleRequestClose() {
+      requestCloseStudio();
+    }
+    window.addEventListener('globehoppers-request-close-studio', handleRequestClose);
+    return () => window.removeEventListener('globehoppers-request-close-studio', handleRequestClose);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closing]);
+
 
   function saveLocalToken(value) { setToken(value); localStorage.setItem('journeylines.githubToken', value); }
   function saveRepo(value) { setRepo(value); localStorage.setItem('journeylines.repo', value); }

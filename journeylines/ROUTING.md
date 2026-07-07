@@ -1,3 +1,2 @@
-# GlobeHoppers Routing Notes
-
-Car routes continue to use the private build-time Mapbox route cache. Boat/train routes continue to use manual route overrides where available, with fallback route geometry otherwise.
+Mapbox routing behavior unchanged from prior build.
+This package intentionally omits src/data/trips.json so local or committed travel-history edits are preserved.

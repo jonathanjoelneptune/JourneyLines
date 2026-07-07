@@ -1,12 +1,13 @@
-# GlobeHoppers v3.15 — Interaction + Placard Queue Polish
+# GlobeHoppers v3.16
 
-- Centered Trip Type icons vertically.
-- Clicking the map closes open Trips or GlobeHoppers Studio drawers.
-- Added shaded left-edge treatment to Trips rows in expanded, compact, and card modes.
-- Made the Trips context edit menu smaller and less padded.
-- Travelers can now be deselected, but Save requires at least one traveler.
-- Empty traveler selection shows as an unfilled/muted preview state.
-- Queued playback cards now stack by width and fade more strongly.
-- Active playback card uses a solid black background.
-- Active card visit text now reads like “1st visit to Atlanta”.
-- Reworked map placard pointer geometry so the carrot stays vertical, connected, and less clipped.
+Interaction and UI polish update:
+- fixed Trips drawer expanded row layout/text regression
+- matched Trips row left-edge shading to Edit Trips
+- clicking the map now animates Edit Trips closed
+- added View Globe hero action and globe/play topbar actions
+- moved advanced playback controls behind a 3-dot menu
+- hidden placards while in spinning globe view
+- lowered placards closer to the location marker and restored pin-drop motion
+- home-base placards now use a home icon
+- enhanced year section bars in card mode
+- package intentionally omits src/data/trips.json to avoid overwriting user-edited trip history

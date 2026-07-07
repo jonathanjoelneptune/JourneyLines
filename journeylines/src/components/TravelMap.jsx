@@ -157,7 +157,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
+      const visited = !isStarted && !introLaunching && !isPlaying ? [] : buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
       setMapReady(true);
@@ -273,10 +273,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!mapReady || !map) return;
     // Visited points and labels change only when the timeline reaches a new
     // destination, not on every animation frame.
-    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
+    const visited = !isStarted && !introLaunching && !isPlaying ? [] : buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), scene?.newArrivalId || null, droppedPinIdsRef);
-  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, completedMode, scene?.newArrivalId, travById]);
+  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, completedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -802,7 +802,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       // Use MapLibre's marker transform for the outer wrapper. This anchors the
       // placard to the globe on the same render path as the map and removes the
       // projection-vs-camera wobble caused by manually setting translate3d().
-      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -18], occludedOpacity: 0 })
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -8], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       labelsRef.current.set(loc.id, el);
