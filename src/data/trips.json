@@ -64,11 +64,10 @@
     "month": null,
     "day": null,
     "displayDate": "2013",
-    "sortKey": "2013-004",
+    "sortKey": "2013-13-99-004",
     "label": "Bahamas",
     "travelers": [
-      "joey",
-      "bonnie"
+      "joey"
     ],
     "mode": "boat",
     "roundTrip": true,
@@ -2800,7 +2799,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "2026-133",
+    "sortKey": "2026-136",
     "label": "Boston",
     "travelers": [
       "joey",
