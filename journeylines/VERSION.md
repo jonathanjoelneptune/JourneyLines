@@ -1,12 +1,8 @@
-# GlobeHoppers v3.7 — Studio Form Interaction Polish
+# GlobeHoppers v3.9 — Studio Reapply + Preview Polish
 
-- Center add/edit modal now animates in and out.
-- Year and month controls are now GlobeHoppers-themed bubble selectors.
-- Year selection is capped at the current calendar year.
-- Calendar opens to the selected year/month.
-- Round trip is now a themed selection tile under travel mode.
-- Additional legs now appear above return-home method.
-- Add leg button is green with a clear plus affordance.
-- Trip preview vessel buttons are centered more reliably.
-- Trips drawer overflow menu has more room to breathe.
-- Trips and Studio drawers preserve scroll position when switching between them.
+- Reapplies the v3.8 Studio delete/cache/layout polish as a fresh package.
+- Removes the duplicate “Add a trip” heading in the add-trip modal.
+- Changes the Studio drawer primary action to “New Trip.”
+- Updates the add-leg button to “+ ADD LEG.”
+- Trip preview now uses map-pin styling for start and end location rows.
+- Round trips show a separate Return home row with clickable transport mode before the final End location pin row.

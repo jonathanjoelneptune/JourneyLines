@@ -167,6 +167,25 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       setBusy(false);
     }
   }
+  async function deleteTripFromModal() {
+    if (!editingId) return;
+    const label = draft.label || draft.toLocationText || editingId;
+    if (!confirm(`Delete ${label}?`)) return;
+    try {
+      setBusy(true);
+      const currentScroll = studioListRef.current?.scrollTop ?? null;
+      const nextTrips = trips.filter(t => t.id !== editingId);
+      if (currentScroll != null) restoreScrollRef.current = currentScroll;
+      setTrips(nextTrips);
+      await commitData(nextTrips, locations, `Delete trip: ${label}`);
+      closeModal();
+    } catch (err) {
+      alert(err.message || String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function del(id) {
     if (!confirm('Delete this trip?')) return;
     const nextTrips = trips.filter(t => t.id !== id);
@@ -320,7 +339,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       </div>
 
       <div className="studio-actions-main">
-        <button className="primary" onClick={openAdd}>Add Trip</button>
+        <button className="primary" onClick={openAdd}>New Trip</button>
         {!reorderMode && <button onClick={enterReorder}>Reorder</button>}
         {reorderMode && <><button className="primary" onClick={saveReorder} disabled={busy}>Save order</button><button onClick={() => setReorderMode(false)}>Cancel reorder</button></>}
       </div>
@@ -374,27 +393,28 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onRemoveLeg={removeLeg}
       onSetReturnMode={setReturnMode}
       onSetPreviewLegMode={setPreviewLegMode}
+      onDelete={modal === 'edit' ? deleteTripFromModal : null}
       homeBases={homeBases}
     />}
   </section>;
 }
 
 
-function BubbleSelect({ label, value, display, options, open, setOpen, onChoose, required }) {
-  return <label className="bubble-select-field">{label}{required && <span className="required-dot">Required</span>}
+function BubbleSelect({ label, value, display, options, open, setOpen, onChoose, required, variant }) {
+  return <label className={`bubble-select-field ${variant ? `bubble-select-field--${variant}` : ''}`}>{label}{required && <span className="required-dot">Required</span>}
     <button type="button" className={`bubble-select-button ${!value ? 'needs-choice' : ''}`} onClick={() => setOpen(!open)}>
       {display}<span>▾</span>
     </button>
-    {open && <div className="bubble-select-popover glass">
+    {open && <div className={`bubble-select-popover glass ${variant ? `bubble-select-popover--${variant}` : ''}`}>
       {options.map(option => <button key={option.value} type="button" className={String(value) === String(option.value) ? 'is-selected' : ''} onClick={() => { onChoose(option.value); setOpen(false); }}>{option.label}</button>)}
     </div>}
   </label>;
 }
 
-function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode }) {
+function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode }) {
   const destinationMatches = filterLocations(locs, draft.toLocationText || '');
   const fromMatches = filterLocations(locs, draft.fromLocationText || '');
-  const title = mode === 'add' ? 'Add a trip' : draft.label || draft.toLocationText || 'Edit trip';
+  const title = mode === 'add' ? 'Trip details' : draft.label || draft.toLocationText || 'Edit trip';
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -406,6 +426,18 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const [calendarCursor, setCalendarCursor] = useState(() => ({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || new Date().getMonth() + 1 }));
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const dateRangeRef = useRef(null);
+
+  useEffect(() => {
+    if (!dateRangeOpen) return;
+    function handlePointerDown(event) {
+      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target) && !event.target.closest?.('.date-range-field')) {
+        setDateRangeOpen(false);
+      }
+    }
+    window.addEventListener('pointerdown', handlePointerDown);
+    return () => window.removeEventListener('pointerdown', handlePointerDown);
+  }, [dateRangeOpen]);
 
   useEffect(() => {
     if (!draft.year && !draft.month) return;
@@ -442,6 +474,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
             <h2>{title}</h2>
           </div>
           <div className="studio-modal-top-actions">
+            {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete trip</button>}
             <button onClick={onClose}>Cancel</button>
             <button className="primary" disabled={busy} onClick={onSave}>{busy ? 'Saving…' : 'Save and commit'}</button>
           </div>
@@ -449,9 +482,9 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
 
         <div className="studio-form-grid studio-form-grid--sticky-fields studio-form-grid--dates">
           <label className="title-field">Trip title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
-          <BubbleSelect label="Year" value={draft.year || ''} display={draft.year || 'Choose year'} options={yearOptions.map(y => ({ value: y, label: String(y) }))} open={yearPickerOpen} setOpen={setYearPickerOpen} onChoose={(value) => setDraft({...draft, year:Number(value)})} required />
-          <BubbleSelect label="Month" value={draft.month || ''} display={monthLabel(draft.month) || 'Choose month'} options={MONTH_OPTIONS.filter(m => m.value).map(m => ({ value: m.value, label: m.label }))} open={monthPickerOpen} setOpen={setMonthPickerOpen} onChoose={(value) => setDraft({...draft, month:Number(value), day:draft.day})} required />
-          <label className="date-range-field">Trip dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose start and end dates'}<span>▾</span></button></label>
+          <BubbleSelect label="Year" value={draft.year || ''} display={draft.year || 'Choose year'} options={yearOptions.map(y => ({ value: y, label: String(y) }))} open={yearPickerOpen} setOpen={setYearPickerOpen} onChoose={(value) => setDraft({...draft, year:Number(value)})} required variant="year" />
+          <BubbleSelect label="Month" value={draft.month || ''} display={monthLabel(draft.month) || 'Choose month'} options={MONTH_OPTIONS.filter(m => m.value).map(m => ({ value: m.value, label: m.label }))} open={monthPickerOpen} setOpen={setMonthPickerOpen} onChoose={(value) => setDraft({...draft, month:Number(value), day:draft.day})} required variant="month" />
+          <label className="date-range-field">Trip dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Trip Dates'}<span>▾</span></button></label>
         </div>
       </div>
 
@@ -465,14 +498,16 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           </section>
 
           <section className="studio-pick-section compact-section">
-            <h3>Travel mode</h3>
+            <h3>Mode of Transportation</h3>
             <div className="mode-selectors">
               {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><span>{m.icon}</span>{m.label}</button>)}
             </div>
-            <div className="round-trip-selector">
-              <button type="button" className={`round-trip-tile ${draft.roundTrip ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, roundTrip: !draft.roundTrip})}>
-                <span>↩</span> Round trip
-              </button>
+            <div className="trip-type-selector">
+              <p>Trip type</p>
+              <div className="trip-type-options">
+                <button type="button" className={`trip-type-tile ${draft.roundTrip ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, roundTrip: true})}><span>↩</span> Round Trip</button>
+                <button type="button" className={`trip-type-tile ${!draft.roundTrip ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, roundTrip: false})}><span>→</span> One Way</button>
+              </div>
             </div>
           </section>
 
@@ -480,17 +515,18 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
             <h3>Route</h3>
             <div className="route-form">
               <div className="default-start-row">
-                <div className="default-start-card">
+                {!draft.overrideFrom ? <div className="default-start-card">
                   <span>Start location</span>
                   <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
                   <small>Auto-derived from trip date and active home base</small>
-                </div>
+                </div> : <div className="default-start-card override-start-card">
+                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />
+                </div>}
                 <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start location</label>
               </div>
-              {draft.overrideFrom && <AutocompleteField label="From" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />}
               <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
               <div className="legs-block">
-                <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add leg</button></div>
+                <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> ADD LEG</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
                   <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
                   <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '' })} matches={filterLocations(locs, leg.locationText || '')} onChoose={loc => onChooseExtraLeg(index, loc)} />
@@ -522,6 +558,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
         <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} />
 
         {dateRangeOpen && <DateRangePopover
+          popoverRef={dateRangeRef}
           draft={draft}
           cursor={calendarCursor}
           setCursor={setCalendarCursor}
@@ -550,8 +587,10 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
     : previewExtraLegs.length
       ? (displayLocation(lastExtraLoc) || lastExtraLoc?.name || 'End pending')
       : (displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending');
-  const endMode = draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : null;
-  rows.push({ label: 'End location', place: endPlace, mode: endMode, target: draft.roundTrip ? 'return' : null });
+  if (draft.roundTrip) {
+    rows.push({ label: 'Return home', place: endPlace, mode: draft.returnMode || draft.mode || 'plane', target: 'return' });
+  }
+  rows.push({ label: 'End location', place: endPlace, mode: null, target: null, pin: true });
   return <aside className="route-preview-card">
     <p className="eyebrow">Trip preview</p>
     <h3>{draft.label || destination?.name || 'New trip'}</h3>
@@ -566,7 +605,7 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
 }
 
 function PreviewModeButton({ mode, target, onSetLegMode }) {
-  if (!mode || target == null) return <span className="route-preview-icon">●</span>;
+  if (!mode || target == null) return <span className="route-preview-icon route-preview-pin" title="Location marker">⌖</span>;
   const currentIndex = Math.max(0, MODE_OPTIONS.findIndex(m => m.id === mode));
   const current = MODE_OPTIONS[currentIndex] || MODE_OPTIONS[0];
   function cycle() {
@@ -578,7 +617,7 @@ function PreviewModeButton({ mode, target, onSetLegMode }) {
   </button>;
 }
 
-function DateRangePopover({ draft, cursor, setCursor, phase, onClose, onSelectDay }) {
+function DateRangePopover({ popoverRef, draft, cursor, setCursor, phase, onClose, onSelectDay }) {
   const days = calendarDays(cursor.year, cursor.month);
   const monthName = new Date(cursor.year, cursor.month - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   const startKey = dateKey(draft.year, draft.month, draft.day);
@@ -587,7 +626,7 @@ function DateRangePopover({ draft, cursor, setCursor, phase, onClose, onSelectDa
     const d = new Date(cursor.year, cursor.month - 1 + delta, 1);
     setCursor({ year: d.getFullYear(), month: d.getMonth() + 1 });
   }
-  return <div className="date-range-popover glass">
+  return <div ref={popoverRef} className="date-range-popover glass">
     <div className="date-range-head"><button type="button" onClick={() => move(-1)}>‹</button><strong>{monthName}</strong><button type="button" onClick={() => move(1)}>›</button></div>
     <p>{phase === 'start' ? 'Choose a start date' : 'Choose an end date'}</p>
     <div className="date-weekdays">{['S','M','T','W','T','F','S'].map(d => <span key={d}>{d}</span>)}</div>

@@ -135,9 +135,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       interactive: true,
       renderWorldCopies: false,
       fadeDuration: 700,
-      maxTileCacheSize: 1200,
+      maxTileCacheSize: 3000,
       refreshExpiredTiles: false,
-      prefetchZoomDelta: 4
+      prefetchZoomDelta: 5
     });
 
     mapRef.current = map;

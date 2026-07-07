@@ -2319,3 +2319,187 @@ option {
   margin-left: 8px;
   opacity: .9;
 }
+
+/* GlobeHoppers v3.8 Studio delete/cache/layout polish */
+.studio-panel {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,179,33,.10), transparent 38%),
+    linear-gradient(180deg, rgba(9, 14, 28, .94), rgba(4, 10, 20, .94)) !important;
+  border-color: rgba(255,179,33,.20) !important;
+}
+.studio-header {
+  min-height: 86px;
+  padding-bottom: 10px !important;
+}
+.studio-header p:not(.eyebrow) {
+  display: none !important;
+}
+.studio-actions-main {
+  padding: 10px 0 12px !important;
+}
+.studio-close { padding: 8px 12px !important; }
+
+.studio-modal button.danger {
+  background: rgba(255, 77, 111, .14) !important;
+  color: #ffd7df !important;
+  border: 1px solid rgba(255, 77, 111, .42) !important;
+}
+.studio-modal button.danger:hover {
+  background: rgba(255, 77, 111, .22) !important;
+  border-color: rgba(255, 77, 111, .68) !important;
+}
+
+.bubble-select-popover--year {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(82px, 1fr));
+  gap: 8px !important;
+}
+.bubble-select-popover--month {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(132px, 1fr));
+  gap: 8px !important;
+}
+.bubble-select-popover--year button,
+.bubble-select-popover--month button {
+  width: 100%;
+  min-width: 0 !important;
+  justify-content: center;
+  min-height: 38px;
+}
+
+.trip-type-selector {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+.trip-type-selector p {
+  margin: 0;
+  color: rgba(226,241,255,.78);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 11px;
+  font-weight: 900;
+}
+.trip-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 360px;
+}
+.trip-type-tile {
+  min-height: 46px;
+  border-radius: 18px !important;
+  padding: 11px 14px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.13) !important;
+  color: #eff8ff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+.trip-type-tile span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(38,244,255,.10);
+  color: #26f4ff;
+}
+.trip-type-tile.is-selected {
+  background: rgba(38,244,255,.16) !important;
+  border-color: rgba(38,244,255,.68) !important;
+  box-shadow: 0 0 18px rgba(38,244,255,.10);
+}
+.round-trip-selector { display: none !important; }
+
+.override-start-card {
+  padding: 10px !important;
+}
+.override-start-card .autocomplete-field {
+  margin: 0;
+}
+.override-start-card .autocomplete-field input {
+  min-height: 44px;
+}
+
+.date-range-button {
+  text-align: left;
+  justify-content: space-between;
+}
+.date-range-popover {
+  z-index: 20600 !important;
+}
+
+.trip-drawer__row {
+  grid-template-columns: 82px minmax(0, 1fr) 108px !important;
+  padding-right: 56px !important;
+}
+.trip-drawer__more {
+  right: 10px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  font-size: 15px !important;
+  letter-spacing: 1px;
+}
+.trip-drawer__meta {
+  padding-right: 8px !important;
+}
+
+@media (max-width: 760px) {
+  .bubble-select-popover--year { grid-template-columns: repeat(2, minmax(82px, 1fr)); }
+  .bubble-select-popover--month { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
+  .trip-type-options { grid-template-columns: 1fr; }
+}
+
+/* GlobeHoppers v3.9 Studio reapply + preview polish */
+.studio-actions-main button.primary {
+  min-width: 110px;
+}
+.add-leg-button {
+  text-transform: uppercase !important;
+  letter-spacing: .045em;
+  font-weight: 1000 !important;
+}
+.add-leg-button span {
+  font-weight: 1100 !important;
+  font-size: 18px !important;
+  line-height: 1;
+}
+.route-preview-pin {
+  color: #ffb321 !important;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255,255,255,.18), transparent 45%),
+    rgba(255, 179, 33, .13) !important;
+  border-color: rgba(255, 179, 33, .48) !important;
+  font-size: 18px !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 0 14px rgba(255,179,33,.10);
+}
+.route-preview-row:first-child .route-preview-pin,
+.route-preview-row:last-child .route-preview-pin {
+  color: #26f4ff !important;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255,255,255,.18), transparent 45%),
+    rgba(38,244,255,.12) !important;
+  border-color: rgba(38,244,255,.46) !important;
+}
+.bubble-select-popover--year {
+  min-width: 290px;
+  grid-template-columns: repeat(3, minmax(82px, 1fr)) !important;
+}
+.bubble-select-popover--month {
+  min-width: 292px;
+  grid-template-columns: repeat(2, minmax(132px, 1fr)) !important;
+}
+.bubble-select-popover--year button,
+.bubble-select-popover--month button {
+  min-height: 40px !important;
+  width: 100% !important;
+  justify-content: center !important;
+  white-space: nowrap;
+}
+.studio-modal h2 {
+  letter-spacing: -0.035em;
+}
