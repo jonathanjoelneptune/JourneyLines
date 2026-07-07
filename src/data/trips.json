@@ -2816,10 +2816,10 @@
   {
     "id": "2026-134-dominican-republic",
     "year": 2026,
-    "month": null,
-    "day": null,
-    "displayDate": "2026",
-    "sortKey": "2026-134",
+    "month": 6,
+    "day": 17,
+    "displayDate": "June 17, 2026",
+    "sortKey": "2026-06-17-011",
     "label": "Dominican Republic",
     "travelers": [
       "joey"
