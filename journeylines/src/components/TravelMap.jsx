@@ -84,7 +84,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, onIntroLaunchComplete = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, onIntroLaunchComplete = () => {}, resetNonce = 0 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -170,6 +170,16 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    try {
+      userCameraOverrideRef.current = false;
+      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, easing: t => t * (2 - t) });
+    } catch {}
+  }, [resetNonce, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -784,7 +794,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       // Use MapLibre's marker transform for the outer wrapper. This anchors the
       // placard to the globe on the same render path as the map and removes the
       // projection-vs-camera wobble caused by manually setting translate3d().
-      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -24], occludedOpacity: 0 })
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -34], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       labelsRef.current.set(loc.id, el);
@@ -916,17 +926,15 @@ function refreshPersistentPinPositions(map, labelsRef) {
 
     el.classList.toggle('is-culled', !visible);
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    if (visible !== el.__jlVisible) {
-      el.__jlVisible = visible;
-      if (visible) {
-        el.style.display = '';
-        el.style.visibility = 'visible';
-        el.style.opacity = '1';
-      } else {
-        el.style.opacity = '0';
-        el.style.visibility = 'hidden';
-        el.style.display = 'none';
-      }
+    el.__jlVisible = visible;
+    if (visible) {
+      el.style.display = '';
+      el.style.visibility = 'visible';
+      el.style.opacity = '1';
+    } else {
+      el.style.opacity = '0';
+      el.style.visibility = 'hidden';
+      el.style.display = 'none';
     }
     el.style.pointerEvents = 'none';
   }

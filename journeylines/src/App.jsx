@@ -30,6 +30,8 @@ export default function App() {
   const tripDrawerScrollRef = useRef(0);
   const studioDrawerScrollRef = useRef(0);
   const [introLaunching, setIntroLaunching] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('globehoppers.theme') || 'bold-dark');
+  const [resetNonce, setResetNonce] = useState(0);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
@@ -37,6 +39,7 @@ export default function App() {
 
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
   useEffect(() => localStorage.setItem('journeylines.locations', JSON.stringify(locations)), [locations]);
+  useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
   useEffect(() => {
     const closeStudio = () => setAdmin(false);
     window.addEventListener('globehoppers-close-studio', closeStudio);
@@ -120,7 +123,7 @@ export default function App() {
     setIsPlaying(false);
   }
   function pause() { setIsPlaying(false); }
-  function reset() { setIsPlaying(false); setIntroLaunching(false); setStarted(false); setActiveIndex(999999); setLegProgress(1); }
+  function reset() { setIsPlaying(false); setIntroLaunching(false); setStarted(false); setActiveIndex(999999); setLegProgress(1); setResetNonce(n => n + 1); }
   function jumpToLeg(index, progressWithinLeg = 0, autoPlay = false) {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
@@ -157,15 +160,24 @@ export default function App() {
 
   const progress = legs.length ? Math.min(1, (Math.min(activeIndex, legs.length - 1) + Math.min(1, legProgress)) / legs.length) : 1;
 
-  return <main className={`app ${isPlaying ? 'is-playing' : ''}`}>
+  return <main className={`app ${isPlaying ? 'is-playing' : ''}`} data-theme={theme}>
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
       <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Trips</button>
       <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Trips</button>
       <button className="topbar-pill" onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
+      <label className="theme-select-label" title="Theme">
+        <span>Theme</span>
+        <select className="topbar-theme-select" value={theme} onChange={e => setTheme(e.target.value)}>
+          <option value="bold-dark">Bold Dark Neon</option>
+          <option value="bold-light">Bold Light Neon</option>
+          <option value="pastel-dark">Dark Pastel</option>
+          <option value="pastel-light">Light Pastel</option>
+        </select>
+      </label>
     </header>
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} />
     {!started && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
       <h1>GlobeHoppers</h1>
