@@ -1,12 +1,10 @@
-# GlobeHoppers v3.3 — Studio Modal Workflow Polish
+# GlobeHoppers v3.4 — Studio Drawer + Preview Workflow Polish
 
-- Trip and Studio row active/highlight styling uses a cleaner white highlight.
-- Trips drawer now uses the same width as GlobeHoppers Studio and trip names follow traveler color conventions.
-- Opening Trips closes Studio, and opening Studio closes Trips.
-- Editing a trip without changing its date preserves its existing timeline order.
-- Month now starts as **Choose month** and year/month are required before saving.
-- Replaced separate start/end date inputs with a single date-range calendar popover.
-- Added a live Trip Preview panel next to the Add/Edit modal showing Start Location, Leg 1, additional legs, and End Location with mode/traveler indicators.
-- Destination entry is visually emphasized and easier to find.
-- Reduced excess modal padding and tightened form spacing.
-- Calendar icon treatment remains white for dark theme compatibility.
+- Trip preview now updates immediately when an additional leg is added and keeps End Location pushed to the bottom of the preview.
+- Renamed the checkbox language to **Override start location** for clarity.
+- GlobeHoppers Studio panel now slides in/out with the same polished motion style as the Trips drawer.
+- Trips drawer spacing was widened so date/month labels do not collide with trip names.
+- Studio trip list scroll position is preserved after saving/committing edits.
+- All scrollbars now use GlobeHoppers dark/cyan/gold styling.
+- Trips drawer now supports right-click context menu with **Edit**. Choosing Edit switches to GlobeHoppers Studio and opens the selected trip modal.
+- Destination field remains emphasized as the primary route input.

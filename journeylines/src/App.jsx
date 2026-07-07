@@ -26,6 +26,7 @@ export default function App() {
   const [filter, setFilter] = useState('all');
   const [admin, setAdmin] = useState(false);
   const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
+  const [studioEditTripId, setStudioEditTripId] = useState(null);
   const [introLaunching, setIntroLaunching] = useState(false);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
@@ -110,6 +111,7 @@ export default function App() {
   }, []);
   function editTravelHistory() {
     setTripDrawerOpen(false);
+    setStudioEditTripId(null);
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
@@ -136,6 +138,15 @@ export default function App() {
     const withinLeg = raw - index;
     jumpToLeg(index, withinLeg, true);
   }
+  function openStudioForTrip(tripId) {
+    setTripDrawerOpen(false);
+    setStudioEditTripId(tripId);
+    setAdmin(true);
+    setStarted(true);
+    setIntroLaunching(false);
+    setIsPlaying(false);
+  }
+
   function titleClick() {
     clickRef.current += 1;
     setTimeout(() => { clickRef.current = 0; }, 900);
@@ -164,11 +175,11 @@ export default function App() {
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
-    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} />
+    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} onConsumedInitialEdit={() => setStudioEditTripId(null)} />}
   </main>;
 }
 
@@ -199,14 +210,22 @@ function buildTripTimeline(trips, legs, locById, travById) {
   });
 }
 
-function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump }) {
+function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump, onEditTrip }) {
+  const [menu, setMenu] = useState(null);
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', close);
+    return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', close); };
+  }, [menu]);
   return <aside className={`trip-drawer glass ${open ? 'is-open' : ''}`} aria-hidden={!open}>
     <div className="trip-drawer__header">
       <div>
         <p className="eyebrow">Timeline</p>
         <h2>Trips</h2>
       </div>
-      <button onClick={onClose}>Close</button>
+      <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
     </div>
     <div className="trip-drawer__list">
       {rows.map(row => {
@@ -216,6 +235,7 @@ function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump }) {
           className={`trip-drawer__row ${active ? 'is-active' : ''}`}
           style={{ '--accent': row.color }}
           onClick={() => onJump(row.firstIndex)}
+          onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, row }); }}
         >
           <span className="trip-drawer__date">{row.date}</span>
           <span className="trip-drawer__main">
@@ -226,6 +246,9 @@ function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump }) {
         </button>;
       })}
     </div>
+    {menu && <div className="trip-context-menu glass" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()}>
+      <button onClick={() => { const id = menu.row.id; setMenu(null); onEditTrip?.(id); }}>Edit</button>
+    </div>}
   </aside>;
 }
 

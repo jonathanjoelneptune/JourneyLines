@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -30,7 +30,7 @@ const empty = {
   roundTrip: true, fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, onConsumedInitialEdit }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [editingId, setEditingId] = useState(null);
@@ -41,9 +41,28 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [token, setToken] = useState(() => localStorage.getItem('journeylines.githubToken') || '');
   const [repo, setRepo] = useState(() => localStorage.getItem('journeylines.repo') || '');
   const [dragId, setDragId] = useState(null);
+  const studioListRef = useRef(null);
+  const restoreScrollRef = useRef(null);
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
+
+  useEffect(() => {
+    if (!initialEditTripId) return;
+    const trip = trips.find(t => t.id === initialEditTripId);
+    if (trip) openEdit(trip);
+    onConsumedInitialEdit?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialEditTripId]);
+
+  useEffect(() => {
+    if (restoreScrollRef.current == null || !studioListRef.current) return;
+    const y = restoreScrollRef.current;
+    requestAnimationFrame(() => {
+      if (studioListRef.current) studioListRef.current.scrollTop = y;
+      restoreScrollRef.current = null;
+    });
+  }, [trips]);
 
   function saveLocalToken(value) { setToken(value); localStorage.setItem('journeylines.githubToken', value); }
   function saveRepo(value) { setRepo(value); localStorage.setItem('journeylines.repo', value); }
@@ -96,8 +115,10 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     try {
       setBusy(true);
       if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
+      const currentScroll = studioListRef.current?.scrollTop ?? null;
       const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases);
       const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
+      if (currentScroll != null) restoreScrollRef.current = currentScroll;
       setTrips(nextTrips);
       if (nextLocations !== locations) setLocations(nextLocations);
       await commitData(nextTrips, nextLocations, editingId ? `Edit trip: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`);
@@ -260,7 +281,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         {reorderMode && <><button className="primary" onClick={saveReorder} disabled={busy}>Save order</button><button onClick={() => setReorderMode(false)}>Cancel reorder</button></>}
       </div>
 
-      <div className={`studio-trip-list ${reorderMode ? 'is-reordering' : ''}`}>
+      <div ref={studioListRef} className={`studio-trip-list ${reorderMode ? 'is-reordering' : ''}`}>
         {(reorderMode ? orderDraft : sortedTrips).map(trip => <div
           className="studio-trip-row"
           style={{ '--accent': tripAccent(trip) }}
@@ -390,7 +411,7 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onCl
                   <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
                   <small>Auto-derived from trip date and active home base</small>
                 </div>
-                <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start</label>
+                <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start location</label>
               </div>
               {draft.overrideFrom && <AutocompleteField label="From" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />}
               <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
@@ -435,11 +456,19 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination }) 
   const rows = [];
   rows.push({ label: 'Start location', place: displayLocation(startLocation) || startLocation?.name || 'Auto-derived start', mode: null });
   rows.push({ label: 'Leg 1', place: displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending', mode: draft.mode || 'plane' });
-  (draft.extraLegs || []).filter(l => l.locationId || l.locationText).forEach((leg, i) => {
+  const previewExtraLegs = (draft.extraLegs || []);
+  previewExtraLegs.forEach((leg, i) => {
     const loc = locById[leg.locationId] || findLocationByText(locs, leg.locationText) || { name: leg.locationText };
     rows.push({ label: `Leg ${i + 2}`, place: displayLocation(loc) || loc?.name || 'Destination pending', mode: leg.modeFromPrevious || draft.mode || 'plane' });
   });
-  if (draft.roundTrip && !(draft.extraLegs || []).some(l => l.locationId || l.locationText)) rows.push({ label: 'End location', place: displayLocation(startLocation) || startLocation?.name || 'Return to start', mode: draft.mode || 'plane' });
+  const lastExtra = previewExtraLegs.length ? previewExtraLegs[previewExtraLegs.length - 1] : null;
+  const lastExtraLoc = lastExtra ? (locById[lastExtra.locationId] || findLocationByText(locs, lastExtra.locationText) || { name: lastExtra.locationText }) : null;
+  const endPlace = previewExtraLegs.length
+    ? (displayLocation(lastExtraLoc) || lastExtraLoc?.name || 'End pending')
+    : draft.roundTrip
+      ? (displayLocation(startLocation) || startLocation?.name || 'Return to start')
+      : (displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending');
+  rows.push({ label: 'End location', place: endPlace, mode: previewExtraLegs.length ? null : (draft.roundTrip ? draft.mode || 'plane' : null) });
   return <aside className="route-preview-card">
     <p className="eyebrow">Trip preview</p>
     <h3>{draft.label || destination?.name || 'New trip'}</h3>

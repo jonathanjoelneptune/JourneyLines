@@ -1904,3 +1904,103 @@ option {
   .studio-form-grid--dates { grid-template-columns: 1fr !important; }
   .date-range-popover { left: 16px; right: 16px; width: auto; }
 }
+
+/* GlobeHoppers v3.4 Studio workflow refinement */
+:root {
+  scrollbar-color: rgba(38,244,255,.55) rgba(2,9,18,.72);
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: rgba(2,9,18,.72); border-radius: 999px; }
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(38,244,255,.78), rgba(255,179,33,.72));
+  border: 2px solid rgba(2,9,18,.88);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #26f4ff, #ffb321); }
+
+.studio-panel {
+  transform: translateX(calc(100% + 32px));
+  opacity: 0;
+  animation: studioSlideIn .42s cubic-bezier(.18,.82,.22,1) forwards;
+}
+@keyframes studioSlideIn {
+  from { transform: translateX(calc(100% + 32px)); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.trip-drawer__row {
+  grid-template-columns: 82px minmax(0, 1fr) auto !important;
+  gap: 14px !important;
+}
+.trip-drawer__date {
+  line-height: 1.08;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.trip-drawer__main { padding-left: 4px; }
+
+.trip-context-menu {
+  position: fixed;
+  z-index: 25000;
+  min-width: 128px;
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(38,244,255,.24);
+  background: rgba(5,13,25,.96);
+  box-shadow: 0 18px 48px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.trip-context-menu button {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.07);
+  color: #f2fbff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.trip-context-menu button:hover {
+  background: rgba(38,244,255,.12);
+  border-color: rgba(38,244,255,.34);
+}
+
+.route-preview-card {
+  min-width: 330px;
+}
+.route-preview-list {
+  counter-reset: previewRows;
+}
+.route-preview-row {
+  min-height: 58px;
+}
+.route-preview-row:last-child {
+  border-color: rgba(255,179,33,.26);
+  background: rgba(255,179,33,.055);
+}
+.route-preview-row small {
+  color: rgba(235,248,255,.78) !important;
+}
+.override-check {
+  min-width: 210px;
+}
+
+.studio-trip-list {
+  scroll-behavior: auto !important;
+}
+.studio-modal {
+  scrollbar-gutter: stable both-edges;
+}
+.autocomplete-field.is-prominent {
+  border-color: rgba(38,244,255,.42) !important;
+  background: linear-gradient(135deg, rgba(0,229,255,.105), rgba(255,179,33,.035)) !important;
+}
+.autocomplete-field.is-prominent input {
+  border-width: 2px !important;
+  background: rgba(0, 14, 28, .98) !important;
+}
+@media (max-width: 720px) {
+  .trip-drawer__row { grid-template-columns: 76px minmax(0, 1fr) !important; }
+  .trip-drawer__meta { grid-column: 2; text-align: left; }
+}
