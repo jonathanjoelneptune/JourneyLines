@@ -108,6 +108,12 @@ export default function App() {
     return () => { cancelAnimationFrame(raf); tRef.current.last = null; };
   }, [isPlaying, activeIndex, legs, speed]);
 
+  function freezePlaybackClock() {
+    const currentLeg = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))]?.leg;
+    const dur = legDurationMs(currentLeg?.miles || 500, speed);
+    tRef.current = { last: null, elapsed: Math.max(0, Math.min(1, legProgress)) * dur };
+  }
+
   function play() {
     const wasGlobeOverview = globeOverview;
     setGlobeOverview(false);
@@ -142,6 +148,7 @@ export default function App() {
   }, []);
   function editTravelHistory() {
     resumeAfterStudioRef.current = isPlaying;
+    freezePlaybackClock();
     setGlobeOverview(false);
     setShowHero(false);
     setTripDrawerOpen(false);
@@ -154,6 +161,7 @@ export default function App() {
   }
   function addTravelTimelineEntry() {
     resumeAfterStudioRef.current = isPlaying;
+    freezePlaybackClock();
     setGlobeOverview(false);
     setShowHero(false);
     setTripDrawerOpen(false);
@@ -165,8 +173,9 @@ export default function App() {
     setIsPlaying(false);
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-open-new-trip')), 80);
   }
-  function pause() { tRef.current.last = null; setIsPlaying(false); }
+  function pause() { freezePlaybackClock(); setIsPlaying(false); }
   function viewGlobe() {
+    freezePlaybackClock();
     setAdmin(false);
     setTripDrawerOpen(false);
     setProjection('globe');
@@ -175,6 +184,7 @@ export default function App() {
     setIsPlaying(false);
     setIntroLaunching(false);
     setShowHero(false);
+    window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview'));
     setResetNonce(n => n + 1);
   }
   function reset() {
@@ -192,21 +202,25 @@ export default function App() {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
     const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
+    const selectedLeg = legs[safeIndex]?.leg;
+    const dur = legDurationMs(selectedLeg?.miles || 500, speed);
+
     const applyJump = () => {
-      const selectedLeg = legs[safeIndex]?.leg;
-      const dur = legDurationMs(selectedLeg?.miles || 500, speed);
-      if (selectedLeg?.from) {
-        window.dispatchEvent(new CustomEvent('globehoppers-jump-to-leg-start', {
-          detail: { lon: selectedLeg.from.lon, lat: selectedLeg.from.lat, mode: selectedLeg.mode }
-        }));
-      }
       setGlobeOverview(false);
       setCameraMode(prev => prev === 'global' ? 'route' : (prev || 'route'));
       setStarted(true);
-      setIsPlaying(Boolean(autoPlay));
       setActiveIndex(safeIndex);
       setLegProgress(safeProgress);
       tRef.current = { last: null, elapsed: safeProgress * dur };
+      setIsPlaying(Boolean(autoPlay));
+
+      window.setTimeout(() => {
+        if (selectedLeg?.from) {
+          window.dispatchEvent(new CustomEvent('globehoppers-jump-to-leg-start', {
+            detail: { lon: selectedLeg.from.lon, lat: selectedLeg.from.lat, mode: selectedLeg.mode, forceScene: true }
+          }));
+        }
+      }, 0);
     };
 
     setJumpFade(true);

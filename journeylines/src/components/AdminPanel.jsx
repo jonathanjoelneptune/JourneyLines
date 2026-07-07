@@ -357,7 +357,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     finally { setBusy(false); }
   }
 
-  return <section className={`studio-shell ${closing ? 'is-closing' : ''}`} onWheelCapture={(e) => e.stopPropagation()}>
+  return <section className={`studio-shell ${closing ? 'is-closing' : ''}`} onWheelCapture={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
     <aside className={`studio-panel glass studio-panel--${viewType}`}>
       <div className="studio-header drawer-header-unified">
         <p className="eyebrow">GlobeHoppers Studio</p>

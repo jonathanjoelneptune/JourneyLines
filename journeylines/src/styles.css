@@ -4085,3 +4085,21 @@ option {
   transform-style: preserve-3d !important;
   backface-visibility: visible !important;
 }
+
+
+/* GlobeHoppers v3.24 first-click camera fixes and drawer scroll isolation */
+.timeline-jump-fade {
+  transition: opacity 105ms ease !important;
+}
+.trip-drawer,
+.studio-shell,
+.studio-panel {
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+}
+.trip-drawer__list,
+.studio-trip-list {
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  scrollbar-gutter: stable !important;
+}

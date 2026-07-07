@@ -1,11 +1,11 @@
-# GlobeHoppers v3.23
+# GlobeHoppers v3.24
 
-Playback pause, globe overview, and timeline jump polish:
-- opening Edit Travel Timeline fully pauses route playback timing
-- closing Edit Travel Timeline resumes only from the exact paused point
-- first click on the globe button now zooms out, restores all placards, and starts spinning
-- Play from globe overview eases back into the current route location
-- takeoff pitch is more pronounced to match landing pitch
-- timeline/queue jumps use a quick fade-to-black transition before jumping to the new leg start
-- Travel Timeline and Studio scroll areas contain wheel scrolling better during playback
+First-click camera and pause fixes:
+- Edit Travel Timeline freezes the playback clock exactly where it is opened
+- Closing Edit Travel Timeline resumes from that exact frozen point
+- Globe button now sends an immediate map command so the first click zooms out/restores overview/spins
+- Timeline and queue-card jumps now force the next route camera immediately on the first click
+- Quick fade-to-black transition retained for timeline/queue jumps
+- Takeoff pitch is increased again to better match landing pitch
+- Travel Timeline and Studio scroll/pointer events are isolated from map playback more aggressively
 - package intentionally omits src/data/trips.json and package-lock.json

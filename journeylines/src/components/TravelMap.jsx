@@ -107,6 +107,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
   const introLaunchRef = useRef({ active: false, key: null });
   const resetAnimatingRef = useRef(false);
+  const forceSceneJumpRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
 
@@ -205,11 +206,29 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    function handleForceGlobeOverview() {
+      try {
+        userCameraOverrideRef.current = false;
+        resetAnimatingRef.current = true;
+        lastCameraRef.current = null;
+        map.stop();
+        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+        window.setTimeout(() => { resetAnimatingRef.current = false; }, 1575);
+      } catch { resetAnimatingRef.current = false; }
+    }
+    window.addEventListener('globehoppers-force-globe-overview', handleForceGlobeOverview);
+    return () => window.removeEventListener('globehoppers-force-globe-overview', handleForceGlobeOverview);
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
     function handleJumpToLegStart(event) {
-      const { lon, lat, mode } = event.detail || {};
+      const { lon, lat, mode, forceScene } = event.detail || {};
       if (lon == null || lat == null) return;
       try {
         userCameraOverrideRef.current = false;
+        forceSceneJumpRef.current = Boolean(forceScene);
         lastCameraRef.current = null;
         const zoom = mode === 'drive' ? 6.4 : mode === 'boat' || mode === 'train' ? 5.2 : 4.6;
         map.stop();
@@ -321,7 +340,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       syncPulse(map, null, 'transparent');
       currentOverlayStateRef.current = null;
       setOverlayVisibility(false);
-      if (completedMode) {
+      if (completedMode && !globeOverview) {
         map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 900, essential: true });
       }
       return;
@@ -364,7 +383,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     // conservative that the camera could fall behind the vessel and then catch
     // up in visible steps. These values still ease, but keep the camera ahead.
     const smoothing = scene.phase === 'settle' ? 0.018 : scene.phase === 'predeparture' ? 0.014 : scene.phase === 'takeoff' ? 0.030 : scene.phase === 'arrival' ? 0.033 : 0.028;
-    const camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
+    let camera;
+    if (forceSceneJumpRef.current) {
+      camera = scene.camera;
+      forceSceneJumpRef.current = false;
+    } else {
+      camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
+    }
     lastCameraRef.current = camera;
     if (!userCameraOverrideRef.current) {
       map.jumpTo({ ...camera, essential: true });
@@ -1471,10 +1496,9 @@ function vehicleScale(mode, phase, endpointBias, progress) {
 function vehiclePitchDeg(mode, phase, progress) {
   if (!(mode === 'plane' || mode === 'move')) return 0;
   const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.70) / 0.30)));
-  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.30)));
-  // Pronounced aircraft attitude: nose-high on takeoff, nose-down/tail-up on landing.
-  // Takeoff is intentionally cranked up to match the visible landing flourish.
-  return Math.round((landing * 72 - takeoff * 78) * 10) / 10;
+  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.34)));
+  // Strong takeoff attitude to match the visible landing pitch.
+  return Math.round((landing * 72 - takeoff * 96) * 10) / 10;
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
