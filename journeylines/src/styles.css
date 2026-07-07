@@ -3939,3 +3939,76 @@ option {
   font-size: 1.15rem !important;
   font-weight: 950 !important;
 }
+
+
+/* GlobeHoppers v3.21 repackage: Add Hop visibility, icon polish, and aircraft attitude */
+.topbar-add {
+  background: linear-gradient(135deg, #44f48a, #dff29a) !important;
+  border-color: rgba(101, 255, 161, .64) !important;
+  color: #03120a !important;
+  font-weight: 950 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.42),
+    0 0 22px rgba(68,244,138,.26),
+    0 10px 26px rgba(0,0,0,.28) !important;
+}
+.topbar-add:hover {
+  background: linear-gradient(135deg, #65ff9d, #ffe783) !important;
+  transform: translateY(-1px);
+}
+.topbar-fullscreen {
+  position: relative;
+}
+.fullscreen-corners {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.fullscreen-corners i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-color: currentColor;
+  border-style: solid;
+  border-width: 0;
+}
+.fullscreen-corners i:nth-child(1) { left: 0; top: 0; border-left-width: 3px; border-top-width: 3px; }
+.fullscreen-corners i:nth-child(2) { right: 0; top: 0; border-right-width: 3px; border-top-width: 3px; }
+.fullscreen-corners i:nth-child(3) { left: 0; bottom: 0; border-left-width: 3px; border-bottom-width: 3px; }
+.fullscreen-corners i:nth-child(4) { right: 0; bottom: 0; border-right-width: 3px; border-bottom-width: 3px; }
+.topbar-fullscreen:hover .fullscreen-corners { transform: scale(1.08); }
+
+/* Home base placards use a warmer, more characterful home marker. */
+.jl-map-pin-home-icon { display: none; }
+.jl-map-pin[data-home-base='true'] .jl-map-pin-home-icon {
+  display: grid !important;
+  position: absolute;
+  inset: 0;
+  place-items: center;
+  font-size: 10px;
+  line-height: 1;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-home-icon::before {
+  content: '🏠';
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.9));
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-home-icon {
+  color: transparent;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-dot::before {
+  content: none !important;
+}
+
+/* Give airplane PNGs a more obvious takeoff/landing attitude cue. */
+.jl-vehicle-overlay[data-mode='plane'] .jl-vehicle-img,
+.jl-vehicle-overlay[data-mode='move'] .jl-vehicle-img {
+  transform-origin: 50% 58%;
+  transform-style: preserve-3d;
+  transition: filter .16s linear;
+}
+.jl-vehicle-overlay[data-mode='plane'],
+.jl-vehicle-overlay[data-mode='move'] {
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}

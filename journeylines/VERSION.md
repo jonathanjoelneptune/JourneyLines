@@ -1,13 +1,12 @@
-# GlobeHoppers v3.19
+# GlobeHoppers v3.21
 
-Route mode and timeline controls polish:
-- Route mode is now the default playback camera mode
-- Switching from globe/idle back to playback returns to route mode
-- View Globe preserves the current timeline position so Play resumes where it left off
-- Removed the 5-second placard hidden-settle rule
-- Edit Trips top button renamed to Edit Travel Timeline
-- Trips top button renamed to Travel Timeline
-- Fullscreen is now a square icon and toggles enter/exit fullscreen
-- Edit Trips drawer title changed to Edit Travel Timeline
-- Edit Trips drawer width matches the Travel Timeline drawer
+Repackaged Add Hop/Skip/Jump and animation polish:
+- top-bar green Add Hop/Add Skip/Add Jump button is restored
+- Studio Add button uses the same session-stable Hop/Skip/Jump label
+- all Add labels open the same New Trip modal
+- Globe overview shows full travel history and preserves timeline resume position
+- fullscreen button uses a four-corner icon
+- home-base placards use a more playful home emoji marker
+- global placard culling refreshes during globe rotation and is less aggressive for front-facing Pacific/Asia locations
+- airplane takeoff/landing attitude is more pronounced
 - package intentionally omits src/data/trips.json and package-lock.json

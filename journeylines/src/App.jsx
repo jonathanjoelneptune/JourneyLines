@@ -33,6 +33,8 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('globehoppers.theme') || 'bold-dark');
   const [timelineView, setTimelineView] = useState(() => localStorage.getItem('globehoppers.timelineView') || 'expanded');
   const [showHero, setShowHero] = useState(true);
+  const [globeOverview, setGlobeOverview] = useState(false);
+  const [addTripNoun] = useState(() => ['Hop', 'Skip', 'Jump'][Math.floor(Math.random() * 3)]);
   const [resetNonce, setResetNonce] = useState(0);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
@@ -98,6 +100,7 @@ export default function App() {
   }, [isPlaying, activeIndex, legs, speed]);
 
   function play() {
+    setGlobeOverview(false);
     setCameraMode(prev => prev === 'global' ? 'route' : (prev || 'route'));
     setShowHero(false);
     setAdmin(false);
@@ -123,6 +126,7 @@ export default function App() {
     setIsPlaying(true);
   }, []);
   function editTravelHistory() {
+    setGlobeOverview(false);
     setShowHero(false);
     setTripDrawerOpen(false);
     setStudioEditTripId(null);
@@ -131,12 +135,24 @@ export default function App() {
     setIntroLaunching(false);
     setIsPlaying(false);
   }
+  function addTravelTimelineEntry() {
+    setGlobeOverview(false);
+    setShowHero(false);
+    setTripDrawerOpen(false);
+    setStudioEditTripId(null);
+    setAdmin(true);
+    setStarted(true);
+    setIntroLaunching(false);
+    setIsPlaying(false);
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-open-new-trip')), 80);
+  }
   function pause() { setIsPlaying(false); }
   function viewGlobe() {
     setAdmin(false);
     setTripDrawerOpen(false);
     setProjection('globe');
     setCameraMode('global');
+    setGlobeOverview(true);
     setIsPlaying(false);
     setIntroLaunching(false);
     setShowHero(false);
@@ -147,6 +163,7 @@ export default function App() {
     setIntroLaunching(false);
     setStarted(false);
     setShowHero(false);
+    setGlobeOverview(true);
     setActiveIndex(999999);
     setLegProgress(1);
     setCameraMode('global');
@@ -198,13 +215,14 @@ export default function App() {
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
+      <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add {addTripNoun}</button>
       <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Travel Timeline</button>
       <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Travel Timeline</button>
-      <button className="topbar-pill topbar-icon-pill" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}>□</button>
+      <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
       <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
       <h1>GlobeHoppers</h1>
@@ -217,11 +235,11 @@ export default function App() {
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
-    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
+    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} />}
   </main>;
 }
 

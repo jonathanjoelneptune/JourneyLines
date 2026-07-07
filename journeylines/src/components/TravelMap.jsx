@@ -84,7 +84,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -115,12 +115,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const legs = useMemo(() => flattenLegs(trips, locById, homeBases), [trips, locById, homeBases]);
 
   const completedMode = activeIndex >= legs.length;
+  const overviewMode = Boolean(globeOverview);
   const safeActiveIndex = Math.min(activeIndex, Math.max(0, legs.length - 1));
   const active = legs[safeActiveIndex];
   const nextActive = !completedMode ? legs[Math.min(activeIndex + 1, Math.max(0, legs.length - 1))] : null;
-  const scene = active && !completedMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries) : null;
-  const completedLegs = useMemo(() => completedMode ? legs : legs.slice(0, Math.max(0, activeIndex)), [completedMode, legs, activeIndex]);
-  const visibleLegs = useMemo(() => completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1)), [completedMode, legs, activeIndex]);
+  const scene = active && !completedMode && !overviewMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries) : null;
+  const completedLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex)), [overviewMode, completedMode, legs, activeIndex]);
+  const visibleLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1)), [overviewMode, completedMode, legs, activeIndex]);
+  const labelCompletedMode = overviewMode || completedMode;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -157,7 +159,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
+      const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
       setMapReady(true);
@@ -245,13 +247,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const map = mapRef.current;
     if (!map) return;
     const refresh = () => {
+      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef);
       const state = currentOverlayStateRef.current;
       if (!state) return;
       updateOverlay(map, state.active, state.scene, state.color);
       updateAirArcOverlay(map, airArcRef.current, state.active, state.scene, state.color);
       const destPt = state.active?.leg?.to ? map.project([state.active.leg.to.lon, state.active.leg.to.lat]) : null;
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
-      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef);
     };
     map.on('move', refresh);
     map.on('render', refresh);
@@ -291,10 +293,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!mapReady || !map) return;
     // Visited points and labels change only when the timeline reaches a new
     // destination, not on every animation frame.
-    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
+    const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), scene?.newArrivalId || null, droppedPinIdsRef);
-  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, completedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying]);
+  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying, globeOverview]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -357,7 +359,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
     updateAirArcOverlay(map, airArcRef.current, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1035,8 +1037,8 @@ function hardPlacardHorizonCutoffDeg(zoom) {
   // v2.35: slightly tighten from v2.34. The distance guard below preserves
   // useful regional labels, so this can focus on preventing true backside/edge
   // bleed-through.
-  if (zoom < 1.7) return 58;
-  if (zoom < 2.2) return 62;
+  if (zoom < 1.7) return 88;
+  if (zoom < 2.2) return 84;
   if (zoom < 3.0) return 66;
   if (zoom < 4.2) return 70;
   if (zoom < 5.5) return 74;
@@ -1048,8 +1050,8 @@ function maxPlacardDistanceMiles(zoom) {
   // Hard distance guard against far-side placards while preserving useful
   // regional context. At closer cinematic zooms, only the current broad region
   // should label; at wide views, allow more of the visible hemisphere.
-  if (zoom < 1.7) return 6200;
-  if (zoom < 2.2) return 5600;
+  if (zoom < 1.7) return 13000;
+  if (zoom < 2.2) return 10500;
   if (zoom < 3.0) return 4700;
   if (zoom < 4.2) return 3600;
   if (zoom < 5.5) return 2300;
@@ -1454,9 +1456,11 @@ function vehicleScale(mode, phase, endpointBias, progress) {
 }
 function vehiclePitchDeg(mode, phase, progress) {
   if (!(mode === 'plane' || mode === 'move')) return 0;
-  const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.82) / 0.18)));
-  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.12)));
-  return Math.round((landing * 22 - takeoff * 8) * 10) / 10;
+  const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.76) / 0.24)));
+  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.18)));
+  // Negative on takeoff raises the nose; positive on landing tips the nose down
+  // and visually lifts the tail for the top-down PNG airplane.
+  return Math.round((landing * 46 - takeoff * 30) * 10) / 10;
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {

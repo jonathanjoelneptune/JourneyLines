@@ -30,7 +30,7 @@ const empty = {
   roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Trip' }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -86,6 +86,16 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     return () => window.removeEventListener('globehoppers-request-close-studio', handleRequestClose);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closing]);
+
+
+  useEffect(() => {
+    function handleOpenNewTrip() {
+      openAdd();
+    }
+    window.addEventListener('globehoppers-open-new-trip', handleOpenNewTrip);
+    return () => window.removeEventListener('globehoppers-open-new-trip', handleOpenNewTrip);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   function saveLocalToken(value) { setToken(value); localStorage.setItem('journeylines.githubToken', value); }
@@ -357,7 +367,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       </div>
 
       <div className="studio-actions-main">
-        <button className="primary" onClick={openAdd}>New Trip</button>
+        <button className="primary" onClick={openAdd}>Add {addTripNoun}</button>
         {!reorderMode && <button onClick={enterReorder}>Reorder</button>}
         {reorderMode && <><button className="primary" onClick={saveReorder} disabled={busy}>Save order</button><button onClick={() => setReorderMode(false)}>Cancel reorder</button></>}
       </div>
@@ -402,6 +412,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onRemoveLeg={removeLeg}
       onSetReturnMode={setReturnMode}
       onSetPreviewLegMode={setPreviewLegMode}
+      addTripNoun={addTripNoun}
       onDelete={modal === 'edit' ? deleteTripFromModal : null}
       homeBases={homeBases}
     />}
@@ -467,10 +478,10 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode }) {
+function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Trip' }) {
   const destinationMatches = filterLocations(locs, draft.toLocationText || '');
   const fromMatches = filterLocations(locs, draft.fromLocationText || '');
-  const title = mode === 'add' ? 'Trip details' : draft.label || draft.toLocationText || 'Edit trip';
+  const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit trip';
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -527,7 +538,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
       <div className="studio-modal-sticky">
         <div className="studio-modal-header studio-modal-header--with-actions">
           <div className="studio-title-block">
-            <p className="eyebrow">{mode === 'add' ? 'New Trip' : 'Edit Trip'}</p>
+            <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : 'Edit Trip'}</p>
             <h2>{title}</h2>
           </div>
           <div className="studio-modal-top-actions">
