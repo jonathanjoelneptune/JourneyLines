@@ -2725,10 +2725,10 @@
   {
     "id": "2026-130-london-and-amsterdam",
     "year": 2026,
-    "month": null,
-    "day": null,
-    "displayDate": "2026",
-    "sortKey": "2026-130",
+    "month": 4,
+    "day": 8,
+    "displayDate": "April 8, 2026",
+    "sortKey": "2026-04-08-011",
     "label": "London and Amsterdam",
     "travelers": [
       "bonnie"
@@ -2743,8 +2743,8 @@
         "modeFromPrevious": null
       },
       {
-        "locationId": "london-uk",
-        "modeFromPrevious": "plane"
+        "locationId": "amsterdam-nl",
+        "modeFromPrevious": "mixed"
       },
       {
         "locationId": "amsterdam-nl",
