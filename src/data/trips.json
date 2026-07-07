@@ -2631,51 +2631,6 @@
     "occasion": ""
   },
   {
-    "id": "2026-136-alaska",
-    "year": 2026,
-    "month": 8,
-    "day": 1,
-    "endYear": 2026,
-    "endMonth": 7,
-    "endDay": 2,
-    "displayDate": "August 1, 2026",
-    "displayEndDate": "July 2, 2026",
-    "sortKey": "2026-08-01-011",
-    "label": "Alaska",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "drive",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "anchorage-ak",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null
-      },
-      {
-        "locationId": "anchorage-ak",
-        "modeFromPrevious": "drive"
-      },
-      {
-        "locationId": "vancouver-ca",
-        "modeFromPrevious": "plane"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "train"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "train"
-      }
-    ],
-    "notes": "",
-    "occasion": ""
-  },
-  {
     "id": "2026-137-detroit",
     "year": 2026,
     "month": 8,
