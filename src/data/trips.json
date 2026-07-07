@@ -2538,10 +2538,10 @@
   {
     "id": "2025-120-las-vegas",
     "year": 2025,
-    "month": null,
+    "month": 9,
     "day": null,
-    "displayDate": "2025",
-    "sortKey": "2025-13-99-012",
+    "displayDate": "September 2025",
+    "sortKey": "2025-09-99-018",
     "label": "Las Vegas",
     "travelers": [
       "joey"
@@ -2552,7 +2552,11 @@
     "toLocationId": "las-vegas-nv",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": ""
   },
   {
     "id": "2025-121-montreal",
