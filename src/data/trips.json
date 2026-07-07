@@ -2725,10 +2725,10 @@
   {
     "id": "2026-126-washington-dc",
     "year": 2026,
-    "month": 4,
+    "month": 1,
     "day": 15,
-    "displayDate": "April 15, 2026",
-    "sortKey": "2026-04-15-011",
+    "displayDate": "January 15, 2026",
+    "sortKey": "2026-01-15-011",
     "label": "Washington DC",
     "travelers": [
       "joey"
