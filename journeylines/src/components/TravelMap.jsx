@@ -123,8 +123,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: MAP_STYLE,
-      center: [-78, 31],
-      zoom: 1.55,
+      center: [-38, 23],
+      zoom: 2.15,
       bearing: 0,
       pitch: 0,
       attributionControl: false,
@@ -232,7 +232,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       currentOverlayStateRef.current = null;
       setOverlayVisibility(false);
       if (completedMode) {
-        map.easeTo({ center: [-38, 23], zoom: 1.55, bearing: 0, pitch: 0, duration: 900, essential: true });
+        map.easeTo({ center: [-38, 23], zoom: 2.15, bearing: 0, pitch: 0, duration: 900, essential: true });
       }
       return;
     }

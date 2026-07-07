@@ -1,7 +1,7 @@
-# GlobeHoppers v2.37 — Front-Facing Branding Rename
+# GlobeHoppers v2.38 — Intro Globe Scale + Hero Fit
 
-- Public-facing app name changed from JourneyLines to GlobeHoppers.
-- Added tagline: “All your hops, skips & jumps.”
-- Kept repository folder, deployment path, Vite base path, workflow, and localStorage keys unchanged for now.
-- Updated browser title, visible app header, about copy, README, routing notes, settings, and accessibility label.
-- No routing, animation, projection, or deployment behavior changes.
+- Keeps the repository, folder, and GitHub Pages path unchanged.
+- Zooms the idle/intro completed globe closer so the opening view feels more intentional and less distant.
+- Enlarges the GlobeHoppers hero card so the title fits comfortably.
+- Tightens the hero title sizing and spacing to prevent the wordmark from extending beyond the card edge.
+- Leaves playback, routing, culling, icons, Mapbox build-time cache, and projection behavior unchanged from v2.37.
