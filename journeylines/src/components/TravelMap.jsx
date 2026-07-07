@@ -84,7 +84,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, introLaunching = false, onIntroLaunchComplete = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, onIntroLaunchComplete = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -170,6 +170,41 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    function handlePreviewLocation(event) {
+      const { lon, lat } = event.detail || {};
+      if (lon == null || lat == null) return;
+      try {
+        userCameraOverrideRef.current = true;
+        map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 5.8), pitch: 58, bearing: 0, duration: 1400, easing: t => t * (2 - t) });
+      } catch {}
+    }
+    window.addEventListener('globehoppers-preview-location', handlePreviewLocation);
+    return () => window.removeEventListener('globehoppers-preview-location', handlePreviewLocation);
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (isPlaying || introLaunching || isStarted) return;
+    let raf;
+    let last;
+    const spin = (ts) => {
+      if (last == null) last = ts;
+      const dt = Math.min(48, ts - last);
+      last = ts;
+      try {
+        const c = map.getCenter();
+        map.setCenter([c.lng + dt * 0.0014, c.lat]);
+      } catch {}
+      raf = requestAnimationFrame(spin);
+    };
+    raf = requestAnimationFrame(spin);
+    return () => cancelAnimationFrame(raf);
+  }, [mapReady, isPlaying, introLaunching, isStarted]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -749,7 +784,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       // Use MapLibre's marker transform for the outer wrapper. This anchors the
       // placard to the globe on the same render path as the map and removes the
       // projection-vs-camera wobble caused by manually setting translate3d().
-      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -8], occludedOpacity: 0 })
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -24], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       labelsRef.current.set(loc.id, el);

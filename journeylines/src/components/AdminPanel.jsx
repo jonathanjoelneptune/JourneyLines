@@ -49,6 +49,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
 
+  function previewMapLocation(location) {
+    if (!location || location.lon == null || location.lat == null) return;
+    window.dispatchEvent(new CustomEvent('globehoppers-preview-location', { detail: { lon: location.lon, lat: location.lat, name: displayLocation(location) || location.name } }));
+  }
+
   useEffect(() => {
     if (!initialEditTripId) return;
     const trip = trips.find(t => t.id === initialEditTripId);
@@ -128,12 +133,17 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   function chooseDestination(location) {
     setDraft({ ...draft, toLocationId: location.id, toLocationText: displayLocation(location), label: draft.label || location.name });
+    previewMapLocation(location);
   }
-  function chooseFrom(location) { setDraft({ ...draft, fromLocationId: location.id, fromLocationText: displayLocation(location), overrideFrom: true }); }
+  function chooseFrom(location) {
+    setDraft({ ...draft, fromLocationId: location.id, fromLocationText: displayLocation(location), overrideFrom: true });
+    previewMapLocation(location);
+  }
   function chooseExtraLeg(index, location) {
     const extraLegs = [...(draft.extraLegs || [])];
     extraLegs[index] = { ...extraLegs[index], locationId: location.id, locationText: displayLocation(location) };
     setDraft({ ...draft, extraLegs });
+    previewMapLocation(location);
   }
   function setExtraLeg(index, patch) {
     const extraLegs = [...(draft.extraLegs || [])];
@@ -401,7 +411,16 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
 
 function BubbleSelect({ label, value, display, options, open, setOpen, onChoose, required, variant }) {
-  return <label className={`bubble-select-field ${variant ? `bubble-select-field--${variant}` : ''}`}>{label}{required && <span className="required-dot">Required</span>}
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event) {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    }
+    window.addEventListener('pointerdown', handlePointerDown);
+    return () => window.removeEventListener('pointerdown', handlePointerDown);
+  }, [open, setOpen]);
+  return <label ref={ref} className={`bubble-select-field ${variant ? `bubble-select-field--${variant}` : ''}`}>{label}{required && <span className="required-dot">Required</span>}
     <button type="button" className={`bubble-select-button ${!value ? 'needs-choice' : ''}`} onClick={() => setOpen(!open)}>
       {display}<span>▾</span>
     </button>
@@ -484,26 +503,35 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <label className="title-field">Trip title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
           <BubbleSelect label="Year" value={draft.year || ''} display={draft.year || 'Choose year'} options={yearOptions.map(y => ({ value: y, label: String(y) }))} open={yearPickerOpen} setOpen={setYearPickerOpen} onChoose={(value) => setDraft({...draft, year:Number(value)})} required variant="year" />
           <BubbleSelect label="Month" value={draft.month || ''} display={monthLabel(draft.month) || 'Choose month'} options={MONTH_OPTIONS.filter(m => m.value).map(m => ({ value: m.value, label: m.label }))} open={monthPickerOpen} setOpen={setMonthPickerOpen} onChoose={(value) => setDraft({...draft, month:Number(value), day:draft.day})} required variant="month" />
-          <label className="date-range-field">Trip dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Trip Dates'}<span>▾</span></button></label>
+          <label className="date-range-field">Trip dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Trip Dates'}<span>▾</span></button>
+            {dateRangeOpen && <DateRangePopover
+              popoverRef={dateRangeRef}
+              draft={draft}
+              cursor={calendarCursor}
+              setCursor={setCalendarCursor}
+              phase={rangePhase}
+              onClose={() => setDateRangeOpen(false)}
+              onSelectDay={selectCalendarDay}
+            />}
+          </label>
         </div>
       </div>
 
       <div className="studio-modal-scroll-content studio-modal-layout">
         <div className="studio-modal-maincol">
-          <section className="studio-pick-section compact-section">
+          <section className="studio-pick-section compact-section travelers-section">
             <h3>Travelers</h3>
             <div className="pill-selectors">
               {TRAVELER_OPTIONS.map(t => <button key={t.id} type="button" className={`traveler-pill ${draft.travelers?.includes(t.id) ? 'is-selected' : ''}`} style={{ '--accent': t.color }} onClick={() => onTravelerToggle(t.id)}><span></span>{t.label}</button>)}
             </div>
           </section>
 
-          <section className="studio-pick-section compact-section">
-            <h3>Mode of Transportation</h3>
+          <section className="studio-pick-section compact-section transport-triptype-row">
+            <div className="transport-choice-group"><h3>Mode of Transportation</h3>
             <div className="mode-selectors">
               {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><span>{m.icon}</span>{m.label}</button>)}
-            </div>
-            <div className="trip-type-selector">
-              <p>Trip type</p>
+            </div></div>
+            <div className="trip-type-selector"><h3>Trip type</h3>
               <div className="trip-type-options">
                 <button type="button" className={`trip-type-tile ${draft.roundTrip ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, roundTrip: true})}><span>↩</span> Round Trip</button>
                 <button type="button" className={`trip-type-tile ${!draft.roundTrip ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, roundTrip: false})}><span>→</span> One Way</button>
@@ -526,7 +554,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
               </div>
               <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
               <div className="legs-block">
-                <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> ADD LEG</button></div>
+                <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
                   <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
                   <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '' })} matches={filterLocations(locs, leg.locationText || '')} onChoose={loc => onChooseExtraLeg(index, loc)} />
@@ -557,15 +585,6 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
 
         <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} />
 
-        {dateRangeOpen && <DateRangePopover
-          popoverRef={dateRangeRef}
-          draft={draft}
-          cursor={calendarCursor}
-          setCursor={setCalendarCursor}
-          phase={rangePhase}
-          onClose={() => setDateRangeOpen(false)}
-          onSelectDay={selectCalendarDay}
-        />}
       </div>
     </div>
   </div>;
@@ -605,7 +624,7 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
 }
 
 function PreviewModeButton({ mode, target, onSetLegMode }) {
-  if (!mode || target == null) return <span className="route-preview-icon route-preview-pin" title="Location marker">⌖</span>;
+  if (!mode || target == null) return <span className="route-preview-icon route-preview-pin" title="Location marker">📍</span>;
   const currentIndex = Math.max(0, MODE_OPTIONS.findIndex(m => m.id === mode));
   const current = MODE_OPTIONS[currentIndex] || MODE_OPTIONS[0];
   function cycle() {

@@ -1,8 +1,12 @@
-# GlobeHoppers v3.9 — Studio Reapply + Preview Polish
+# GlobeHoppers v3.10 — Compact Studio + Map Preview Polish
 
-- Reapplies the v3.8 Studio delete/cache/layout polish as a fresh package.
-- Removes the duplicate “Add a trip” heading in the add-trip modal.
-- Changes the Studio drawer primary action to “New Trip.”
-- Updates the add-leg button to “+ ADD LEG.”
-- Trip preview now uses map-pin styling for start and end location rows.
-- Round trips show a separate Return home row with clickable transport mode before the final End location pin row.
+- Tightened the Add/Edit Trip modal layout to reduce wasted space and scrolling.
+- Kept Travelers on its own row, while placing Mode of Transportation and Trip Type side-by-side.
+- Renamed Trips drawer headings to GlobeHoppers Studio / Travel Timeline.
+- Year and month bubble menus now close when clicking outside.
+- Year/month bubble popovers expand to fit options without internal scrollbars.
+- Date-range calendar opens directly below the Trip Dates field.
+- Changed Add Leg button text to “+ Add Leg”.
+- Initial paused/hero globe now slowly rotates.
+- Selecting destinations/start/leg locations in Studio flies the map to that location.
+- Map placards are shifted upward so the pointer sits above the destination dot instead of behind it.

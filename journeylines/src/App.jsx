@@ -165,7 +165,7 @@ export default function App() {
       <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Trips</button>
       <button className="topbar-pill" onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} />
     {!started && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
       <h1>GlobeHoppers</h1>
@@ -242,8 +242,8 @@ function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollSt
     <aside className={`trip-drawer glass ${open ? 'is-open' : ''}`} aria-hidden={!open}>
       <div className="trip-drawer__header">
         <div>
-          <p className="eyebrow">Timeline</p>
-          <h2>Trips</h2>
+          <p className="eyebrow">GlobeHoppers Studio</p>
+          <h2>Travel Timeline</h2>
         </div>
         <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
       </div>
