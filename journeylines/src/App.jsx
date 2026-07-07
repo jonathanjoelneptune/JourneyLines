@@ -60,6 +60,7 @@ export default function App() {
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), []);
   const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
   const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, travById), [filteredTrips, legs, locById, travById]);
+  const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
   const traveler = current ? travById[getTravelerKey(current.trip)] : null;
@@ -96,6 +97,8 @@ export default function App() {
   }, [isPlaying, activeIndex, legs, speed]);
 
   function play() {
+    setAdmin(false);
+    setTripDrawerOpen(false);
     if (!started || activeIndex >= legs.length - 1) {
       setActiveIndex(0);
       setLegProgress(0);
@@ -189,7 +192,7 @@ export default function App() {
         <button className="secondary big" onClick={editTravelHistory}>Edit Travel History</button>
       </div>
     </section>}
-    <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
+    <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
     <section className="about glass">
@@ -222,7 +225,10 @@ function buildTripTimeline(trips, legs, locById, travById) {
       color: traveler?.color || '#00e5ff',
       route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
       legCount: tripLegs.length,
-      year: trip.year || String(trip.date || '').slice(0, 4) || ''
+      year: trip.year || String(trip.date || '').slice(0, 4) || '',
+      toLocationId: trip.toLocationId,
+      notes: trip.notes || trip.occasion || '',
+      trip
     };
   });
 }
@@ -318,6 +324,26 @@ function groupRowsByYear(rows = []) {
     byYear.get(year).rows.push(row);
   }
   return groups;
+}
+
+
+function buildTripCardRows(rows, activeIndex) {
+  if (!rows?.length) return [];
+  let currentIdx = rows.findIndex(row => activeIndex >= row.firstIndex && activeIndex < row.firstIndex + Math.max(1, row.legCount || 1));
+  if (currentIdx < 0) currentIdx = Math.max(0, Math.min(rows.length - 1, rows.findIndex(row => row.firstIndex >= activeIndex)));
+  if (currentIdx < 0) currentIdx = 0;
+  const yearCounts = new Map();
+  const destinationCounts = new Map();
+  const enriched = rows.map((row, i) => {
+    const year = String(row.year || '').match(/\d{4}/)?.[0] || 'Trips';
+    const yCount = (yearCounts.get(year) || 0) + 1;
+    yearCounts.set(year, yCount);
+    const key = row.toLocationId || row.title;
+    const vCount = (destinationCounts.get(key) || 0) + 1;
+    destinationCounts.set(key, vCount);
+    return { ...row, totalIndex: i + 1, totalTrips: rows.length, tripOfYear: yCount, visitCount: vCount };
+  });
+  return enriched.slice(currentIdx, currentIdx + 4);
 }
 
 function formatLocation(loc) {

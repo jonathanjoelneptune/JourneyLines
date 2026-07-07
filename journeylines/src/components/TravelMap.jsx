@@ -427,7 +427,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     vehicleRef.current.dataset.mode = iconMode;
     vehicleRef.current.dataset.iconColor = colorToIconName(color) || 'Blue';
     vehicleRef.current.style.setProperty('--vehicle-color', color);
-    vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) scale(${sceneState.vehicleScale})`;
+    vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) perspective(260px) rotateX(${sceneState.vehiclePitchDeg || 0}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
 
     const destPt = map.project([leg.to.lon, leg.to.lat]);
@@ -575,6 +575,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
     heading,
     screenHeading: headingToScreenRotation(heading, bearing),
     vehicleScale: vehicleScale(leg.mode, phase, endpointBias, p),
+    vehiclePitchDeg: vehiclePitchDeg(leg.mode, phase, p),
     vehicleVisible: raw <= 1 && phase !== 'predeparture' && p > 0.006 && p < 0.994,
     pulseActive: arrived,
     arrivalLabelVisible: arrived,
@@ -801,7 +802,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       // Use MapLibre's marker transform for the outer wrapper. This anchors the
       // placard to the globe on the same render path as the map and removes the
       // projection-vs-camera wobble caused by manually setting translate3d().
-      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -44], occludedOpacity: 0 })
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -58], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       labelsRef.current.set(loc.id, el);
@@ -1430,6 +1431,13 @@ function vehicleScale(mode, phase, endpointBias, progress) {
   const landingShrink = smoothstep(Math.max(0, Math.min(1, (1 - progress) / 0.14)));
   return cinematic * takeoffGrow * landingShrink;
 }
+function vehiclePitchDeg(mode, phase, progress) {
+  if (!(mode === 'plane' || mode === 'move')) return 0;
+  const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.82) / 0.18)));
+  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.12)));
+  return Math.round((landing * 22 - takeoff * 8) * 10) / 10;
+}
+
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
   if (!(mode === 'plane' || mode === 'move')) return routeProgress;
   if (rawP > 0.965) return 1;

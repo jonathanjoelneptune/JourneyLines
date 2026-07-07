@@ -3066,3 +3066,159 @@ option {
   .drawer-header-controls { justify-content: flex-start; }
   .view-type-selector button { font-size: 10px !important; padding: 5px 7px !important; }
 }
+
+/* GlobeHoppers v3.13 cinematic cards + studio density polish */
+.trip-card-stack {
+  position: absolute;
+  z-index: 35;
+  right: 24px;
+  top: 84px;
+  width: min(385px, calc(100vw - 48px));
+  display: grid;
+  gap: 10px;
+  pointer-events: auto;
+}
+.trip-card-stack .trip-card {
+  position: relative !important;
+  inset: auto !important;
+  width: auto !important;
+  opacity: .74;
+  transform: translateY(0) scale(1);
+  transition: opacity .22s ease, transform .28s ease, background .22s ease;
+  padding: 15px 17px !important;
+  border-radius: 20px !important;
+}
+.trip-card-stack .trip-card:hover { opacity: .96; transform: translateY(-2px) scale(1.01); }
+.trip-card-stack .trip-card--stack-0 { opacity: .78; }
+.trip-card-stack .trip-card--stack-1,
+.trip-card-stack .trip-card--stack-2,
+.trip-card-stack .trip-card--stack-3 { padding: 11px 14px !important; }
+.trip-card-stack .trip-card--stack-1 h2,
+.trip-card-stack .trip-card--stack-2 h2,
+.trip-card-stack .trip-card--stack-3 h2 { font-size: 1.05rem; }
+.trip-card-stack .trip-card--stack-1 p,
+.trip-card-stack .trip-card--stack-2 p,
+.trip-card-stack .trip-card--stack-3 p { font-size: .78rem; }
+.trip-card__stats { font-size: .76rem; color: rgba(235,248,255,.70); }
+.app:not(.is-playing) .trip-card-stack { display: none; }
+
+/* Shared drawer header rhythm */
+.trip-drawer__header,
+.studio-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: start !important;
+  gap: 10px !important;
+}
+.trip-drawer__header > div:first-child,
+.studio-header > div:first-child { min-width: 0; }
+.drawer-header-controls { display: contents !important; }
+.view-type-selector { align-self: start; }
+.studio-close,
+.trip-drawer__header .drawer-header-controls > button,
+.drawer-header-controls > button { align-self: start; }
+
+/* Compact list breathing room */
+.trip-drawer--compact .trip-drawer__row,
+.studio-trip-list--compact .studio-trip-row {
+  grid-template-columns: 116px minmax(0, 1fr) auto !important;
+  min-height: 36px !important;
+}
+.trip-drawer--compact .trip-drawer__date,
+.studio-trip-list--compact .studio-trip-date { white-space: nowrap !important; }
+
+/* Denser card views, roughly 6 cards per row */
+.timeline-card-grid,
+.studio-card-grid {
+  grid-template-columns: repeat(6, minmax(74px, 1fr)) !important;
+  gap: 7px !important;
+}
+.trip-drawer--card .trip-drawer__row,
+.studio-trip-row--card {
+  min-height: 78px !important;
+  padding: 9px !important;
+  border-radius: 15px !important;
+}
+.trip-drawer--card .trip-drawer__date,
+.studio-trip-row--card .studio-trip-date { font-size: .72rem !important; }
+.trip-drawer--card .trip-drawer__main strong,
+.studio-trip-row--card .studio-trip-main strong { font-size: .86rem !important; }
+.studio-trip-row--card .studio-trip-buttons { top: 6px !important; right: 6px !important; }
+.studio-card-edit {
+  width: auto !important;
+  min-width: 42px !important;
+  height: 24px !important;
+  padding: 0 9px !important;
+  font-size: 10px !important;
+  border-radius: 999px !important;
+}
+.studio-trip-list.is-reordering .studio-trip-row--card,
+.studio-trip-list.is-reordering .studio-trip-row { cursor: grab; }
+.studio-trip-list.is-reordering .studio-trip-row:active { cursor: grabbing; transform: scale(.985); }
+
+/* Studio modal density and section rhythm */
+.studio-form-grid--dates { gap: 8px !important; }
+.studio-modal input,
+.studio-modal textarea,
+.bubble-select-button,
+.date-range-button { min-height: 36px !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+.traveler-pill { min-height: 30px !important; padding: 4px 10px !important; }
+.traveler-pill .traveler-dot,
+.traveler-pill span { width: 10px !important; height: 10px !important; }
+.mode-tile,
+.trip-type-tile {
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 5px 10px !important;
+  border-radius: 13px !important;
+}
+.mode-tile span,
+.trip-type-tile span { font-size: 15px !important; }
+.trip-type-options { align-items: center; }
+.transport-triptype-row { gap: 10px !important; }
+.studio-modal-maincol { gap: 8px !important; }
+.route-section { padding: 9px 10px !important; }
+.default-start-card,
+.legs-block,
+.return-mode-card { padding: 8px 10px !important; }
+.legs-header { margin-bottom: 4px !important; }
+.route-form { gap: 7px !important; }
+.autocomplete-field.is-prominent { padding: 7px !important; }
+.autocomplete-field.is-prominent input { min-height: 38px !important; }
+
+/* Trip preview metadata */
+.route-preview-meta {
+  display: grid;
+  gap: 4px;
+  margin: -6px 0 12px;
+  color: rgba(226,241,255,.68);
+  font-size: 12px;
+  line-height: 1.25;
+}
+.route-preview-meta span { display: flex; gap: 7px; align-items: center; }
+.route-preview-meta b {
+  width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+  background: var(--trip-accent, #00e5ff);
+  box-shadow: 0 0 10px var(--trip-accent, #00e5ff);
+}
+
+/* Map placards sit above route lines and keep their pointer clear. */
+.maplibregl-marker.jl-map-pin,
+.jl-map-pin { z-index: 2450 !important; overflow: visible !important; padding-bottom: 18px !important; }
+.maplibregl-marker.jl-map-pin[data-home-base='true'],
+.jl-map-pin[data-home-base='true'] { z-index: 2480 !important; }
+.maplibregl-marker.jl-map-pin[data-active-home-base='true'],
+.jl-map-pin[data-active-home-base='true'] { z-index: 2490 !important; }
+.jl-vehicle-overlay { z-index: 2600 !important; transform-style: preserve-3d; will-change: transform, opacity; }
+.jl-vehicle-img { transform-style: preserve-3d; backface-visibility: visible; }
+.jl-map-pin-tail { bottom: -15px !important; height: 16px !important; clip-path: polygon(50% 100%, 0 0, 100% 0) !important; }
+
+@media (max-width: 1100px) {
+  .timeline-card-grid,
+  .studio-card-grid { grid-template-columns: repeat(4, minmax(78px,1fr)) !important; }
+}
+@media (max-width: 760px) {
+  .timeline-card-grid,
+  .studio-card-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+  .trip-card-stack { left: 18px; right: 18px; width: auto; }
+}

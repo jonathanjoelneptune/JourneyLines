@@ -1,11 +1,15 @@
-# GlobeHoppers v3.12 — Timeline View Modes + Reset/Placard Polish
+# GlobeHoppers v3.13 — Cinematic Cards + Studio Density Polish
 
-- Adds shared travel-history view modes for Trips and GlobeHoppers Studio: Expanded, Compact, and Card.
-- Card view groups trips by year and lays them out in a multi-card grid.
-- Compact view collapses rows to a tighter one-line timeline style.
-- Adds matching view selectors to the right side of both drawer headers.
-- Refines Mode of Transportation and Trip Type buttons to use the compact return-home style.
-- Reset now glides back to the intro globe position before resuming continuous idle rotation.
-- Idle/paused globe rotation continues indefinitely.
-- Makes hidden/backside placards fully invisible instead of dimmed.
-- Raises map placards above route overlays while keeping vessel icons above placards.
+- Added a four-card active trip stack that appears only during active playback.
+- Current trip card now shows trip position, trip-of-year context, and visit count.
+- Next three trips appear beneath the active trip and brighten on hover.
+- Added a subtle airplane landing flourish: aircraft pitches down and shrinks on approach.
+- Tightened Studio modal spacing while keeping travelers on their own row.
+- Mode of Transportation and Trip Type now share the compact return-method tile proportions.
+- Trip Preview now includes date, traveler/group color, and notes/occasion context.
+- Joey + Bonnie traveler selection lights switch to the group cyan color.
+- Drawer header layout is consistent between Travel Timeline and Edit Travel History.
+- Compact timeline view gives the date column more breathing room.
+- Card view is denser, with up to six cards per row and Edit buttons in Studio cards.
+- Play Travel History closes open Trips/Studio menus before playback starts.
+- Map placards are layered higher and given additional pointer clearance to avoid tail clipping.

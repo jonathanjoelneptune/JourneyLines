@@ -417,7 +417,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById)}</small></span>
     <span className="studio-trip-buttons">
-      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? <button className="studio-card-more" onClick={() => onEdit(trip)}>⋯</button> : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
+      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? <button className="studio-card-edit" onClick={() => onEdit(trip)}>Edit</button> : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
     </span>
   </div>;
 }
@@ -475,6 +475,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const dateRangeRef = useRef(null);
+  const bothTravelersSelected = draft.travelers?.includes('joey') && draft.travelers?.includes('bonnie');
 
   useEffect(() => {
     if (!dateRangeOpen) return;
@@ -551,7 +552,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <section className="studio-pick-section compact-section travelers-section">
             <h3>Travelers</h3>
             <div className="pill-selectors">
-              {TRAVELER_OPTIONS.map(t => <button key={t.id} type="button" className={`traveler-pill ${draft.travelers?.includes(t.id) ? 'is-selected' : ''}`} style={{ '--accent': t.color }} onClick={() => onTravelerToggle(t.id)}><span></span>{t.label}</button>)}
+              {TRAVELER_OPTIONS.map(t => { const selected = draft.travelers?.includes(t.id); const accent = selected && bothTravelersSelected ? '#00e5ff' : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.label}</button>; })}
             </div>
           </section>
 
@@ -639,9 +640,14 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
     rows.push({ label: 'Return home', place: endPlace, mode: draft.returnMode || draft.mode || 'plane', target: 'return' });
   }
   rows.push({ label: 'End location', place: endPlace, mode: null, target: null, pin: true });
-  return <aside className="route-preview-card">
+  return <aside className="route-preview-card" style={{ '--trip-accent': tripAccent(draft) }}>
     <p className="eyebrow">Trip preview</p>
     <h3>{draft.label || destination?.name || 'New trip'}</h3>
+    <div className="route-preview-meta">
+      <span>{formatDateRangeLabel(draft) || (draft.year ? `${monthLabel(draft.month) || 'Month'} ${draft.year}` : 'Dates pending')}</span>
+      <span><b></b>{travelerSummary(draft.travelers)} · {groupNameForTravelers(draft.travelers)}</span>
+      {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
+    </div>
     <div className="route-preview-list">
       {rows.map((r, i) => <div className="route-preview-row" key={`${r.label}-${i}`}>
         <PreviewModeButton mode={r.mode} target={r.target} onSetLegMode={onSetLegMode} />
@@ -803,6 +809,7 @@ function tripAccent(trip) {
 function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }
 function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }
 function travelerSummary(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); return hasJ && hasB ? 'Joey + Bonnie' : hasB ? 'Bonnie' : 'Joey'; }
+function groupNameForTravelers(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); return hasJ && hasB ? 'Group: Joey + Bonnie' : hasB ? 'Solo trip' : 'Solo trip'; }
 function formatDateRangeLabel(t) {
   const start = toDateInputValue(t.year, t.month, t.day);
   const end = toDateInputValue(t.endYear, t.endMonth, t.endDay);
