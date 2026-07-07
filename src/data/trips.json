@@ -2423,10 +2423,10 @@
   {
     "id": "2025-114-washington-dc",
     "year": 2025,
-    "month": null,
+    "month": 4,
     "day": null,
-    "displayDate": "2025",
-    "sortKey": "2025-13-99-006",
+    "displayDate": "April 2025",
+    "sortKey": "2025-04-99-018",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2437,7 +2437,11 @@
     "toLocationId": "washington-dc",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": ""
   },
   {
     "id": "2025-115-fort-lauderdale",
