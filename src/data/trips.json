@@ -2274,10 +2274,10 @@
   {
     "id": "2025-109-atlanta-and-washington-dc-split-return",
     "year": 2025,
-    "month": null,
+    "month": 1,
     "day": null,
-    "displayDate": "2025",
-    "sortKey": "2025-13-99-001",
+    "displayDate": "January 2025",
+    "sortKey": "2025-01-99-018",
     "label": "Atlanta and Washington DC split return",
     "travelers": [
       "joey",
@@ -2293,7 +2293,7 @@
         "modeFromPrevious": null
       },
       {
-        "locationId": "atlanta-ga",
+        "locationId": "washington-dc",
         "modeFromPrevious": "plane"
       },
       {
@@ -2306,7 +2306,11 @@
       }
     ],
     "notes": "Bonnie returned from Atlanta; Joey continued to Washington DC, then San Diego.",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": ""
   },
   {
     "id": "2025-110-washington-dc",
