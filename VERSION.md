@@ -1,1 +1,1 @@
-GlobeHoppers v3.44 — Hero Close + Corrected Group Accents
+GlobeHoppers v3.45 — Group Accent Placement + Themed Delete Popups

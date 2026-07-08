@@ -42,6 +42,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [formError, setFormError] = useState('');
+  const [confirmRequest, setConfirmRequest] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('journeylines.githubToken') || '');
   const [repo, setRepo] = useState(() => localStorage.getItem('journeylines.repo') || '');
   const [dragId, setDragId] = useState(null);
@@ -191,9 +192,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   async function saveTripFromModal() {
     try {
-      if (!draft.year || !draft.month) throw new Error('Please choose both a year and a month before saving this hop.');
-      if (!draft.travelers?.length && !(draft.guestHoppers || []).length) throw new Error('Please select at least one Hopper or Guest Hopper before saving this hop.');
-      if (!draft.toLocationId && !draft.toLocationText?.trim()) throw new Error('Please choose a destination before saving this hop.');
+      validateHopDraftForSave(draft);
       setBusy(true);
       const currentScroll = studioListRef.current?.scrollTop ?? null;
       const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases);
@@ -212,27 +211,48 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   async function deleteTripFromModal() {
     if (!editingId) return;
     const label = draft.label || draft.toLocationText || editingId;
-    if (!confirm(`Delete ${label}?`)) return;
-    try {
-      setBusy(true);
-      const currentScroll = studioListRef.current?.scrollTop ?? null;
-      const nextTrips = trips.filter(t => t.id !== editingId);
-      if (currentScroll != null) restoreScrollRef.current = currentScroll;
-      setTrips(nextTrips);
-      await commitData(nextTrips, locations, `Delete trip: ${label}`);
-      closeModal();
-    } catch (err) {
-      alert(err.message || String(err));
-    } finally {
-      setBusy(false);
-    }
+    setConfirmRequest({
+      title: 'Delete hop?',
+      message: `Delete ${label}? This cannot be undone.`,
+      confirmLabel: 'Delete hop',
+      onConfirm: async () => {
+        try {
+          setBusy(true);
+          const currentScroll = studioListRef.current?.scrollTop ?? null;
+          const nextTrips = trips.filter(t => t.id !== editingId);
+          if (currentScroll != null) restoreScrollRef.current = currentScroll;
+          setTrips(nextTrips);
+          await commitData(nextTrips, locations, `Delete trip: ${label}`);
+          closeModal();
+        } catch (err) {
+          setFormError(err.message || String(err));
+        } finally {
+          setBusy(false);
+        }
+      }
+    });
   }
 
   function del(id) {
-    if (!confirm('Delete this trip?')) return;
-    const nextTrips = trips.filter(t => t.id !== id);
-    setTrips(nextTrips);
-    commitData(nextTrips, locations, 'Delete trip from GlobeHoppers').catch(err => alert(err.message || String(err)));
+    const trip = trips.find(t => t.id === id);
+    const label = trip?.label || trip?.toLocationName || trip?.toLocationId || 'this hop';
+    setConfirmRequest({
+      title: 'Delete hop?',
+      message: `Delete ${label}? This cannot be undone.`,
+      confirmLabel: 'Delete hop',
+      onConfirm: async () => {
+        try {
+          setBusy(true);
+          const nextTrips = trips.filter(t => t.id !== id);
+          setTrips(nextTrips);
+          await commitData(nextTrips, locations, `Delete trip: ${label}`);
+        } catch (err) {
+          setFormError(err.message || String(err));
+        } finally {
+          setBusy(false);
+        }
+      }
+    });
   }
   function download() {
     const blob = new Blob([JSON.stringify(trips, null, 2)], { type: 'application/json' });
@@ -405,6 +425,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       </details>
     </aside>
 
+    {confirmRequest && <ThemedConfirmPopup request={confirmRequest} busy={busy} onCancel={() => setConfirmRequest(null)} onConfirm={async () => { const action = confirmRequest.onConfirm; setConfirmRequest(null); await action?.(); }} />}
+
     {modal && <TripModal
       mode={modal}
       closing={modalClosing}
@@ -433,6 +455,40 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
 
 
+function validateHopDraftForSave(draft = {}) {
+  const missing = [];
+  if (!draft.month) missing.push('Month');
+  if (!draft.travelers?.length && !(draft.guestHoppers || []).length) missing.push('Hoppers');
+  if (!draft.toLocationId && !draft.toLocationText?.trim()) missing.push('Destination');
+  if (!missing.length) return;
+  const actions = [];
+  if (missing.includes('Month')) actions.push('choose a month');
+  if (missing.includes('Hoppers')) actions.push('add at least one Hopper or Guest Hopper');
+  if (missing.includes('Destination')) actions.push('choose a destination');
+  throw new Error(`Missing required ${missing.length === 1 ? 'field' : 'fields'}: ${formatHumanList(missing)}. Please ${formatHumanList(actions)}.`);
+}
+
+function formatHumanList(items = []) {
+  if (items.length <= 1) return items[0] || '';
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+}
+
+function ThemedConfirmPopup({ request, busy, onCancel, onConfirm }) {
+  return <div className="studio-confirm-backdrop" role="presentation" onClick={onCancel}>
+    <div className="studio-confirm-popup glass" role="dialog" aria-modal="true" aria-labelledby="studio-confirm-title" onClick={(e) => e.stopPropagation()}>
+      <p className="eyebrow">Please confirm</p>
+      <h3 id="studio-confirm-title">{request.title || 'Confirm action'}</h3>
+      <p>{request.message}</p>
+      <div className="studio-confirm-actions">
+        <button type="button" className="secondary" disabled={busy} onClick={onCancel}>Cancel</button>
+        <button type="button" className="danger" disabled={busy} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+
 function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete, hopperData, activeTripId, onPlayTrip }) {
   const playFromRow = () => { if (!reorderMode) onPlayTrip?.(trip.id); };
   const visual = resolveTripVisual(trip, hopperData || {});
@@ -440,10 +496,12 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
   const isMixed = !visual.isSquad && colors.length > 1;
   const accent = tripAccent(trip, hopperData);
   const accent2 = visual.accentColors?.[0] || colors[1] || accent;
+  const accent3 = visual.accentColors?.[1] || colors[2] || 'transparent';
+  const accent4 = visual.accentColors?.[2] || colors[3] || 'transparent';
   const isCurrent = activeTripId && trip.id === activeTripId;
   return <div
     className={`studio-trip-row studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''}`}
-    style={{ '--accent': accent, '--accent-2': accent2, '--accent-gradient': colorGradient(colors, accent) }}
+    style={{ '--accent': accent, '--accent-2': accent2, '--accent-3': accent3, '--accent-4': accent4, '--accent-gradient': colorGradient(colors, accent) }}
     draggable={reorderMode}
     onClick={playFromRow}
     onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
@@ -613,8 +671,8 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <section className="studio-pick-section compact-section travelers-section">
             <h3>Hoppers</h3>
             <div className="pill-selectors">
-              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const accent = selected && visual.isSquad ? visual.color : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
-                {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}<button type="button" onClick={(e) => { e.stopPropagation(); setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).filter(x => x.id !== g.id) })); }}>×</button></span>)}
+              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': t.color }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
+                {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}<button type="button" onClick={(e) => { e.stopPropagation(); setFormError(''); setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).filter(x => x.id !== g.id) })); }}>×</button></span>)}
                 <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
                 {guestPopupOpen && <div className="guest-hopper-popover glass">
                   <label>Name<input autoFocus value={guestDraft.name} placeholder="Name" onChange={e => setGuestDraft(g => ({ ...g, name: e.target.value }))} /></label>
@@ -699,12 +757,15 @@ function previewGroupLabel(draft = {}, visual = {}) {
 
 function previewDotBackground(colors = [], fallback = '#5d7288') {
   const list = colors.filter(Boolean);
-  if (list.length <= 1) return list[0] || fallback;
-  const c1 = list[0] || fallback;
-  const c2 = list[1] || c1;
-  const c3 = list[2] || c1;
-  const c4 = list[3] || c1;
-  return `conic-gradient(from 0deg, ${c1} 0deg 90deg, ${c2} 90deg 180deg, ${c3} 180deg 270deg, ${c4} 270deg 360deg)`;
+  const base = list[0] || fallback;
+  if (list.length <= 1) return base;
+  const c2 = list[1] || base;
+  const c3 = list[2] || base;
+  const c4 = list[3] || base;
+  // Primary Hopper owns the base circle. Additional Hoppers/Guests fill
+  // top-right, then bottom-right, then bottom-left so the dot matches the
+  // larger Hop Preview corner accents.
+  return `conic-gradient(from 0deg, ${c2} 0deg 90deg, ${c3} 90deg 180deg, ${c4} 180deg 270deg, ${base} 270deg 360deg)`;
 }
 
 function TripRoutePreview({ draft, locById, locs, startLocation, destination, onSetLegMode, hopperData }) {
@@ -731,8 +792,10 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
   const noHoppers = !!visual.isEmpty;
   const mixedColors = (visual.colors || []).filter(Boolean);
   const accentColor = visual.accentColors?.[0] || mixedColors[1] || visual.color || '#5d7288';
+  const accentColor3 = visual.accentColors?.[1] || mixedColors[2] || 'transparent';
+  const accentColor4 = visual.accentColors?.[2] || mixedColors[3] || 'transparent';
   const isMixed = !visual.isSquad && mixedColors.length > 1;
-  return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''} ${isMixed ? 'route-preview-card--mixed' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-accent-2': accentColor, '--trip-gradient': colorGradient(mixedColors, visual.color || '#5d7288') }}>
+  return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''} ${isMixed ? 'route-preview-card--mixed' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-accent-2': accentColor, '--trip-accent-3': accentColor3, '--trip-accent-4': accentColor4, '--trip-gradient': colorGradient(mixedColors, visual.color || '#5d7288') }}>
     <p className="eyebrow">Hop preview</p>
     <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
     <div className="route-preview-meta">
@@ -792,7 +855,7 @@ function AutocompleteField({ label, value, onChange, matches, onChoose, compact,
 
 function normalizeTrip(draft, trips, locations, homeBases) {
   if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
-  if (!draft.travelers?.length) throw new Error('Select at least one traveler before saving.');
+  if (!draft.travelers?.length && !(draft.guestHoppers || []).length) throw new Error('Select at least one Hopper or Guest Hopper before saving.');
   let nextLocations = locations;
   let toLocationId = draft.toLocationId;
   if (!toLocationId && draft.toLocationText) {

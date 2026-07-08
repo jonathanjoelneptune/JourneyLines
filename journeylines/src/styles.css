@@ -4823,3 +4823,134 @@ button.danger.compact-delete,
   border: 1px solid rgba(255,255,255,.34);
   box-shadow: 0 0 10px color-mix(in srgb, var(--trip-accent-2), transparent 58%);
 }
+
+/* GlobeHoppers v3.45 group accents + themed delete confirmations */
+/* Guest Hoppers are always selected once added, so give them the same clear selected glow. */
+.guest-hopper-chip.is-selected,
+.traveler-pill.guest-hopper-chip.is-selected {
+  border-color: color-mix(in srgb, var(--accent), white 12%) !important;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--accent), transparent 60%),
+      color-mix(in srgb, var(--accent), transparent 82%)) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent), transparent 34%),
+    0 0 16px color-mix(in srgb, var(--accent), transparent 58%) !important;
+}
+.guest-hopper-chip.is-selected .traveler-dot {
+  box-shadow: 0 0 13px var(--accent) !important;
+}
+
+/* Add Hop picker headings should stand out a bit more without becoming heavy. */
+.travelers-section > h3,
+.transport-choice-group > h3,
+.trip-type-selector > h3 {
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 9px 4px 10px;
+  border-radius: 999px;
+  color: #9ff8ff !important;
+  letter-spacing: .04em;
+  background:
+    linear-gradient(90deg, rgba(0,229,255,.13), rgba(255,179,33,.055)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,229,255,.16),
+    0 0 16px rgba(0,229,255,.08);
+}
+
+/* Multi-person Hop Preview accents: 2nd person top-right, 3rd bottom-right, 4th bottom-left. */
+.route-preview-card--mixed::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -2px !important;
+  border-radius: inherit !important;
+  background:
+    radial-gradient(circle at 100% 0%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 0%) 0%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 22%) 16%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 78%) 34%,
+      transparent 54%),
+    radial-gradient(circle at 100% 100%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 0%) 0%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 28%) 15%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 84%) 34%,
+      transparent 54%),
+    radial-gradient(circle at 0% 100%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 0%) 0%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 30%) 15%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 86%) 34%,
+      transparent 54%) !important;
+  opacity: .88 !important;
+  pointer-events: none !important;
+}
+
+/* Match multi-member placement on edit timeline rows too. */
+.studio-trip-row.is-mixed::after,
+.studio-trip-row--expanded.is-mixed::after,
+.studio-trip-row--compact.is-mixed::after,
+.studio-trip-row--card.is-mixed::after {
+  inset: -2px !important;
+  width: auto !important;
+  height: auto !important;
+  background:
+    radial-gradient(circle at 100% 0%,
+      color-mix(in srgb, var(--accent-2), transparent 0%) 0%,
+      color-mix(in srgb, var(--accent-2), transparent 20%) 14%,
+      color-mix(in srgb, var(--accent-2), transparent 78%) 32%,
+      transparent 52%),
+    radial-gradient(circle at 100% 100%,
+      color-mix(in srgb, var(--accent-3), transparent 0%) 0%,
+      color-mix(in srgb, var(--accent-3), transparent 26%) 14%,
+      color-mix(in srgb, var(--accent-3), transparent 84%) 32%,
+      transparent 52%),
+    radial-gradient(circle at 0% 100%,
+      color-mix(in srgb, var(--accent-4), transparent 0%) 0%,
+      color-mix(in srgb, var(--accent-4), transparent 28%) 14%,
+      color-mix(in srgb, var(--accent-4), transparent 86%) 32%,
+      transparent 52%) !important;
+}
+
+/* Themed confirmation modal for destructive actions. */
+.studio-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50060;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .28);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.studio-confirm-popup {
+  width: min(440px, calc(100vw - 44px));
+  padding: 22px;
+  border-radius: 26px;
+  border: 1px solid rgba(255,179,33,.42);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,179,33,.18), transparent 38%),
+    linear-gradient(180deg, rgba(8,16,31,.92), rgba(4,10,20,.86)) !important;
+  box-shadow: 0 26px 90px rgba(0,0,0,.55), 0 0 30px rgba(255,179,33,.12);
+}
+.studio-confirm-popup h3 {
+  margin: 6px 0 8px;
+  font-size: 1.5rem;
+}
+.studio-confirm-popup p:not(.eyebrow) {
+  margin: 0;
+  color: rgba(235,248,255,.84);
+  line-height: 1.38;
+}
+.studio-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.studio-confirm-actions .danger {
+  background: linear-gradient(135deg, #ff5c7a, #ffb321) !important;
+  border-color: rgba(255,255,255,.18) !important;
+  color: #07101f !important;
+  font-weight: 950;
+}
