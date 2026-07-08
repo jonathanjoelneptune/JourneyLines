@@ -337,7 +337,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // completes, route cache changes, or display settings change. Avoid doing
     // this in the per-frame playback loop.
     syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-  }, [mapReady, completedLegs, travById, hopperData, showTrails, trailOpacity, trailWidth, routedGeometries]);
+  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -347,7 +347,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, hopperData || travById), scene?.newArrivalId || null, droppedPinIdsRef);
-  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, hopperData, isStarted, introLaunching, isPlaying, globeOverview]);
+  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying, globeOverview]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -416,7 +416,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
     updateAirArcOverlay(map, airArcRef.current, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, hopperData, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -426,7 +426,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     syncPulse(map, active.leg.to, color);
     arrivalTimerRef.current = setTimeout(() => syncPulse(map, active.leg.to, 'transparent'), 900);
     return () => clearTimeout(arrivalTimerRef.current);
-  }, [mapReady, activeIndex, scene?.pulseActive, active, completedMode, travById, hopperData]);
+  }, [mapReady, activeIndex, scene?.pulseActive, active, completedMode, travById]);
 
 
   useEffect(() => {
@@ -970,7 +970,7 @@ function updateVisitTicks(container, visitColors = []) {
 function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, visibilityStateRef, runtimeRef) {
   const now = performance.now();
   const runtime = runtimeRef?.current || {};
-  const minInterval = runtime.playback ? 110 : 80;
+  const minInterval = runtime.playback ? 180 : 80;
   if (throttleRef?.current?.t && now - throttleRef.current.t < minInterval) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
   refreshPersistentPinPositions(map, labelsRef, visibilityStateRef, runtimeRef);
@@ -985,75 +985,59 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   const runtime = runtimeRef?.current || {};
   const activeIds = runtime.activeIds || new Set();
   const playback = Boolean(runtime.playback);
+  const stateMap = visibilityStateRef?.current;
 
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
     if (!loc) continue;
-
     const pt = map.project([loc.lon, loc.lat]);
     const angularDistance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
     const activePlacard = activeIds.has(loc.id);
-
-    // Do not cull because a label is away from the camera focus. If it is in
-    // the projected view and still on the front face, keep it. This preserves
-    // local context like Oakland/San Francisco while the camera is around LA.
-    const onScreenShow = pt.x > -260 && pt.x < w + 260 && pt.y > -220 && pt.y < h + 220;
-    const onScreenHide = pt.x > -420 && pt.x < w + 420 && pt.y > -360 && pt.y < h + 360;
-
-    // The problem band is the globe rim/backside transition. Playback uses a
-    // stricter front-face threshold than globe overview, but no local-distance
-    // filter. Separate show/hide thresholds prevent flutter.
-    const baseHorizon = hardPlacardHorizonCutoffDeg(zoom);
-    const showCutoff = playback && !activePlacard ? 44 : baseHorizon - 1;
-    const hideCutoff = playback && !activePlacard ? 52 : baseHorizon + 2.5;
-
-    const showCandidate = Boolean(onScreenShow && angularDistance <= showCutoff);
-    const hideCandidate = Boolean(!onScreenHide || angularDistance > hideCutoff);
-
     const now = performance.now();
-    const stateMap = visibilityStateRef?.current;
-    const prior = stateMap?.get(loc.id) || { visible: false, switchedAt: 0, showSince: 0, flips: 0, lockedUntil: 0 };
-    let visible = prior.visible;
+    const prior = stateMap?.get(loc.id) || { visible: false, hiddenUntil: 0, seenSafeSince: 0 };
 
-    if (activePlacard) {
-      visible = showCandidate || (!hideCandidate && prior.visible);
-    } else if (hideCandidate) {
-      visible = false;
-      if (prior.visible) prior.flips = (prior.flips || 0) + 1;
-      prior.showSince = 0;
-      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 1200 : 140));
-    } else if (showCandidate) {
-      if (!prior.showSince) prior.showSince = now;
-      const dwell = playback ? (prior.flips >= 2 ? 900 : 320) : 70;
-      visible = now >= (prior.lockedUntil || 0) && now - prior.showSince >= dwell;
-      if (visible) prior.flips = 0;
+    const onScreenLoose = pt.x > -320 && pt.x < w + 320 && pt.y > -260 && pt.y < h + 260;
+
+    let visible;
+    if (playback && !activePlacard) {
+      // Hard safe-face gate: no rim band, no dim state, no repeated re-entry.
+      // Labels must be clearly on the front face for a short dwell before they
+      // can appear, and once they leave the safe face they stay hidden briefly.
+      const safeFront = angularDistance <= 48;
+      const unsafeBackOrRim = angularDistance >= 54 || !onScreenLoose;
+      if (unsafeBackOrRim) {
+        visible = false;
+        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 2000);
+        prior.seenSafeSince = 0;
+      } else if (safeFront && onScreenLoose) {
+        if (!prior.seenSafeSince) prior.seenSafeSince = now;
+        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 260;
+      } else {
+        visible = false;
+      }
     } else {
-      visible = prior.visible;
+      const horizonCutoff = hardPlacardHorizonCutoffDeg(zoom);
+      visible = Boolean(onScreenLoose && angularDistance <= horizonCutoff - 1);
     }
 
-    if (visible !== prior.visible) prior.switchedAt = now;
     prior.visible = visible;
     if (stateMap) stateMap.set(loc.id, prior);
 
     el.classList.toggle('is-culled', !visible);
-    el.classList.toggle('is-flicker-locked', Boolean(showCandidate && !visible));
+    el.classList.toggle('is-flicker-locked', !visible);
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     el.__jlVisible = visible;
-
-    // Hard binary visibility. Do not allow MapLibre occlusion opacity to leave
-    // dimmed ghost placards around the globe edge.
     try { el.__jlMarker?.setOpacity?.(visible ? '1' : '0', '0'); } catch {}
     if (visible) {
       el.style.display = '';
       el.style.visibility = 'visible';
       el.style.opacity = '1';
-      el.style.pointerEvents = 'none';
     } else {
       el.style.opacity = '0';
       el.style.visibility = 'hidden';
       el.style.display = 'none';
-      el.style.pointerEvents = 'none';
     }
+    el.style.pointerEvents = 'none';
   }
 }
 

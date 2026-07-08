@@ -49,8 +49,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
-  const safeHopperData = hopperData || { hoppers: [{ id:'joey', name:'Joey', color:'#ff8a00', colorName:'orange' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8', colorName:'pink' }], hopSquads: [{ id:'neptunes', name:'The Neptunes', hopperIds:['joey','bonnie'], color:'#00e5ff', colorName:'cyan' }], palette: [{ name:'orange', label:'Orange', color:'#ff8a00' }, { name:'pink', label:'Pink', color:'#ff4fd8' }, { name:'gray', label:'Gray', color:'#8e99a8' }, { name:'green', label:'Green', color:'#44f48a' }, { name:'blue', label:'Blue', color:'#2f80ff' }, { name:'cyan', label:'Cyan', color:'#00e5ff' }] };
-  const normalizedHoppers = useMemo(() => normalizeHopperData(safeHopperData), [safeHopperData]);
+  const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
 
   function previewMapLocation(location) {
     if (!location || location.lon == null || location.lat == null) return;
@@ -379,9 +378,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         {viewType === 'card' ? groupTripsByYear(reorderMode ? orderDraft : sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid studio-card-grid">
-            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} />)}
+            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} />)}
           </div>
-        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} />)}
+        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} />)}
       </div>
 
       <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
@@ -424,11 +423,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
 
 
-function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete, hopperData }) {
+function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete }) {
   const openIfCard = () => { if (!reorderMode && viewType === 'card') onEdit(trip); };
   return <div
     className={`studio-trip-row studio-trip-row--${viewType}`}
-    style={{ '--accent': resolveTripVisual(trip, hopperData).color }}
+    style={{ '--accent': tripAccent(trip) }}
     draggable={reorderMode}
     onClick={openIfCard}
     onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
@@ -437,7 +436,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
     onDrop={() => { moveTrip(dragId, trip.id); setDragId(null); }}
   >
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
-    <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
+    <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById)}</small></span>
     <span className="studio-trip-buttons">
       {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
     </span>
@@ -496,9 +495,6 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const [calendarCursor, setCalendarCursor] = useState(() => ({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || new Date().getMonth() + 1 }));
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
-  const [guestPopupOpen, setGuestPopupOpen] = useState(false);
-  const [guestColorOpen, setGuestColorOpen] = useState(false);
-  const [guestDraft, setGuestDraft] = useState({ name: '', colorName: 'gray', color: '#8e99a8' });
   const dateRangeRef = useRef(null);
   const bothHoppersSelected = draft.travelers?.includes('joey') && draft.travelers?.includes('bonnie');
 
@@ -520,21 +516,6 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
       month: Number(draft.month) || 1
     });
   }, [draft.year, draft.month]);
-
-  function openGuestPopup() {
-    setGuestDraft({ id: `guest-${Date.now().toString(36)}`, name: '', colorName: 'gray', color: '#8e99a8' });
-    setGuestColorOpen(false);
-    setGuestPopupOpen(true);
-  }
-  function chooseGuestColor(name) {
-    const c = ((normalizedHoppers?.palette?.length ? normalizedHoppers.palette : [{ name:'gray', label:'Gray', color:'#8e99a8' }, { name:'orange', label:'Orange', color:'#ff8a00' }, { name:'pink', label:'Pink', color:'#ff4fd8' }, { name:'green', label:'Green', color:'#44f48a' }, { name:'blue', label:'Blue', color:'#2f80ff' }])).find(p => p.name === name) || { name: 'gray', color: '#8e99a8' };
-    setGuestDraft(g => ({ ...g, colorName: c.name, color: c.color }));
-  }
-  function addGuestFromPopup() {
-    if (!guestDraft.name.trim()) return;
-    setDraft(d => ({ ...d, guestHoppers: [...(d.guestHoppers || []), { ...guestDraft, name: guestDraft.name.trim() }] }));
-    setGuestPopupOpen(false);
-  }
 
   function selectCalendarDay(day) {
     const selected = { year: calendarCursor.year, month: calendarCursor.month, day };
@@ -591,25 +572,11 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
         <div className="studio-modal-maincol">
           <section className="studio-pick-section compact-section travelers-section">
             <h3>Hoppers</h3>
-            <div className="pill-selectors hoppers-picker">
-              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [
-                { id: 'joey', name: 'Joey', color: '#ff8a00' },
-                { id: 'bonnie', name: 'Bonnie', color: '#ff4fd8' }
-              ])).map(t => {
-                const selected = draft.travelers?.includes(t.id);
-                return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': t.color || '#8e99a8' }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>;
-              })}
-              {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}</span>)}
-              <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
+            <div className="pill-selectors">
+              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const accent = selected && visual.isSquad ? visual.color : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
+                <button type="button" className="traveler-pill add-guest-hopper" onClick={() => setDraft(d => ({ ...d, guestHoppers: [...(d.guestHoppers || []), { id: `guest-${Date.now().toString(36)}`, name: 'Guest Hopper', colorName: 'green', color: '#44f48a' }] }))}>+ Add Guest Hopper</button>
+                {(draft.guestHoppers || []).map(g => <span key={g.id} className="guest-hopper-editor" style={{ '--accent': g.color }}><input value={g.name} onChange={e => setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).map(x => x.id === g.id ? { ...x, name: e.target.value } : x) }))} /><select value={g.colorName || 'green'} onChange={e => { const c = (normalizedHoppers.palette || []).find(p => p.name === e.target.value) || { name: 'green', color: '#44f48a' }; setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).map(x => x.id === g.id ? { ...x, colorName: c.name, color: c.color } : x) })); }} >{(normalizedHoppers.palette || []).map(c => <option key={c.name} value={c.name}>{c.label}</option>)}</select></span>)}
             </div>
-            {guestPopupOpen && <div className="guest-hopper-popover glass">
-              <label>Name<input autoFocus value={guestDraft.name} placeholder="Name" onChange={e => setGuestDraft(g => ({ ...g, name: e.target.value }))} /></label>
-              <div className="guest-color-row"><span>Color</span><ColorPopover colors={(normalizedHoppers?.palette?.length ? normalizedHoppers.palette : [{ name:'gray', label:'Gray', color:'#8e99a8' }, { name:'orange', label:'Orange', color:'#ff8a00' }, { name:'pink', label:'Pink', color:'#ff4fd8' }, { name:'green', label:'Green', color:'#44f48a' }, { name:'blue', label:'Blue', color:'#2f80ff' }])} value={guestDraft.colorName} color={guestDraft.color} open={guestColorOpen} onToggle={() => setGuestColorOpen(v => !v)} onChoose={(name) => { chooseGuestColor(name); setGuestColorOpen(false); }} /></div>
-              <div className="guest-popover-actions">
-                <button type="button" className="secondary" onClick={() => setGuestPopupOpen(false)}>Cancel</button>
-                <button type="button" className="primary" onClick={addGuestFromPopup}>OK</button>
-              </div>
-            </div>}
           </section>
 
           <section className="studio-pick-section compact-section transport-triptype-row">
@@ -701,14 +668,14 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
     <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
     <div className="route-preview-meta">
       <span>{formatDateRangeLabel(draft) || (draft.year ? [monthLabel(draft.month), draft.year].filter(Boolean).join(' ') : 'Dates pending')}</span>
-      <span><b></b>{travelerSummary(draft.travelers, draft.guestHoppers, normalizedHoppers)} · {groupNameForHoppers(draft.travelers)}</span>
+      <span><b></b>{travelerSummary(draft.travelers, draft.guestHoppers)} · {groupNameForHoppers(draft.travelers)}</span>
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
     <div className="route-preview-list">
       {rows.map((r, i) => <div className="route-preview-row" key={`${r.label}-${i}`}>
         <PreviewModeButton mode={r.mode} target={r.target} onSetLegMode={onSetLegMode} />
         <div><strong>{r.label}</strong><small>{r.place}</small></div>
-        <span className="route-preview-people">{travelerSummary(draft.travelers, draft.guestHoppers, normalizedHoppers)}</span>
+        <span className="route-preview-people">{travelerSummary(draft.travelers, draft.guestHoppers)}</span>
       </div>)}
     </div>
   </aside>;
@@ -855,26 +822,20 @@ function formatEndDisplayDate(t) {
   if (!t.endYear) return '';
   return formatDisplayDate({ year: t.endYear, month: t.endMonth, day: t.endDay });
 }
-function tripAccent(trip, hopperData) {
-  return resolveTripVisual(trip, hopperData).color || '#5d7288';
-}
-
-
-function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
-  return <span className="color-popover">
-    <button type="button" className="color-popover__trigger" style={{ '--swatch': color || '#8e99a8' }} onClick={onToggle} title="Choose color" />
-    {open && <span className="color-popover__menu glass">
-      {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChoose?.(c.name)} />)}
-    </span>}
-  </span>;
+function tripAccent(trip) {
+  const hasJ = trip.travelers?.includes('joey');
+  const hasB = trip.travelers?.includes('bonnie');
+  if (hasJ && hasB) return '#00e5ff';
+  if (hasB) return '#ff4fd8';
+  if (hasJ) return '#ff8a00';
+  return '#5d7288';
 }
 
 
 function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }
 function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }
-function travelerSummary(travelers = [], guestHoppers = [], hopperData = {}) {
-  const byId = Object.fromEntries((hopperData.hoppers || []).map(h => [h.id, h.name]));
-  const all = [...(travelers || []).map(id => byId[id] || id), ...(guestHoppers || []).map(g => g.name || 'Guest Hopper')];
+function travelerSummary(travelers = [], guestHoppers = []) {
+  const all = [...(travelers || []), ...(guestHoppers || []).map(g => g.name || 'Guest Hopper')];
   if (!all.length) return 'No hoppers selected';
   return all.join(' + ');
 }
@@ -920,11 +881,7 @@ function formatDisplayDate(t) { if (t.month && t.day) return new Date(t.year, t.
 function formatTripDate(t) { return t.displayDate || formatDisplayDate(t); }
 function displayLocation(l) { return l ? [l.name, l.region && regionShort(l.region), l.country !== 'United States' ? l.country : ''].filter(Boolean).join(', ') : ''; }
 function displayNameFromLocation(l) { return l?.name || ''; }
-function summarizeTrip(t, locById, hopperData = {}) {
-  const to = locById[t.toLocationId];
-  const visual = resolveTripVisual(t, hopperData);
-  return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${visual.name || 'No hoppers'} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`;
-}
+function summarizeTrip(t, locById) { const to = locById[t.toLocationId]; const people = (t.travelers || []).join(' + ') || 'No hoppers'; return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${people} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`; }
 function filterLocations(locs, q) { const needle = String(q || '').toLowerCase().trim(); if (!needle) return locs.slice(0, 6); return locs.filter(l => `${l.name} ${l.region} ${l.country} ${l.id}`.toLowerCase().includes(needle)); }
 function findLocationByText(locs, text) { const q = String(text || '').toLowerCase().trim(); return locs.find(l => [l.id, l.name, displayLocation(l)].some(v => String(v).toLowerCase() === q)) || locs.find(l => displayLocation(l).toLowerCase().includes(q) || q.includes(l.name.toLowerCase())); }
 function createPlaceholderLocation(text) { const name = String(text || 'New destination').split(',')[0].trim(); return { id: slug(text || name), name, region: '', country: '', continent: '', lat: 0, lon: 0, needsGeocoding: true }; }

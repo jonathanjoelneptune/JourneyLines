@@ -294,7 +294,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} />}
   </main>;
 }
 
@@ -304,35 +304,16 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   const { hoppers, hopSquads, palette } = normalizeHopperData(hopperData);
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify({ hoppers, hopSquads, palette })));
   const [busy, setBusy] = useState(false);
-  const [openPicker, setOpenPicker] = useState(null);
   const token = localStorage.getItem('journeylines.githubToken') || '';
   const repo = localStorage.getItem('journeylines.repo') || '';
   const colors = palette?.length ? palette : [
-    { name: 'red', label: 'Red', color: '#ff3b30' },
     { name: 'orange', label: 'Orange', color: '#ff8a00' },
-    { name: 'yellow', label: 'Yellow', color: '#ffd60a' },
-    { name: 'gold', label: 'Gold', color: '#d7a300' },
-    { name: 'green', label: 'Green', color: '#44f48a' },
-    { name: 'blue', label: 'Blue', color: '#2f80ff' },
     { name: 'pink', label: 'Pink', color: '#ff4fd8' },
-    { name: 'purple', label: 'Purple', color: '#9b5cff' },
-    { name: 'gray', label: 'Gray', color: '#8e99a8' },
-    { name: 'black', label: 'Black', color: '#050607' },
     { name: 'cyan', label: 'Cyan', color: '#00e5ff' }
   ];
 
-  function pickColor(colorName) {
-    return colors.find(c => c.name === colorName) || colors.find(c => c.name === 'blue') || colors[0];
-  }
   function updateHopper(id, patch) {
     setDraft(d => ({ ...d, hoppers: d.hoppers.map(h => h.id === id ? { ...h, ...patch } : h) }));
-  }
-  function deleteHopper(id) {
-    setDraft(d => ({
-      ...d,
-      hoppers: d.hoppers.filter(h => h.id !== id),
-      hopSquads: d.hopSquads.map(s => ({ ...s, hopperIds: (s.hopperIds || []).filter(x => x !== id) }))
-    }));
   }
   function addHopper() {
     const id = `hopper-${Date.now().toString(36)}`;
@@ -345,14 +326,8 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     const id = `squad-${Date.now().toString(36)}`;
     setDraft(d => ({ ...d, hopSquads: [...d.hopSquads, { id, name: 'New Hop Squad', hopperIds: [], colorName: 'cyan', color: '#00e5ff' }] }));
   }
-  function deleteSquad(id) {
-    setDraft(d => ({ ...d, hopSquads: d.hopSquads.filter(s => s.id !== id) }));
-  }
-  function setColor(kind, id, colorName) {
-    const c = pickColor(colorName);
-    if (kind === 'hopper') updateHopper(id, { colorName: c.name, color: c.color });
-    else updateSquad(id, { colorName: c.name, color: c.color });
-    setOpenPicker(null);
+  function pickColor(colorName) {
+    return colors.find(c => c.name === colorName) || colors[0];
   }
   async function save() {
     const clean = {
@@ -375,7 +350,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     onClose?.();
   }
   return <section className="hopper-editor-backdrop" onClick={onClose}>
-    <div className="hopper-editor glass hopper-editor--compact" onClick={e => e.stopPropagation()}>
+    <div className="hopper-editor glass" onClick={e => e.stopPropagation()}>
       <header className="hopper-editor__header">
         <p className="eyebrow">GlobeHoppers Studio</p>
         <h2>Edit Hoppers</h2>
@@ -388,11 +363,9 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
             <button className="primary small" onClick={addHopper}>Add Hopper</button>
           </div>
           <div className="hopper-list">
-            {draft.hoppers.map(h => <article className="hopper-card hopper-card--row" key={h.id} style={{ '--accent': h.color }}>
-              <input aria-label="Hopper name" value={h.name} onChange={e => updateHopper(h.id, { name: e.target.value })} />
-              <span className="hopper-color-label">Color:</span>
-              <ColorPopover colors={colors} value={h.colorName || 'blue'} color={h.color || '#2f80ff'} open={openPicker === `hopper:${h.id}`} onToggle={() => setOpenPicker(openPicker === `hopper:${h.id}` ? null : `hopper:${h.id}`)} onChoose={(name) => setColor('hopper', h.id, name)} />
-              <button className="danger compact-delete" type="button" onClick={() => deleteHopper(h.id)}>Delete</button>
+            {draft.hoppers.map(h => <article className="hopper-card" key={h.id} style={{ '--accent': h.color }}>
+              <input value={h.name} onChange={e => updateHopper(h.id, { name: e.target.value })} />
+              <ColorPicker colors={colors} value={h.colorName} onChange={(name) => { const c = pickColor(name); updateHopper(h.id, { colorName: c.name, color: c.color }); }} />
             </article>)}
           </div>
         </section>
@@ -403,22 +376,18 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
           </div>
           <div className="hopper-list">
             {draft.hopSquads.map(s => <article className="hopper-card hopper-card--squad" key={s.id} style={{ '--accent': s.color }}>
-              <div className="squad-row-top">
-                <input value={s.name} onChange={e => updateSquad(s.id, { name: e.target.value })} />
-                <span className="hopper-color-label">Color:</span>
-                <ColorPopover colors={colors} value={s.colorName || 'cyan'} color={s.color || '#00e5ff'} open={openPicker === `squad:${s.id}`} onToggle={() => setOpenPicker(openPicker === `squad:${s.id}` ? null : `squad:${s.id}`)} onChoose={(name) => setColor('squad', s.id, name)} />
-                <button className="danger compact-delete" type="button" onClick={() => deleteSquad(s.id)}>Delete</button>
-              </div>
+              <input value={s.name} onChange={e => updateSquad(s.id, { name: e.target.value })} />
               <div className="squad-members">
                 {draft.hoppers.map(h => {
                   const selected = (s.hopperIds || []).includes(h.id);
-                  return <button type="button" key={h.id} className={selected ? 'is-selected' : 'is-unselected'} style={{ '--accent': h.color }} onClick={() => {
+                  return <button type="button" key={h.id} className={selected ? 'is-selected' : ''} style={{ '--accent': h.color }} onClick={() => {
                     const ids = new Set(s.hopperIds || []);
                     selected ? ids.delete(h.id) : ids.add(h.id);
                     updateSquad(s.id, { hopperIds: [...ids] });
                   }}><span />{h.name}</button>;
                 })}
               </div>
+              <ColorPicker colors={colors} value={s.colorName} onChange={(name) => { const c = pickColor(name); updateSquad(s.id, { colorName: c.name, color: c.color }); }} />
             </article>)}
           </div>
         </section>
@@ -431,13 +400,10 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   </section>;
 }
 
-function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
-  return <span className="color-popover">
-    <button type="button" className="color-popover__trigger" style={{ '--swatch': color }} onClick={onToggle} title="Choose color" />
-    {open && <span className="color-popover__menu glass">
-      {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChoose?.(c.name)} />)}
-    </span>}
-  </span>;
+function ColorPicker({ colors = [], value, onChange }) {
+  return <div className="color-picker">
+    {colors.filter(c => c.name !== 'cyan' || true).map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChange?.(c.name)} />)}
+  </div>;
 }
 
 function slugify(value = '') {
@@ -451,10 +417,11 @@ async function commitSingleJsonFile(repo, token, path, data, message) {
     'Content-Type': 'application/json',
     'X-GitHub-Api-Version': '2022-11-28'
   };
+  const encodedPath = encodeURIComponent(path).replaceAll('%2F', '/');
   const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2) + '\n')));
 
-  async function getCurrentSha() {
-    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path).replaceAll('%2F','/')}?ref=main`, { headers, cache: 'no-store' });
+  async function currentSha() {
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${encodedPath}?ref=main`, { headers, cache: 'no-store' });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(await res.text());
     const json = await res.json();
@@ -463,19 +430,17 @@ async function commitSingleJsonFile(repo, token, path, data, message) {
 
   let lastError = null;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const sha = await getCurrentSha();
+    const sha = await currentSha();
     const body = { message, content, branch: 'main' };
     if (sha) body.sha = sha;
-    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path).replaceAll('%2F','/')}`, {
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${encodedPath}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(body)
     });
     if (res.ok) return await res.json();
-    const text = await res.text();
-    lastError = new Error(text);
-    // GitHub may still be processing the previous website commit. Refetch the
-    // latest file SHA and retry rather than surfacing a stale/422 error.
+    const msg = await res.text();
+    lastError = new Error(msg);
     if (![409, 422].includes(res.status)) throw lastError;
     await new Promise(resolve => setTimeout(resolve, 350 + attempt * 350));
   }
