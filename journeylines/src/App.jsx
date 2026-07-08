@@ -324,10 +324,15 @@ function buildTripTimeline(trips, legs, locById, travById) {
 function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollStore, onClose, onJump, onEditTrip, viewType = 'expanded', onViewTypeChange }) {
   const [menu, setMenu] = useState(null);
   const listRef = useRef(null);
+  const userScrollingRef = useRef(false);
+  const scrollTimerRef = useRef(null);
   useEffect(() => {
     if (!open || !listRef.current) return;
     requestAnimationFrame(() => { if (listRef.current) listRef.current.scrollTop = initialScroll || 0; });
-  }, [open, initialScroll]);
+  // Restore only when opening. During playback, App re-renders should not
+  // continuously force scrollTop and fight the user's scrollbar.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   useEffect(() => {
     if (!menu) return;
     const close = () => setMenu(null);
@@ -356,7 +361,7 @@ function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollSt
         <button className="drawer-close-button" onClick={() => { setMenu(null); onClose(); }}>Close</button>
         <h2>Travel Timeline</h2>
       </div>
-      <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onWheel={(e) => e.stopPropagation()} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
+      <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => { userScrollingRef.current = true; e.stopPropagation(); }} onScroll={(e) => { userScrollingRef.current = true; window.clearTimeout(scrollTimerRef.current); scrollTimerRef.current = window.setTimeout(() => { userScrollingRef.current = false; }, 180); onScrollStore?.(e.currentTarget.scrollTop); }}>
         {viewType === 'card' ? grouped.map(group => <section className="timeline-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid">

@@ -4138,3 +4138,11 @@ option {
   visibility: hidden !important;
   display: none !important;
 }
+
+
+/* GlobeHoppers v3.28 timeline scrollbar hardening */
+.trip-drawer__list {
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable both-edges !important;
+  will-change: scroll-position;
+}

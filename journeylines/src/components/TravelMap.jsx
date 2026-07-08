@@ -967,9 +967,10 @@ function updateVisitTicks(container, visitColors = []) {
 function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, visibilityStateRef, runtimeRef) {
   const now = performance.now();
   const runtime = runtimeRef?.current || {};
-  // Globe mode works well because the camera moves slowly. Playback gets a
-  // stricter, slower placard pass so persistent labels do not toggle at the rim.
-  const minInterval = runtime.playback ? 145 : 80;
+  // Playback gets a slower visibility cadence, but not a smaller camera-view
+  // footprint. The flicker issue is globe-rim/backside crossing, not local-region
+  // distance from the camera focus.
+  const minInterval = runtime.playback ? 125 : 80;
   if (throttleRef?.current?.t && now - throttleRef.current.t < minInterval) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
   refreshPersistentPinPositions(map, labelsRef, visibilityStateRef, runtimeRef);
@@ -984,36 +985,29 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   const runtime = runtimeRef?.current || {};
   const activeIds = runtime.activeIds || new Set();
   const playback = Boolean(runtime.playback);
-  const centerX = w / 2;
-  const centerY = h / 2;
-  const globeRadius = Math.min(w, h) / 2;
 
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
     const angularDistance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
-    const milesFromFocus = milesFromMapCenter(map, loc.lon, loc.lat);
     const activePlacard = activeIds.has(loc.id);
-    const distFromScreenCenter = Math.hypot(pt.x - centerX, pt.y - centerY);
 
-    // Playback uses a smaller safe zone than globe overview. This is the key
-    // difference: labels at the visible globe rim are hidden early instead of
-    // being allowed into the unstable edge band.
-    const rimShow = playback && !activePlacard ? globeRadius * 0.74 : globeRadius * 0.94;
-    const rimHide = playback && !activePlacard ? globeRadius * 0.82 : globeRadius * 1.04;
-    const onScreenShow = pt.x > 24 && pt.x < w - 24 && pt.y > 24 && pt.y < h - 24 && distFromScreenCenter < rimShow;
-    const onScreenHide = pt.x > -90 && pt.x < w + 90 && pt.y > -90 && pt.y < h + 90 && distFromScreenCenter < rimHide;
+    // Keep placards visible if they are in the current projected map view, even
+    // if they are not near the current camera focus. This prevents local-region
+    // pop-in such as hiding Oakland/San Francisco while focused around LA.
+    const onScreenShow = pt.x > -220 && pt.x < w + 220 && pt.y > -180 && pt.y < h + 180;
+    const onScreenHide = pt.x > -360 && pt.x < w + 360 && pt.y > -300 && pt.y < h + 300;
 
+    // The only aggressive culling during playback is backside/rim culling. Use
+    // separate enter/exit thresholds so labels do not toggle when crossing the
+    // globe rim. Globe overview can stay close to the previous working behavior.
     const baseHorizon = hardPlacardHorizonCutoffDeg(zoom);
-    const baseMiles = maxPlacardDistanceMiles(zoom);
-    const showCutoff = playback && !activePlacard ? baseHorizon - 12 : baseHorizon - 2;
-    const hideCutoff = playback && !activePlacard ? baseHorizon - 5 : baseHorizon + 1.8;
-    const showMiles = playback && !activePlacard ? baseMiles - 600 : baseMiles - 180;
-    const hideMiles = playback && !activePlacard ? baseMiles - 150 : baseMiles + 180;
+    const showCutoff = playback && !activePlacard ? Math.min(baseHorizon, 70) : baseHorizon - 1;
+    const hideCutoff = playback && !activePlacard ? Math.min(baseHorizon + 8, 82) : baseHorizon + 2.5;
 
-    const showCandidate = Boolean(onScreenShow && angularDistance <= showCutoff && milesFromFocus <= showMiles);
-    const hideCandidate = Boolean(!onScreenHide || angularDistance > hideCutoff || milesFromFocus > hideMiles);
+    const showCandidate = Boolean(onScreenShow && angularDistance <= showCutoff);
+    const hideCandidate = Boolean(!onScreenHide || angularDistance > hideCutoff);
 
     const now = performance.now();
     const stateMap = visibilityStateRef?.current;
@@ -1021,28 +1015,26 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     let visible = prior.visible;
 
     if (activePlacard) {
-      // Origin/destination placards can stay responsive. They are central to the
-      // current route and are not the flickering edge labels.
       visible = showCandidate || (!hideCandidate && prior.visible);
     } else if (hideCandidate) {
       visible = false;
       if (prior.visible) prior.flips = (prior.flips || 0) + 1;
       prior.showSince = 0;
-      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 900 : 220));
+      // Short lock is enough now that we are not hiding based on local camera
+      // focus. Longer locks caused unnecessary pop-in.
+      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 320 : 160));
     } else if (showCandidate) {
       if (!prior.showSince) prior.showSince = now;
-      const dwell = playback ? (prior.flips >= 2 ? 1200 : 520) : 120;
+      const dwell = playback ? (prior.flips >= 2 ? 520 : 180) : 80;
       visible = now >= (prior.lockedUntil || 0) && now - prior.showSince >= dwell;
       if (visible) prior.flips = 0;
     } else {
-      // Buffer zone: preserve prior state. This is the separate enter/exit
-      // threshold that prevents visible/hidden/visible/hidden flutter.
+      // In the buffer band, preserve the last stable visibility. This is the
+      // actual anti-flicker guard.
       visible = prior.visible;
     }
 
-    if (visible !== prior.visible) {
-      prior.switchedAt = now;
-    }
+    if (visible !== prior.visible) prior.switchedAt = now;
     prior.visible = visible;
     if (stateMap) stateMap.set(loc.id, prior);
 
