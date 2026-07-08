@@ -7367,3 +7367,73 @@ button.custom-rainbow-swatch.is-selected,
 .timeline-marker-wrap:focus-within {
   pointer-events: none !important;
 }
+
+
+/* GlobeHoppers v3.66: tighter RGB fields, higher tooltip, centered tooltip text, subtle pin shadow */
+.custom-rgb-row {
+  gap: 5px !important;
+}
+.custom-rgb-row label {
+  gap: 1px !important;
+}
+.custom-rgb-row input {
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 1px 3px !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  border-radius: 10px !important;
+}
+.custom-rgb-row b {
+  font-size: 8px !important;
+  line-height: 1 !important;
+}
+.custom-hue-slider::-webkit-slider-runnable-track {
+  height: 6px !important;
+}
+.custom-hue-slider::-moz-range-track {
+  height: 6px !important;
+}
+.timeline-marker::before {
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.55),
+    0 0 0 1px rgba(2,8,16,.78),
+    0 0 8px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 62%) !important;
+}
+.timeline-marker::after {
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.55),
+    0 0 4px rgba(0,0,0,.35) !important;
+}
+.timeline-marker__tooltip {
+  bottom: calc(100% + 40px) !important;
+  padding: 6px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+.timeline-marker__tooltip strong,
+.timeline-marker__tooltip small {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+}
+.timeline-marker__tooltip strong {
+  font-weight: 900 !important;
+}
+.timeline-marker__tooltip small {
+  font-size: .9em !important;
+  color: rgba(225,240,255,.78) !important;
+  font-weight: 750 !important;
+  margin-top: 0 !important;
+}
+.progress--scrubbable:hover .timeline-marker.is-active:not(:hover):not(:focus-visible) {
+  opacity: .86 !important;
+  transform: translateX(-50%) !important;
+}

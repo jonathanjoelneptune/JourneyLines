@@ -1,1 +1,1 @@
-GlobeHoppers v3.65 — Timeline Pin Hover Fix + Thin Hue Slider
+GlobeHoppers v3.66 — Timeline Tooltip Alignment + Hover Clear

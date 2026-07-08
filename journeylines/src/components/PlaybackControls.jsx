@@ -45,6 +45,8 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
             max="1000"
             step="1"
             value={pct}
+            onMouseEnter={() => setHoverMarker(null)}
+            onMouseMove={() => setHoverMarker(null)}
             onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
           />
         </div>
