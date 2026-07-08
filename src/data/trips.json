@@ -3079,6 +3079,32 @@
     "occasion": ""
   },
   {
+    "id": "2026-140-boston",
+    "year": 2026,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-08-99-014",
+    "label": "Boston",
+    "travelers": [
+      "joey",
+      "hopper-mrbokhmr"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "boston-ma",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
     "id": "2026-139-tokyo",
     "year": 2026,
     "month": 9,
