@@ -14,7 +14,7 @@
     },
     {
       "id": "hopper-mrbokhmr",
-      "name": "Bernardf",
+      "name": "Bernard",
       "colorName": "green",
       "color": "#44f48a"
     }
@@ -29,6 +29,13 @@
       ],
       "colorName": "blue",
       "color": "#2f80ff"
+    },
+    {
+      "id": "squad-mrbpqgve",
+      "name": "Small Council",
+      "hopperIds": [],
+      "colorName": "gray",
+      "color": "#8e99a8"
     }
   ],
   "palette": [
