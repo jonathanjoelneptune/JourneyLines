@@ -268,7 +268,7 @@ export default function App() {
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
       <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add Hop</button>
-      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Globehopper Timeline</button>
+      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>GlobeHopper Timeline</button>
       <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Timeline</button>
       <button className="topbar-pill" onClick={() => { setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}>Edit Hoppers</button>
       <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
@@ -282,7 +282,7 @@ export default function App() {
       <h1>GlobeHoppers</h1>
       <p>All your hops, skips & jumps, replayed across a living globe.</p>
       <div className="hero-actions">
-        <button className="primary big" onClick={play}>Play Globehopper Timeline</button>
+        <button className="primary big" onClick={play}>Play GlobeHopper Timeline</button>
         <button className="primary big hero-add-hop" onClick={addTravelTimelineEntry}>Add Hop</button>
         <button className="secondary big" onClick={viewGlobe}>View Globe</button>
       </div>
@@ -294,7 +294,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} />}
   </main>;
 }
 
@@ -516,7 +516,7 @@ function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollSt
         <p className="eyebrow">GlobeHoppers Studio</p>
         <ViewTypeSelector value={viewType} onChange={onViewTypeChange} />
         <button className="drawer-close-button" onClick={() => { setMenu(null); onClose(); }}>Close</button>
-        <h2>Globehopper Timeline</h2>
+        <h2>GlobeHopper Timeline</h2>
       </div>
       <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => { userScrollingRef.current = true; e.stopPropagation(); }} onScroll={(e) => { userScrollingRef.current = true; window.clearTimeout(scrollTimerRef.current); scrollTimerRef.current = window.setTimeout(() => { userScrollingRef.current = false; }, 180); onScrollStore?.(e.currentTarget.scrollTop); }}>
         {viewType === 'card' ? grouped.map(group => <section className="timeline-year-section" key={group.year}>

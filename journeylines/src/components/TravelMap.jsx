@@ -1003,15 +1003,15 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
       // Hard safe-face gate: no rim band, no dim state, no repeated re-entry.
       // Labels must be clearly on the front face for a short dwell before they
       // can appear, and once they leave the safe face they stay hidden briefly.
-      const safeFront = angularDistance <= 48;
-      const unsafeBackOrRim = angularDistance >= 54 || !onScreenLoose;
+      const safeFront = angularDistance <= 64;
+      const unsafeBackOrRim = angularDistance >= 78 || !onScreenLoose;
       if (unsafeBackOrRim) {
         visible = false;
-        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 2000);
+        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 900);
         prior.seenSafeSince = 0;
       } else if (safeFront && onScreenLoose) {
         if (!prior.seenSafeSince) prior.seenSafeSince = now;
-        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 260;
+        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 180;
       } else {
         visible = false;
       }

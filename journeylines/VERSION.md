@@ -1,11 +1,11 @@
-# GlobeHoppers v3.34
+# GlobeHoppers v3.35
 
-Stable Add/Edit Hop recovery and hard rim culling:
-- Rebased Add/Edit Hop modal behavior on the known-working v3.30 implementation
-- Keeps dynamic configured Hoppers selectable in Add/Edit Hop
-- Keeps Guest Hoppers supported using the stable inline v3.30 path
-- Preserves active in-flight route and vessel color matching from current Hopper / Hop Squad data
-- Keeps GitHub Hopper saves on the SHA refetch/retry path for back-to-back commits
-- Replaces the rim flashing fix with a hard safe-front-face gate during playback
-- Rim/backside placards are immediately hidden and locked hidden for 2 seconds before reappearing
+Hopper data propagation and culling tuning:
+- Add/Edit Hop now receives the live Hopper data from App state
+- Configured Hoppers such as newly added people now appear as selectable in Add/Edit Hop
+- Add/Edit Hop Hopper colors now reflect the colors set in Edit Hoppers
+- Edit GlobeHopper Timeline row colors now use live Hopper / Hop Squad data
+- Top Timeline button and drawer title use GlobeHopper Timeline casing
+- Placard culling is relaxed from the v3.34 hard 48/54 degree gate to a 64/78 degree front-face buffer
+- Rim/backside placards still hard-hide, but front-facing placards being flown over should remain visible
 - package intentionally omits src/data/trips.json, src/data/hoppers.json, and package-lock.json
