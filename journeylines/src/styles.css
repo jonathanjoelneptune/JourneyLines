@@ -6791,3 +6791,148 @@ button.custom-rainbow-swatch.is-selected,
   font-size: .9em !important;
   font-weight: 700 !important;
 }
+
+
+/* GlobeHoppers v3.61 custom picker positioning + all-trip pin overlay */
+
+/* Keep the custom color panel from being clipped off the right side of the screen. */
+.custom-color-panel {
+  left: auto !important;
+  right: 0 !important;
+  top: calc(100% + 10px) !important;
+  transform: none !important;
+  z-index: 140 !important;
+}
+.color-popover__menu--custom {
+  position: absolute !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 130 !important;
+}
+
+/* Preserve the thin timeline exactly; pins are an overlay only. */
+.controls {
+  padding: 12px !important;
+  min-height: 0 !important;
+  align-items: center !important;
+}
+.timeline-scrubber {
+  align-items: center !important;
+}
+.timeline-scrubber-stack {
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  gap: 3px !important;
+  align-items: center !important;
+}
+.progress--scrubbable {
+  height: 9px !important;
+  margin-top: 0 !important;
+  overflow: visible !important;
+  border-radius: 999px !important;
+}
+.progress--scrubbable span {
+  position: relative !important;
+  z-index: 2 !important;
+}
+.progress--scrubbable input[type='range'] {
+  z-index: 30 !important;
+}
+
+/* The marker layer sits above the thin bar, but does not change the bar size or layout. */
+.timeline-marker-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  z-index: 40 !important;
+}
+
+/* Every trip marker is a pushpin overlay. The needle tip lands on the existing timeline bar. */
+.timeline-marker {
+  position: absolute !important;
+  left: auto;
+  top: -14px !important;
+  width: 13px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: .86 !important;
+  transform: translateX(-50%) !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 44 !important;
+}
+
+/* Pin head */
+.timeline-marker::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 0 !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle at 32% 27%, rgba(255,255,255,.58), transparent 33%),
+    var(--marker-color, #00e5ff) !important;
+  border: 1px solid rgba(255,255,255,.66) !important;
+  box-shadow:
+    0 0 0 1px rgba(2,8,16,.78),
+    0 0 9px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 62%) !important;
+  transform: translateX(-50%) !important;
+}
+
+/* Pin needle; bottom lands on the middle of the 9px timeline bar. */
+.timeline-marker::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 8px !important;
+  width: 1px !important;
+  height: 12px !important;
+  background:
+    linear-gradient(to bottom,
+      rgba(255,255,255,.84),
+      color-mix(in srgb, var(--marker-color, #00e5ff), transparent 20%)) !important;
+  box-shadow: 0 0 4px rgba(0,0,0,.45) !important;
+  transform: translateX(-50%) !important;
+}
+
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translateX(-50%) scale(1.22) !important;
+  z-index: 60 !important;
+}
+.timeline-marker:hover::before,
+.timeline-marker:focus-visible::before {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.80),
+    0 0 14px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 38%) !important;
+}
+
+/* Tooltip remains state-controlled and floats above the selected pin only. */
+.timeline-marker__tooltip {
+  bottom: calc(100% + 10px) !important;
+  z-index: 80 !important;
+  padding: 6px 10px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+/* Keep the year row below the original thin rail, unobtrusive. */
+.timeline-year-scale {
+  height: 16px !important;
+  margin-top: 1px !important;
+  position: relative !important;
+  z-index: 1 !important;
+}

@@ -1,1 +1,1 @@
-GlobeHoppers v3.60 — Custom Picker OK + Thin Timeline Pins
+GlobeHoppers v3.61 — Timeline Pin Overlay + Picker Position Fix
