@@ -21,15 +21,18 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
         <div className="progress progress--scrubbable">
           <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
           <div className="timeline-marker-layer" aria-hidden="true">
-            {tripMarkers.map(marker => <button
+            {tripMarkers.map(marker => <span
               key={marker.id}
-              type="button"
-              className="timeline-marker"
+              className="timeline-marker-wrap"
               style={{ left: `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff' }}
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
             >
+              <button
+                type="button"
+                className="timeline-marker"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
+              />
               <span className="timeline-marker__tooltip">{marker.title}<small>{marker.date}</small></span>
-            </button>)}
+            </span>)}
           </div>
           <input
             aria-label="Travel timeline"

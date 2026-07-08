@@ -6009,3 +6009,173 @@ textarea,
 .custom-color-hex {
   display: none !important;
 }
+
+
+/* GlobeHoppers v3.57 custom-color slot + corrected timeline marker hit/tooltip behavior */
+
+/* Custom color is now just a rainbow circle in the palette grid. No separate square/hex/OK strip. */
+.color-popover__menu--custom {
+  display: grid !important;
+  grid-template-columns: repeat(6, 28px) !important;
+  gap: 8px !important;
+  min-width: auto !important;
+  width: max-content !important;
+  align-items: center !important;
+}
+.color-popover__menu--custom > button,
+.color-popover__menu--custom .custom-rainbow-swatch {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+}
+.custom-rainbow-swatch {
+  display: inline-block !important;
+  border: 1px solid rgba(255,255,255,.46) !important;
+  background: conic-gradient(from 0deg, #ff3b30, #ff8a00, #ffd60a, #44f48a, #00e5ff, #2f80ff, #9b5cff, #ff4fd8, #ff3b30) !important;
+  box-shadow: 0 0 10px rgba(255,255,255,.12) !important;
+  cursor: pointer !important;
+}
+.custom-rainbow-swatch.is-selected {
+  outline: 2px solid rgba(255,255,255,.82) !important;
+  outline-offset: 2px !important;
+}
+.custom-color-hidden-input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.custom-color-editor,
+.custom-color-picker,
+.custom-color-hex,
+.custom-color-wheel,
+.custom-color-hex-input,
+.custom-color-ok {
+  display: none !important;
+}
+
+/* Move the rail lower in the controls and make the marker stem land on the rail. */
+.controls {
+  padding-top: 22px !important;
+}
+.timeline-scrubber-stack {
+  gap: 4px !important;
+}
+.progress--scrubbable {
+  margin-top: 22px !important;
+  overflow: visible !important;
+}
+.timeline-marker-layer {
+  overflow: visible !important;
+  pointer-events: none !important;
+  z-index: 8 !important;
+}
+
+/* Marker wrapper owns hover/focus state. This prevents the first marker tooltip from appearing when
+   only the whole timeline or scrubber is hovered. */
+.timeline-marker-wrap {
+  position: absolute !important;
+  top: 0 !important;
+  transform: translateX(-50%) !important;
+  width: 18px !important;
+  height: 34px !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+  z-index: 2 !important;
+}
+.timeline-marker {
+  position: absolute !important;
+  left: 50% !important;
+  top: -19px !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 999px 999px 999px 2px !important;
+  border: 1px solid rgba(255,255,255,.58) !important;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255,255,255,.44), transparent 35%),
+    color-mix(in srgb, var(--marker-color, #00e5ff), white 4%) !important;
+  box-shadow:
+    0 0 0 1px rgba(4,11,20,.75),
+    0 0 7px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 70%) !important;
+  opacity: .74 !important;
+  transform: translate(-50%, 0) rotate(-45deg) !important;
+  cursor: pointer !important;
+}
+.timeline-marker::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 9px !important;
+  width: 1px !important;
+  height: 18px !important;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--marker-color, #00e5ff), transparent 8%),
+    rgba(225,235,244,.58)) !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  transform-origin: top center !important;
+  opacity: .76 !important;
+}
+.timeline-marker::after {
+  content: none !important;
+}
+.timeline-marker-wrap:hover,
+.timeline-marker-wrap:focus-within {
+  z-index: 20 !important;
+}
+.timeline-marker-wrap:hover .timeline-marker,
+.timeline-marker-wrap:focus-within .timeline-marker {
+  opacity: 1 !important;
+  transform: translate(-50%, 0) rotate(-45deg) scale(1.28) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.82),
+    0 0 14px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 44%) !important;
+}
+
+/* Tooltip lives on the wrapper, outside the tiny button, so it can show real trip text correctly. */
+.timeline-marker__tooltip {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 40px !important;
+  transform: translate(-50%, 8px) !important;
+  min-width: 150px !important;
+  max-width: 240px !important;
+  padding: 10px 12px !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(8, 19, 34, .98), rgba(4, 11, 21, .96)) !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color, #00e5ff), transparent 45%) !important;
+  color: #f3fbff !important;
+  font-size: .78rem !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  white-space: normal !important;
+  box-shadow:
+    0 16px 36px rgba(0,0,0,.46),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity .16s ease, transform .16s ease, visibility .16s ease !important;
+  z-index: 30 !important;
+}
+.timeline-marker__tooltip small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(225,240,255,.76) !important;
+  font-size: .72rem !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+}
+.timeline-marker-wrap:hover .timeline-marker__tooltip,
+.timeline-marker-wrap:focus-within .timeline-marker__tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translate(-50%, 0) !important;
+}
+.timeline-marker-wrap:not(:hover):not(:focus-within) .timeline-marker__tooltip {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}

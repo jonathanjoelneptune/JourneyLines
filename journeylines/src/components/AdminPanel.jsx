@@ -984,37 +984,18 @@ function tripAccent(trip, hopperData) {
 
 
 function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
-  const palette = colors.length ? colors : [
-    { name: 'red', label: 'Red', color: '#ff3b30' },
-    { name: 'orange', label: 'Orange', color: '#ff8a00' },
-    { name: 'yellow', label: 'Yellow', color: '#ffd60a' },
-    { name: 'green', label: 'Green', color: '#44f48a' },
-    { name: 'cyan', label: 'Cyan', color: '#00e5ff' },
-    { name: 'blue', label: 'Blue', color: '#2f80ff' },
-    { name: 'pink', label: 'Pink', color: '#ff4fd8' },
-    { name: 'purple', label: 'Purple', color: '#9b5cff' },
-    { name: 'gray', label: 'Gray', color: '#8e99a8' },
-    { name: 'black', label: 'Black', color: '#050607' }
-  ];
   const currentColor = normalizeHexColor(color || '#00e5ff');
-  const [draftColor, setDraftColor] = useState(currentColor);
-  useEffect(() => { if (open) setDraftColor(currentColor); }, [open, currentColor]);
-
-  function applyCustom() {
-    onChoose?.('custom', normalizeHexColor(draftColor));
+  const customInputId = useMemo(() => `custom-color-${Math.random().toString(36).slice(2)}`, []);
+  function chooseCustom(nextColor) {
+    onChoose?.('custom', normalizeHexColor(nextColor));
     onToggle?.();
   }
-
   return <span className="color-popover">
     <button type="button" className="color-popover__trigger" style={{ '--swatch': currentColor }} onClick={onToggle} title="Choose color" />
     {open && <span className="color-popover__menu glass color-popover__menu--custom">
-      {palette.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label || c.name} onClick={() => onChoose?.(c.name, c.color)} />)}
-      <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} title="Choose custom color" onClick={() => setDraftColor(currentColor)} />
-      <span className="custom-color-editor">
-        <input className="custom-color-wheel" type="color" value={draftColor} onChange={(e) => setDraftColor(normalizeHexColor(e.target.value))} />
-        <input className="custom-color-hex-input" value={draftColor} onChange={(e) => setDraftColor(normalizeHexColor(e.target.value))} placeholder="#00e5ff" />
-        <button type="button" className="custom-color-ok" onClick={applyCustom}>OK</button>
-      </span>
+      {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label || c.name} onClick={() => onChoose?.(c.name, c.color)} />)}
+      <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} title="Choose custom color" onClick={() => document.getElementById(customInputId)?.click()} />
+      <input id={customInputId} className="custom-color-hidden-input" type="color" value={currentColor} onChange={(e) => chooseCustom(e.target.value)} />
     </span>}
   </span>;
 }

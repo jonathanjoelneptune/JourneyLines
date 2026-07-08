@@ -1,1 +1,1 @@
-GlobeHoppers v3.56 — Custom Color Picker Polish + Timeline Pin Fix
+GlobeHoppers v3.57 — Timeline Tooltip + Custom Color Slot Fix
