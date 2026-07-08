@@ -613,7 +613,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <section className="studio-pick-section compact-section travelers-section">
             <h3>Hoppers</h3>
             <div className="pill-selectors">
-              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const comboColors = (visual.colors || []).filter(Boolean); const accent = selected && visual.isSquad ? visual.color : t.color; const mixed = selected && !visual.isSquad && comboColors.length > 1; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''} ${mixed ? 'is-mixed' : ''}`} style={{ '--accent': accent, '--accent-2': comboColors[1] || accent, '--pill-gradient': colorGradient(comboColors, accent) }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
+              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const accent = selected && visual.isSquad ? visual.color : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
                 {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}<button type="button" onClick={(e) => { e.stopPropagation(); setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).filter(x => x.id !== g.id) })); }}>×</button></span>)}
                 <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
                 {guestPopupOpen && <div className="guest-hopper-popover glass">
@@ -688,6 +688,25 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   </div>;
 }
 
+function previewGroupLabel(draft = {}, visual = {}) {
+  const permanentCount = Array.isArray(draft.travelers) ? draft.travelers.length : 0;
+  const guestCount = Array.isArray(draft.guestHoppers) ? draft.guestHoppers.length : 0;
+  if (visual?.isEmpty || permanentCount + guestCount === 0) return 'Required';
+  if (visual?.isSquad) return 'Hop Squad';
+  if (guestCount > 0 || permanentCount > 1) return 'Group hop';
+  return 'Solo hop';
+}
+
+function previewDotBackground(colors = [], fallback = '#5d7288') {
+  const list = colors.filter(Boolean);
+  if (list.length <= 1) return list[0] || fallback;
+  const c1 = list[0] || fallback;
+  const c2 = list[1] || c1;
+  const c3 = list[2] || c1;
+  const c4 = list[3] || c1;
+  return `conic-gradient(from 0deg, ${c1} 0deg 90deg, ${c2} 90deg 180deg, ${c3} 180deg 270deg, ${c4} 270deg 360deg)`;
+}
+
 function TripRoutePreview({ draft, locById, locs, startLocation, destination, onSetLegMode, hopperData }) {
   const rows = [];
   rows.push({ label: 'Start location', place: displayLocation(startLocation) || startLocation?.name || 'Auto-derived start', mode: null, target: null });
@@ -718,7 +737,7 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
     <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
     <div className="route-preview-meta">
       <span>{formatDateRangeLabel(draft) || (draft.year ? [monthLabel(draft.month), draft.year].filter(Boolean).join(' ') : 'Dates pending')}</span>
-      <span><b style={{ background: noHoppers ? 'transparent' : visual.color }}></b>{visual.name} · {noHoppers ? 'Required' : visual.isSquad ? 'Hop Squad' : groupNameForHoppers(draft.travelers)}</span>
+      <span><b className={isMixed ? 'is-group-dot' : ''} style={{ background: noHoppers ? 'transparent' : previewDotBackground(mixedColors, visual.color) }}></b>{visual.name} · {previewGroupLabel(draft, visual)}</span>
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
     <div className="route-preview-list">
@@ -893,9 +912,12 @@ function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || 
 function travelerSummary(travelers = [], guestHoppers = [], hopperData = {}) {
   return resolveTripVisual({ travelers, guestHoppers }, hopperData || {}).name || 'No hoppers selected';
 }
-function groupNameForHoppers(travelers = []) {
-  if (!travelers?.length) return 'Required';
-  return travelers.length > 1 ? 'Hop squad or group hop' : 'Solo hop';
+function groupNameForHoppers(travelers = [], guestHoppers = [], visual = {}) {
+  const permanentCount = Array.isArray(travelers) ? travelers.length : 0;
+  const guestCount = Array.isArray(guestHoppers) ? guestHoppers.length : 0;
+  if (visual?.isEmpty || permanentCount + guestCount === 0) return 'Required';
+  if (visual?.isSquad) return 'Hop Squad';
+  return (guestCount > 0 || permanentCount > 1) ? 'Group hop' : 'Solo hop';
 }
 function formatDateRangeLabel(t) {
   const start = toDateInputValue(t.year, t.month, t.day);
