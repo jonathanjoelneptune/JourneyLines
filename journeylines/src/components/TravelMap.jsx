@@ -105,6 +105,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const tilePreloadRef = useRef(new Set());
   const lastActiveRouteUpdateRef = useRef(0);
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
+  const labelVisibilityStateRef = useRef(new Map());
   const introLaunchRef = useRef({ active: false, key: null });
   const resetAnimatingRef = useRef(false);
   const forceSceneJumpRef = useRef(false);
@@ -284,7 +285,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const map = mapRef.current;
     if (!map) return;
     const refresh = () => {
-      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef);
+      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef, labelVisibilityStateRef);
       const state = currentOverlayStateRef.current;
       if (!state) return;
       updateOverlay(map, state.active, state.scene, state.color);
@@ -922,7 +923,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       droppedIdsRef.current.delete(id);
     }
   }
-  refreshPersistentPinPositions(map, labelsRef);
+  refreshPersistentPinPositions(map, labelsRef, null);
 }
 
 function updateVisitTicks(container, visitColors = []) {
@@ -951,16 +952,16 @@ function updateVisitTicks(container, visitColors = []) {
   container.__jlTickColors = colors;
 }
 
-function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef) {
+function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, visibilityStateRef) {
   const now = performance.now();
   // Marker positions are now owned by MapLibre. We only update opacity/culling,
   // so this can run at a moderate cadence without causing placard wobble.
   if (throttleRef?.current?.t && now - throttleRef.current.t < 80) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
-  refreshPersistentPinPositions(map, labelsRef);
+  refreshPersistentPinPositions(map, labelsRef, null);
 }
 
-function refreshPersistentPinPositions(map, labelsRef) {
+function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null) {
   if (!map || !labelsRef?.current) return;
   const canvas = map.getCanvas();
   const w = canvas?.clientWidth || window.innerWidth;
@@ -994,9 +995,36 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const closeEnough = wasVisible
       ? milesFromFocus <= maxMiles + milesHysteresis
       : milesFromFocus <= maxMiles - milesHysteresis;
-    const visible = Boolean(onScreen && frontSide && closeEnough);
+    const rawVisible = Boolean(onScreen && frontSide && closeEnough);
+    const now = performance.now();
+    const stateMap = visibilityStateRef?.current;
+    const prior = stateMap?.get(loc.id) || { visible: false, switchedAt: 0, rawLast: false, flips: 0, lockedUntil: 0 };
+    let visible = prior.visible;
+
+    // Hysteresis prevents edge-of-globe labels from flickering when the camera is
+    // near the horizon threshold. A label must be safely visible for a short
+    // dwell before reappearing; hidden states apply immediately.
+    if (!rawVisible) {
+      visible = false;
+      if (prior.rawLast) prior.flips = (prior.flips || 0) + 1;
+      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + 450);
+    } else if (!prior.visible) {
+      const dwell = prior.flips >= 2 ? 900 : 260;
+      visible = now >= (prior.lockedUntil || 0) && now - (prior.switchedAt || 0) >= dwell;
+    } else {
+      visible = true;
+      prior.flips = 0;
+    }
+
+    if (visible !== prior.visible) {
+      prior.switchedAt = now;
+    }
+    prior.visible = visible;
+    prior.rawLast = rawVisible;
+    if (stateMap) stateMap.set(loc.id, prior);
 
     el.classList.toggle('is-culled', !visible);
+    el.classList.toggle('is-flicker-locked', Boolean(rawVisible && !visible));
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     el.__jlVisible = visible;
     if (visible) {

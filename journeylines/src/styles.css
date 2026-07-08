@@ -4122,3 +4122,11 @@ option {
   58% { width: 64px; height: 24px; opacity: .25; filter: blur(.2px); }
   100% { width: 94px; height: 36px; opacity: 0; filter: blur(1px); }
 }
+
+
+/* GlobeHoppers v3.26 placard flicker hysteresis and globe pause-resume polish */
+.jl-map-pin.is-flicker-locked {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+}

@@ -142,10 +142,13 @@ export default function App() {
   }
   const completeIntroLaunch = useCallback(() => {
     setIntroLaunching(false);
-    tRef.current = { last: null, elapsed: 0 };
-    setLegProgress(0);
+    const currentLeg = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))]?.leg;
+    const dur = legDurationMs(currentLeg?.miles || 500, speed);
+    const currentProgress = Math.max(0, Math.min(1, legProgress));
+    tRef.current = { last: null, elapsed: currentProgress * dur };
+    setLegProgress(currentProgress);
     setIsPlaying(true);
-  }, []);
+  }, [activeIndex, legProgress, legs, speed]);
   function editTravelHistory() {
     resumeAfterStudioRef.current = isPlaying;
     freezePlaybackClock();
@@ -175,6 +178,7 @@ export default function App() {
   }
   function pause() { freezePlaybackClock(); setIsPlaying(false); }
   function viewGlobe() {
+    resumeAfterStudioRef.current = isPlaying;
     freezePlaybackClock();
     setAdmin(false);
     setTripDrawerOpen(false);
