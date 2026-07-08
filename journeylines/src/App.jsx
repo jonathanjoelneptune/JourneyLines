@@ -67,12 +67,23 @@ export default function App() {
   useEffect(() => {
     const pauseForHopModal = () => {
       resumeAfterStudioRef.current = isPlaying;
-      freezePlaybackClock();
+      if (isPlaying) freezePlaybackClock();
       tRef.current.last = null;
       setIsPlaying(false);
     };
+    const resumeAfterHopModal = () => {
+      if (resumeAfterStudioRef.current) {
+        resumeAfterStudioRef.current = false;
+        tRef.current.last = null;
+        setIsPlaying(true);
+      }
+    };
     window.addEventListener('globehoppers-pause-for-hop-modal', pauseForHopModal);
-    return () => window.removeEventListener('globehoppers-pause-for-hop-modal', pauseForHopModal);
+    window.addEventListener('globehoppers-resume-after-hop-modal', resumeAfterHopModal);
+    return () => {
+      window.removeEventListener('globehoppers-pause-for-hop-modal', pauseForHopModal);
+      window.removeEventListener('globehoppers-resume-after-hop-modal', resumeAfterHopModal);
+    };
   }, [isPlaying, activeIndex, legProgress, legs, speed]);
 
   const sortedTrips = useMemo(() => sortTrips(trips), [trips]);

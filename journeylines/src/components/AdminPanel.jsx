@@ -148,6 +148,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       setModalClosing(false);
       setEditingId(null);
       setDraft(empty);
+      window.dispatchEvent(new CustomEvent('globehoppers-resume-after-hop-modal'));
     }, 260);
   }
 
@@ -437,11 +438,12 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
   const visual = resolveTripVisual(trip, hopperData || {});
   const colors = (visual.colors || []).filter(Boolean);
   const isMixed = !visual.isSquad && colors.length > 1;
-  const accent2 = visual.accentColors?.[0] || colors[1] || visual.color || tripAccent(trip, hopperData);
+  const accent = tripAccent(trip, hopperData);
+  const accent2 = visual.accentColors?.[0] || colors[1] || accent;
   const isCurrent = activeTripId && trip.id === activeTripId;
   return <div
     className={`studio-trip-row studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''}`}
-    style={{ '--accent': tripAccent(trip, hopperData), '--accent-2': accent2, '--accent-gradient': colorGradient(colors, tripAccent(trip, hopperData)) }}
+    style={{ '--accent': accent, '--accent-2': accent2, '--accent-gradient': colorGradient(colors, accent) }}
     draggable={reorderMode}
     onClick={openIfCard}
     onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
@@ -679,7 +681,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           </section>
         </div>
 
-        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} hopperData={normalizedHoppers} activeTripId={activeTripId} />
+        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} hopperData={normalizedHoppers} />
 
       </div>
     </div>

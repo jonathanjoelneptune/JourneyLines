@@ -8,7 +8,10 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
   const returnText = trip.roundTrip ? 'Round trip' : expanded.route.length > 2 ? 'Multi-stop' : 'One way';
   const activeRow = rows[0];
   const stack = rows.length ? rows : [{ title: trip.label, date: displayDate(trip), mode, traveler: traveler?.name || 'Travel', color: traveler?.color || '#00e5ff' }];
-  return <aside className="trip-card-stack" style={{ '--accent': traveler?.color || '#00e5ff' }}>
+  const accentColor = traveler?.color || '#00e5ff';
+  const accent2 = !traveler?.isSquad && Array.isArray(traveler?.colors) && traveler.colors.length > 1 ? traveler.colors[1] : accentColor;
+  const isMixedTraveler = !traveler?.isSquad && Array.isArray(traveler?.members) && traveler.members.length > 1;
+  return <aside className={`trip-card-stack ${isMixedTraveler ? 'is-mixed' : ''}`} style={{ '--accent': accentColor, '--accent-2': accent2 }}>
     {stack.map((row, index) => {
       const queued = index > 0;
       const CardTag = queued ? 'button' : 'article';
@@ -38,9 +41,10 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
 function capitalize(s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); }
 function ordinal(n) { const v = Number(n) || 0; const mod100 = v % 100; if (mod100 >= 11 && mod100 <= 13) return `${v}th`; switch (v % 10) { case 1: return `${v}st`; case 2: return `${v}nd`; case 3: return `${v}rd`; default: return `${v}th`; } }
 
+
 function TravelerName({ traveler }) {
   if (!traveler) return <>Travel</>;
-  const members = Array.isArray(traveler.members) ? traveler.members : [];
+  const members = Array.isArray(traveler.members) ? traveler.members.filter(Boolean) : [];
   if (!traveler.isSquad && members.length > 1) {
     return <>{members.map((m, index) => <span key={`${m.id || m.name || index}`} className="trip-card__traveler-name" style={{ color: m.color || traveler.color }}>
       {index > 0 ? ' + ' : ''}{m.name || m.label || 'Guest'}
