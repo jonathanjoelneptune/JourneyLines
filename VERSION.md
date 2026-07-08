@@ -1,1 +1,1 @@
-GlobeHoppers v3.47 — Blended Timeline Accents + Preview Corner Fix
+GlobeHoppers v3.48 — Correct Repository Data Paths

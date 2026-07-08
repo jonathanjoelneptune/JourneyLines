@@ -401,7 +401,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     if (token && repo) {
       try {
         setBusy(true);
-        await commitSingleJsonFile(repo, token, 'src/data/hoppers.json', clean, 'Update hoppers from GlobeHoppers');
+        await commitSingleJsonFile(repo, token, 'journeylines/src/data/hoppers.json', clean, 'Update hoppers from GlobeHoppers');
       } catch (err) {
         alert(`Saved locally, but GitHub commit failed: ${err.message || err}`);
       } finally { setBusy(false); }

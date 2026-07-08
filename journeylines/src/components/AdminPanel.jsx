@@ -262,8 +262,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   async function commitData(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
     if (!token || !repo) throw new Error('Enter a repo and fine-grained GitHub token in Repository Settings first.');
     const files = [
-      { path: 'src/data/trips.json', data: nextTrips },
-      { path: 'src/data/locations.json', data: nextLocations }
+      { path: 'journeylines/src/data/trips.json', data: nextTrips },
+      { path: 'journeylines/src/data/locations.json', data: nextLocations }
     ];
     await commitFilesAtomically(files, message);
   }
