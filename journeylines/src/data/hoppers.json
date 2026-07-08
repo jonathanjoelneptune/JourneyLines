@@ -1,0 +1,85 @@
+{
+  "hoppers": [
+    {
+      "id": "joey",
+      "name": "Joey",
+      "colorName": "orange",
+      "color": "#ff8a00"
+    },
+    {
+      "id": "bonnie",
+      "name": "Bonnie",
+      "colorName": "pink",
+      "color": "#ff4fd8"
+    }
+  ],
+  "hopSquads": [
+    {
+      "id": "neptunes",
+      "name": "The Neptunes",
+      "hopperIds": [
+        "joey",
+        "bonnie"
+      ],
+      "colorName": "cyan",
+      "color": "#00e5ff"
+    }
+  ],
+  "palette": [
+    {
+      "name": "red",
+      "label": "Red",
+      "color": "#ff3b30"
+    },
+    {
+      "name": "orange",
+      "label": "Orange",
+      "color": "#ff8a00"
+    },
+    {
+      "name": "yellow",
+      "label": "Yellow",
+      "color": "#ffd60a"
+    },
+    {
+      "name": "gold",
+      "label": "Gold",
+      "color": "#d7a300"
+    },
+    {
+      "name": "green",
+      "label": "Green",
+      "color": "#44f48a"
+    },
+    {
+      "name": "blue",
+      "label": "Blue",
+      "color": "#2f80ff"
+    },
+    {
+      "name": "pink",
+      "label": "Pink",
+      "color": "#ff4fd8"
+    },
+    {
+      "name": "purple",
+      "label": "Purple",
+      "color": "#9b5cff"
+    },
+    {
+      "name": "gray",
+      "label": "Gray",
+      "color": "#8e99a8"
+    },
+    {
+      "name": "black",
+      "label": "Black",
+      "color": "#050607"
+    },
+    {
+      "name": "cyan",
+      "label": "Cyan",
+      "color": "#00e5ff"
+    }
+  ]
+}

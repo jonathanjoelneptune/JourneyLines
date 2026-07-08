@@ -5,11 +5,16 @@ export function activeHomeBase(homeBases, trip) {
   return homeBases.find(h => h.start <= key && (!h.end || h.end >= key)) || homeBases[0];
 }
 
-export function getTravelerKey(trip) {
-  const ids = trip.travelers || [];
+export function getTravelerKey(trip, hopSquads = []) {
+  const ids = [...new Set(trip.travelers || [])].filter(Boolean);
+  const key = ids.slice().sort().join('|');
+  const squad = hopSquads.find(s => [...new Set(s.hopperIds || [])].filter(Boolean).sort().join('|') === key);
+  if (squad) return squad.id;
   if (ids.includes('joey') && ids.includes('bonnie')) return 'both';
+  if (ids.length === 1) return ids[0];
   if (ids.includes('bonnie')) return 'bonnie';
-  return 'joey';
+  if (ids.includes('joey')) return 'joey';
+  return ids[0] || 'joey';
 }
 
 export function expandTrip(trip, locationsById, homeBases) {

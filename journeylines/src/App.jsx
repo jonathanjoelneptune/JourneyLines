@@ -6,15 +6,17 @@ import AdminPanel from './components/AdminPanel.jsx';
 import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
 import { legDurationMs } from './utils/routeTiming.js';
+import { normalizeHopperData, resolveTripVisual, travelerListForLegacy } from './utils/hopperUtils.js';
 import baseTrips from './data/trips.json';
 import baseLocations from './data/locations.json';
 import homeBases from './data/homeBases.json';
-import travelers from './data/travelers.json';
+import baseHoppers from './data/hoppers.json';
 import settings from './data/settings.json';
 
 export default function App() {
   const [trips, setTrips] = useState(() => JSON.parse(localStorage.getItem('journeylines.trips') || 'null') || baseTrips);
   const [locations, setLocations] = useState(() => JSON.parse(localStorage.getItem('journeylines.locations') || 'null') || baseLocations);
+  const [hopperData, setHopperData] = useState(() => JSON.parse(localStorage.getItem('globehoppers.hoppers') || 'null') || baseHoppers);
   const [isPlaying, setIsPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(999999);
@@ -35,7 +37,8 @@ export default function App() {
   const [showHero, setShowHero] = useState(true);
   const [globeOverview, setGlobeOverview] = useState(false);
   const [jumpFade, setJumpFade] = useState(false);
-  const [addTripNoun] = useState(() => ['Hop', 'Skip', 'Jump'][Math.floor(Math.random() * 3)]);
+  const addTripNoun = 'Hop';
+  const [hopperEditorOpen, setHopperEditorOpen] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
@@ -45,6 +48,7 @@ export default function App() {
 
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
   useEffect(() => localStorage.setItem('journeylines.locations', JSON.stringify(locations)), [locations]);
+  useEffect(() => localStorage.setItem('globehoppers.hoppers', JSON.stringify(hopperData)), [hopperData]);
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
   useEffect(() => {
@@ -69,13 +73,15 @@ export default function App() {
     return true;
   }), [sortedTrips, filter]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
-  const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), []);
+  const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
+  const travelers = useMemo(() => travelerListForLegacy(normalizedHoppers), [normalizedHoppers]);
+  const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
   const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
-  const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, travById), [filteredTrips, legs, locById, travById]);
+  const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, normalizedHoppers), [filteredTrips, legs, locById, normalizedHoppers]);
   const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
-  const traveler = current ? travById[getTravelerKey(current.trip)] : null;
+  const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
 
   useEffect(() => {
     if (!isPlaying || !legs.length) return;
@@ -261,9 +267,10 @@ export default function App() {
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
-      <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add {addTripNoun}</button>
-      <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Travel Timeline</button>
-      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Travel Timeline</button>
+      <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add Hop</button>
+      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>GlobeHopper Timeline</button>
+      <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Timeline</button>
+      <button className="topbar-pill" onClick={() => { setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}>Edit Hoppers</button>
       <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
       <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
@@ -275,23 +282,173 @@ export default function App() {
       <h1>GlobeHoppers</h1>
       <p>All your hops, skips & jumps, replayed across a living globe.</p>
       <div className="hero-actions">
-        <button className="primary big" onClick={play}>Play Travel History</button>
-        <button className="secondary big" onClick={editTravelHistory}>Edit Travel History</button>
+        <button className="primary big" onClick={play}>Play GlobeHoppers Timeline</button>
+        <button className="secondary big" onClick={addTravelTimelineEntry}>Add Hop</button>
         <button className="secondary big" onClick={viewGlobe}>View Globe</button>
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
-    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} />
+    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} />}
+    {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} />}
   </main>;
 }
 
 
-function buildTripTimeline(trips, legs, locById, travById) {
+
+function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
+  const { hoppers, hopSquads, palette } = normalizeHopperData(hopperData);
+  const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify({ hoppers, hopSquads, palette })));
+  const [busy, setBusy] = useState(false);
+  const token = localStorage.getItem('journeylines.githubToken') || '';
+  const repo = localStorage.getItem('journeylines.repo') || '';
+  const colors = palette?.length ? palette : [
+    { name: 'orange', label: 'Orange', color: '#ff8a00' },
+    { name: 'pink', label: 'Pink', color: '#ff4fd8' },
+    { name: 'cyan', label: 'Cyan', color: '#00e5ff' }
+  ];
+
+  function updateHopper(id, patch) {
+    setDraft(d => ({ ...d, hoppers: d.hoppers.map(h => h.id === id ? { ...h, ...patch } : h) }));
+  }
+  function addHopper() {
+    const id = `hopper-${Date.now().toString(36)}`;
+    setDraft(d => ({ ...d, hoppers: [...d.hoppers, { id, name: 'New Hopper', colorName: 'blue', color: '#2f80ff' }] }));
+  }
+  function updateSquad(id, patch) {
+    setDraft(d => ({ ...d, hopSquads: d.hopSquads.map(s => s.id === id ? { ...s, ...patch } : s) }));
+  }
+  function addSquad() {
+    const id = `squad-${Date.now().toString(36)}`;
+    setDraft(d => ({ ...d, hopSquads: [...d.hopSquads, { id, name: 'New Hop Squad', hopperIds: [], colorName: 'cyan', color: '#00e5ff' }] }));
+  }
+  function pickColor(colorName) {
+    return colors.find(c => c.name === colorName) || colors[0];
+  }
+  async function save() {
+    const clean = {
+      ...draft,
+      hoppers: draft.hoppers.map(h => ({ ...h, id: h.id || slugify(h.name), name: h.name || 'Hopper' })),
+      hopSquads: draft.hopSquads.map(s => ({ ...s, id: s.id || slugify(s.name), name: s.name || 'Hop Squad', hopperIds: s.hopperIds || [] }))
+    };
+    setHopperData(clean);
+    localStorage.setItem('globehoppers.hoppers', JSON.stringify(clean));
+    if (token && repo) {
+      try {
+        setBusy(true);
+        await commitSingleJsonFile(repo, token, 'src/data/hoppers.json', clean, 'Update hoppers from GlobeHoppers');
+      } catch (err) {
+        alert(`Saved locally, but GitHub commit failed: ${err.message || err}`);
+      } finally {
+        setBusy(false);
+      }
+    }
+    onClose?.();
+  }
+  return <section className="hopper-editor-backdrop" onClick={onClose}>
+    <div className="hopper-editor glass" onClick={e => e.stopPropagation()}>
+      <header className="hopper-editor__header">
+        <p className="eyebrow">GlobeHoppers Studio</p>
+        <h2>Edit Hoppers</h2>
+        <button className="drawer-close-button" onClick={onClose}>Close</button>
+      </header>
+      <div className="hopper-editor__body">
+        <section>
+          <div className="hopper-section-title">
+            <h3>Hoppers</h3>
+            <button className="primary small" onClick={addHopper}>Add Hopper</button>
+          </div>
+          <div className="hopper-list">
+            {draft.hoppers.map(h => <article className="hopper-card" key={h.id} style={{ '--accent': h.color }}>
+              <input value={h.name} onChange={e => updateHopper(h.id, { name: e.target.value })} />
+              <ColorPicker colors={colors} value={h.colorName} onChange={(name) => { const c = pickColor(name); updateHopper(h.id, { colorName: c.name, color: c.color }); }} />
+            </article>)}
+          </div>
+        </section>
+        <section>
+          <div className="hopper-section-title">
+            <h3>Hop Squads</h3>
+            <button className="primary small" onClick={addSquad}>Add Squad</button>
+          </div>
+          <div className="hopper-list">
+            {draft.hopSquads.map(s => <article className="hopper-card hopper-card--squad" key={s.id} style={{ '--accent': s.color }}>
+              <input value={s.name} onChange={e => updateSquad(s.id, { name: e.target.value })} />
+              <div className="squad-members">
+                {draft.hoppers.map(h => {
+                  const selected = (s.hopperIds || []).includes(h.id);
+                  return <button type="button" key={h.id} className={selected ? 'is-selected' : ''} style={{ '--accent': h.color }} onClick={() => {
+                    const ids = new Set(s.hopperIds || []);
+                    selected ? ids.delete(h.id) : ids.add(h.id);
+                    updateSquad(s.id, { hopperIds: [...ids] });
+                  }}><span />{h.name}</button>;
+                })}
+              </div>
+              <ColorPicker colors={colors} value={s.colorName} onChange={(name) => { const c = pickColor(name); updateSquad(s.id, { colorName: c.name, color: c.color }); }} />
+            </article>)}
+          </div>
+        </section>
+      </div>
+      <footer className="hopper-editor__footer">
+        <button className="secondary" onClick={onClose}>Cancel</button>
+        <button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save Hoppers'}</button>
+      </footer>
+    </div>
+  </section>;
+}
+
+function ColorPicker({ colors = [], value, onChange }) {
+  return <div className="color-picker">
+    {colors.filter(c => c.name !== 'cyan' || true).map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChange?.(c.name)} />)}
+  </div>;
+}
+
+function slugify(value = '') {
+  return String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `id-${Date.now().toString(36)}`;
+}
+
+async function commitSingleJsonFile(repo, token, path, data, message) {
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+  const refRes = await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/main`, { headers });
+  if (!refRes.ok) throw new Error(await refRes.text());
+  const ref = await refRes.json();
+  const headSha = ref.object?.sha;
+  const commitRes = await fetch(`https://api.github.com/repos/${repo}/git/commits/${headSha}`, { headers });
+  if (!commitRes.ok) throw new Error(await commitRes.text());
+  const headCommit = await commitRes.json();
+  const treeRes = await fetch(`https://api.github.com/repos/${repo}/git/trees`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      base_tree: headCommit.tree.sha,
+      tree: [{ path, mode: '100644', type: 'blob', content: JSON.stringify(data, null, 2) + '\n' }]
+    })
+  });
+  if (!treeRes.ok) throw new Error(await treeRes.text());
+  const tree = await treeRes.json();
+  const newCommitRes = await fetch(`https://api.github.com/repos/${repo}/git/commits`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ message, tree: tree.sha, parents: [headSha] })
+  });
+  if (!newCommitRes.ok) throw new Error(await newCommitRes.text());
+  const newCommit = await newCommitRes.json();
+  const updateRefRes = await fetch(`https://api.github.com/repos/${repo}/git/refs/heads/main`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ sha: newCommit.sha })
+  });
+  if (!updateRefRes.ok) throw new Error(await updateRefRes.text());
+}
+
+function buildTripTimeline(trips, legs, locById, hopperData) {
   const firstLegByTrip = new Map();
   for (let i = 0; i < legs.length; i++) {
     const id = legs[i]?.trip?.id;
@@ -302,7 +459,7 @@ function buildTripTimeline(trips, legs, locById, travById) {
     const tripLegs = legs.filter(l => l.trip.id === trip.id);
     const from = tripLegs[0]?.leg?.from;
     const to = tripLegs[0]?.leg?.to || locById[trip.toLocationId];
-    const traveler = travById[getTravelerKey(trip)];
+    const traveler = resolveTripVisual(trip, hopperData);
     return {
       id: trip.id,
       firstIndex,

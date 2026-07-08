@@ -4146,3 +4146,149 @@ option {
   scrollbar-gutter: stable both-edges !important;
   will-change: scroll-position;
 }
+
+
+/* GlobeHoppers v3.30 Hoppers / Hop Squads editor */
+.hopper-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, .44);
+  display: grid;
+  place-items: center;
+  padding: 28px;
+}
+.hopper-editor {
+  width: min(860px, calc(100vw - 48px));
+  max-height: min(820px, calc(100vh - 48px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-radius: 28px;
+  overflow: hidden;
+}
+.hopper-editor__header,
+.hopper-editor__footer {
+  padding: 22px 24px;
+  border-bottom: 1px solid rgba(38,244,255,.18);
+}
+.hopper-editor__footer {
+  border-top: 1px solid rgba(38,244,255,.18);
+  border-bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.hopper-editor__header {
+  position: relative;
+}
+.hopper-editor__header h2 {
+  margin: 8px 0 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+.hopper-editor__header .drawer-close-button {
+  position: absolute;
+  right: 20px;
+  top: 22px;
+}
+.hopper-editor__body {
+  padding: 22px 24px;
+  overflow: auto;
+  display: grid;
+  gap: 24px;
+}
+.hopper-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.hopper-section-title h3 {
+  margin: 0;
+  color: rgba(230, 248, 255, .96);
+}
+.hopper-list {
+  display: grid;
+  gap: 12px;
+}
+.hopper-card {
+  border: 1px solid color-mix(in srgb, var(--accent, #00e5ff), transparent 35%);
+  border-left-width: 5px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #00e5ff), transparent 90%), rgba(8,16,30,.84));
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+.hopper-card input {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(38,244,255,.24);
+  background: rgba(0,10,22,.78);
+  color: #f2fbff;
+  font-weight: 850;
+  padding: 0 12px;
+}
+.color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.color-picker button {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--swatch);
+  border: 2px solid rgba(255,255,255,.32);
+}
+.color-picker button.is-selected {
+  outline: 3px solid rgba(255,255,255,.88);
+  outline-offset: 2px;
+}
+.squad-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.squad-members button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+}
+.squad-members button span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+.squad-members button.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent), transparent 78%);
+}
+.add-guest-hopper {
+  border-style: dashed !important;
+}
+.guest-hopper-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent, #44f48a), transparent 30%);
+  background: rgba(0, 10, 22, .66);
+}
+.guest-hopper-editor input,
+.guest-hopper-editor select {
+  min-height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(0,0,0,.44);
+  color: #fff;
+  padding: 0 10px;
+}

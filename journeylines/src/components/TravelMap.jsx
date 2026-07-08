@@ -1002,8 +1002,8 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     // stricter front-face threshold than globe overview, but no local-distance
     // filter. Separate show/hide thresholds prevent flutter.
     const baseHorizon = hardPlacardHorizonCutoffDeg(zoom);
-    const showCutoff = playback && !activePlacard ? Math.min(baseHorizon - 10, 62) : baseHorizon - 1;
-    const hideCutoff = playback && !activePlacard ? Math.min(baseHorizon - 2, 68) : baseHorizon + 2.5;
+    const showCutoff = playback && !activePlacard ? Math.min(baseHorizon - 16, 56) : baseHorizon - 1;
+    const hideCutoff = playback && !activePlacard ? Math.min(baseHorizon - 6, 64) : baseHorizon + 2.5;
 
     const showCandidate = Boolean(onScreenShow && angularDistance <= showCutoff);
     const hideCandidate = Boolean(!onScreenHide || angularDistance > hideCutoff);

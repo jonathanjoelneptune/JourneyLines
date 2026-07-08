@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { normalizeHopperData, resolveTripVisual } from '../utils/hopperUtils.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -30,7 +31,7 @@ const empty = {
   roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Trip' }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -48,6 +49,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
+  const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
 
   function previewMapLocation(location) {
     if (!location || location.lon == null || location.lat == null) return;
@@ -189,7 +191,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
       setTrips(nextTrips);
       if (nextLocations !== locations) setLocations(nextLocations);
-      await commitData(nextTrips, nextLocations, editingId ? `Edit trip: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`);
+      await commitData(nextTrips, nextLocations, editingId ? `Edit Hop: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`);
       closeModal();
     } catch (err) {
       alert(err.message || String(err));
@@ -412,7 +414,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onRemoveLeg={removeLeg}
       onSetReturnMode={setReturnMode}
       onSetPreviewLegMode={setPreviewLegMode}
-      addTripNoun={addTripNoun}
+      addTripNoun={addTripNoun} normalizedHoppers={normalizedHoppers}
       onDelete={modal === 'edit' ? deleteTripFromModal : null}
       homeBases={homeBases}
     />}
@@ -478,10 +480,10 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Trip' }) {
+function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers }) {
   const destinationMatches = filterLocations(locs, draft.toLocationText || '');
   const fromMatches = filterLocations(locs, draft.fromLocationText || '');
-  const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit trip';
+  const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -494,7 +496,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const dateRangeRef = useRef(null);
-  const bothTravelersSelected = draft.travelers?.includes('joey') && draft.travelers?.includes('bonnie');
+  const bothHoppersSelected = draft.travelers?.includes('joey') && draft.travelers?.includes('bonnie');
 
   useEffect(() => {
     if (!dateRangeOpen) return;
@@ -538,21 +540,21 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
       <div className="studio-modal-sticky">
         <div className="studio-modal-header studio-modal-header--with-actions">
           <div className="studio-title-block">
-            <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : 'Edit Trip'}</p>
+            <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : 'Edit Hop'}</p>
             <h2>{title}</h2>
           </div>
           <div className="studio-modal-top-actions">
-            {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete trip</button>}
+            {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete hop</button>}
             <button onClick={onClose}>Cancel</button>
             <button className="primary" disabled={busy} onClick={onSave}>{busy ? 'Saving…' : 'Save and commit'}</button>
           </div>
         </div>
 
         <div className="studio-form-grid studio-form-grid--sticky-fields studio-form-grid--dates">
-          <label className="title-field">Trip title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
+          <label className="title-field">Hop title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
           <BubbleSelect label="Year" value={draft.year || ''} display={draft.year || 'Choose year'} options={yearOptions.map(y => ({ value: y, label: String(y) }))} open={yearPickerOpen} setOpen={setYearPickerOpen} onChoose={(value) => setDraft({...draft, year:Number(value)})} required variant="year" />
           <BubbleSelect label="Month" value={draft.month || ''} display={monthLabel(draft.month) || 'Choose month'} options={MONTH_OPTIONS.filter(m => m.value).map(m => ({ value: m.value, label: m.label }))} open={monthPickerOpen} setOpen={setMonthPickerOpen} onChoose={(value) => setDraft({...draft, month:Number(value), day:draft.day})} required variant="month" />
-          <label className="date-range-field">Trip dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Trip Dates'}<span>▾</span></button>
+          <label className="date-range-field">Hop dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Hop Dates'}<span>▾</span></button>
             {dateRangeOpen && <DateRangePopover
               popoverRef={dateRangeRef}
               draft={draft}
@@ -569,9 +571,11 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
       <div className="studio-modal-scroll-content studio-modal-layout">
         <div className="studio-modal-maincol">
           <section className="studio-pick-section compact-section travelers-section">
-            <h3>Travelers</h3>
+            <h3>Hoppers</h3>
             <div className="pill-selectors">
-              {TRAVELER_OPTIONS.map(t => { const selected = draft.travelers?.includes(t.id); const accent = selected && bothTravelersSelected ? '#00e5ff' : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.label}</button>; })}
+              {(normalizedHoppers?.hoppers || []).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const accent = selected && visual.isSquad ? visual.color : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
+                <button type="button" className="traveler-pill add-guest-hopper" onClick={() => setDraft(d => ({ ...d, guestHoppers: [...(d.guestHoppers || []), { id: `guest-${Date.now().toString(36)}`, name: 'Guest Hopper', colorName: 'green', color: '#44f48a' }] }))}>+ Add Guest Hopper</button>
+                {(draft.guestHoppers || []).map(g => <span key={g.id} className="guest-hopper-editor" style={{ '--accent': g.color }}><input value={g.name} onChange={e => setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).map(x => x.id === g.id ? { ...x, name: e.target.value } : x) }))} /><select value={g.colorName || 'green'} onChange={e => { const c = (normalizedHoppers.palette || []).find(p => p.name === e.target.value) || { name: 'green', color: '#44f48a' }; setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).map(x => x.id === g.id ? { ...x, colorName: c.name, color: c.color } : x) })); }} >{(normalizedHoppers.palette || []).map(c => <option key={c.name} value={c.name}>{c.label}</option>)}</select></span>)}
             </div>
           </section>
 
@@ -580,7 +584,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
             <div className="mode-selectors">
               {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><span>{m.icon}</span>{m.label}</button>)}
             </div></div>
-            <div className="trip-type-selector"><h3>Trip type</h3>
+            <div className="trip-type-selector"><h3>Hop type</h3>
               <div className="trip-type-options">
                 <button type="button" className={`trip-type-tile ${draft.roundTrip ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, roundTrip: true})}><span>↩</span> Round Trip</button>
                 <button type="button" className={`trip-type-tile ${!draft.roundTrip ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, roundTrip: false})}><span>→</span> One Way</button>
@@ -660,18 +664,18 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
   }
   rows.push({ label: 'End location', place: endPlace, mode: null, target: null, pin: true });
   return <aside className="route-preview-card" style={{ '--trip-accent': tripAccent(draft) }}>
-    <p className="eyebrow">Trip preview</p>
-    <h3>{draft.label || destination?.name || 'New trip'}</h3>
+    <p className="eyebrow">Hop preview</p>
+    <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
     <div className="route-preview-meta">
       <span>{formatDateRangeLabel(draft) || (draft.year ? [monthLabel(draft.month), draft.year].filter(Boolean).join(' ') : 'Dates pending')}</span>
-      <span><b></b>{travelerSummary(draft.travelers)} · {groupNameForTravelers(draft.travelers)}</span>
+      <span><b></b>{travelerSummary(draft.travelers, draft.guestHoppers)} · {groupNameForHoppers(draft.travelers)}</span>
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
     <div className="route-preview-list">
       {rows.map((r, i) => <div className="route-preview-row" key={`${r.label}-${i}`}>
         <PreviewModeButton mode={r.mode} target={r.target} onSetLegMode={onSetLegMode} />
         <div><strong>{r.label}</strong><small>{r.place}</small></div>
-        <span className="route-preview-people">{travelerSummary(draft.travelers)}</span>
+        <span className="route-preview-people">{travelerSummary(draft.travelers, draft.guestHoppers)}</span>
       </div>)}
     </div>
   </aside>;
@@ -784,6 +788,7 @@ function normalizeTrip(draft, trips, locations, homeBases) {
     sortKey: draft.id && draft.sortKey && String(draft.sortKey).startsWith(bucketKey(draft)) ? draft.sortKey : buildSortKey(draft, count),
     label,
     travelers: draft.travelers || [],
+    guestHoppers: draft.guestHoppers || [],
     mode: draft.mode || 'plane',
     roundTrip: !!draft.roundTrip,
     returnMode: draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : '',
@@ -829,8 +834,15 @@ function tripAccent(trip) {
 
 function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }
 function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }
-function travelerSummary(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); if (!hasJ && !hasB) return 'No travelers selected'; return hasJ && hasB ? 'Joey + Bonnie' : hasB ? 'Bonnie' : 'Joey'; }
-function groupNameForTravelers(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); if (!hasJ && !hasB) return 'Required'; return hasJ && hasB ? 'Group: Joey + Bonnie' : 'Solo trip'; }
+function travelerSummary(travelers = [], guestHoppers = []) {
+  const all = [...(travelers || []), ...(guestHoppers || []).map(g => g.name || 'Guest Hopper')];
+  if (!all.length) return 'No hoppers selected';
+  return all.join(' + ');
+}
+function groupNameForHoppers(travelers = []) {
+  if (!travelers?.length) return 'Required';
+  return travelers.length > 1 ? 'Hop squad or group hop' : 'Solo hop';
+}
 function formatDateRangeLabel(t) {
   const start = toDateInputValue(t.year, t.month, t.day);
   const end = toDateInputValue(t.endYear, t.endMonth, t.endDay);
@@ -869,7 +881,7 @@ function formatDisplayDate(t) { if (t.month && t.day) return new Date(t.year, t.
 function formatTripDate(t) { return t.displayDate || formatDisplayDate(t); }
 function displayLocation(l) { return l ? [l.name, l.region && regionShort(l.region), l.country !== 'United States' ? l.country : ''].filter(Boolean).join(', ') : ''; }
 function displayNameFromLocation(l) { return l?.name || ''; }
-function summarizeTrip(t, locById) { const to = locById[t.toLocationId]; const people = t.travelers?.includes('joey') && t.travelers?.includes('bonnie') ? 'Joey + Bonnie' : t.travelers?.includes('bonnie') ? 'Bonnie' : 'Joey'; return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${people} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`; }
+function summarizeTrip(t, locById) { const to = locById[t.toLocationId]; const people = (t.travelers || []).join(' + ') || 'No hoppers'; return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${people} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`; }
 function filterLocations(locs, q) { const needle = String(q || '').toLowerCase().trim(); if (!needle) return locs.slice(0, 6); return locs.filter(l => `${l.name} ${l.region} ${l.country} ${l.id}`.toLowerCase().includes(needle)); }
 function findLocationByText(locs, text) { const q = String(text || '').toLowerCase().trim(); return locs.find(l => [l.id, l.name, displayLocation(l)].some(v => String(v).toLowerCase() === q)) || locs.find(l => displayLocation(l).toLowerCase().includes(q) || q.includes(l.name.toLowerCase())); }
 function createPlaceholderLocation(text) { const name = String(text || 'New destination').split(',')[0].trim(); return { id: slug(text || name), name, region: '', country: '', continent: '', lat: 0, lon: 0, needsGeocoding: true }; }
