@@ -3130,6 +3130,38 @@
     "occasion": ""
   },
   {
+    "id": "2026-142-kentucky",
+    "year": 2026,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-08-99-016",
+    "label": "Kentucky",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-mrbrfu4f",
+        "name": "Kaiyltn",
+        "colorName": "yellow",
+        "color": "#ffd60a"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "louisville-ky",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
     "id": "2026-139-tokyo",
     "year": 2026,
     "month": 9,
