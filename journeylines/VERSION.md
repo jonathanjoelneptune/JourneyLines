@@ -1,1 +1,1 @@
-GlobeHoppers v3.69 — Hoppers Menu + Cancel Alignment + Gray Timeline
+GlobeHoppers v3.70 — Drawer parity + black timeline + freer reordering

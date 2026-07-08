@@ -358,7 +358,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     const label = hopper?.name || 'this Hopper';
     setConfirmRequest({
       title: 'Delete Hopper?',
-      message: `Delete ${label}? This will also remove them from any Hop Squads.`,
+      message: `Delete ${label}? This will also remove them from any HopSquads.`,
       confirmLabel: 'Delete Hopper',
       onConfirm: () => setDraft(d => ({ ...d, hoppers: d.hoppers.filter(h => h.id !== id), hopSquads: d.hopSquads.map(s => ({ ...s, hopperIds: (s.hopperIds || []).filter(x => x !== id) })) }))
     });
@@ -420,7 +420,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     <div className={`hopper-editor glass hopper-editor--compact hopper-editor-drawer ${closing ? 'is-closing' : ''}`} onClick={e => e.stopPropagation()}>
       <header className="hopper-editor__header">
         <p className="eyebrow">GlobeHoppers Studio</p>
-        <h2>Hoppers and Hop Squads</h2>
+        <h2>Hoppers/HopSquads</h2>
         <button className="drawer-close-button" onClick={requestClose}>Close</button>
       </header>
       <div className="hopper-editor__body">
@@ -436,7 +436,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
           </div>
         </section>
         <section>
-          <div className="hopper-section-title"><h3>Hop Squads</h3><button className="primary small" onClick={addSquad}>Add Squad</button></div>
+          <div className="hopper-section-title"><h3>HopSquads</h3><button className="primary small" onClick={addSquad}>Add Squad</button></div>
           <div className="hopper-list">
             {draft.hopSquads.map(s => <article className="hopper-card hopper-card--squad" key={s.id} style={{ '--accent': s.color }}>
               <div className="squad-row-top">

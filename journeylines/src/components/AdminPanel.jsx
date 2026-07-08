@@ -46,6 +46,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [token, setToken] = useState(() => localStorage.getItem('journeylines.githubToken') || '');
   const [repo, setRepo] = useState(() => localStorage.getItem('journeylines.repo') || '');
   const [dragId, setDragId] = useState(null);
+  const [dropId, setDropId] = useState(null);
   const studioListRef = useRef(null);
   const restoreScrollRef = useRef(null);
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
@@ -361,13 +362,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   function enterReorder() { setOrderDraft(sortTripsForEditor(trips)); setReorderMode(true); }
   function moveTrip(fromId, toId) {
-    if (!fromId || fromId === toId) return;
-    const fromTrip = orderDraft.find(t => t.id === fromId);
-    const toTrip = orderDraft.find(t => t.id === toId);
-    if (!fromTrip || !toTrip || bucketKey(fromTrip) !== bucketKey(toTrip)) return;
+    if (!fromId || !toId || fromId === toId) return;
     const next = [...orderDraft];
     const from = next.findIndex(t => t.id === fromId);
     const to = next.findIndex(t => t.id === toId);
+    if (from < 0 || to < 0) return;
     const [item] = next.splice(from, 1);
     next.splice(to, 0, item);
     setOrderDraft(next);
@@ -395,7 +394,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         <p className="eyebrow">GlobeHoppers Studio</p>
         <StudioViewTypeSelector value={viewType} onChange={onViewTypeChange} />
         <button className="studio-close drawer-close-button" onClick={requestCloseStudio}>Close</button>
-        <h2>Edit GlobeHopper Timeline</h2>
+        <h2>GlobeHopper Timeline</h2>
       </div>
 
       <div className="studio-actions-main">
@@ -408,9 +407,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         {viewType === 'card' ? groupTripsByYear(reorderMode ? orderDraft : sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid studio-card-grid">
-            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
           </div>
-        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
       </div>
 
       <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
@@ -485,7 +484,7 @@ function ThemedConfirmPopup({ request, busy, onCancel, onConfirm }) {
 }
 
 
-function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete, hopperData, activeTripId, onPlayTrip }) {
+function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId, setDropId, moveTrip, locById, onEdit, onDelete, hopperData, activeTripId, onPlayTrip }) {
   const playFromRow = () => { if (!reorderMode) onPlayTrip?.(trip.id); };
   const visual = resolveTripVisual(trip, hopperData || {});
   const colors = (visual.colors || []).filter(Boolean);
@@ -495,15 +494,20 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
   const accent3 = visual.accentColors?.[1] || colors[2] || 'transparent';
   const accent4 = visual.accentColors?.[2] || colors[3] || 'transparent';
   const isCurrent = activeTripId && trip.id === activeTripId;
+  const isDragging = reorderMode && dragId === trip.id;
+  const isDropTarget = reorderMode && dropId === trip.id && dragId && dragId !== trip.id;
   return <div
-    className={`studio-trip-row studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''}`}
+    className={`studio-trip-row studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''} ${isDragging ? 'is-dragging' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
     style={{ '--accent': accent, '--accent-2': accent2, '--accent-3': accent3, '--accent-4': accent4, '--accent-gradient': colorGradient(colors, accent) }}
     draggable={reorderMode}
     onClick={playFromRow}
     onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
-    onDragStart={() => setDragId(trip.id)}
-    onDragOver={e => e.preventDefault()}
-    onDrop={() => { moveTrip(dragId, trip.id); setDragId(null); }}
+    onDragStart={(e) => { setDragId(trip.id); try { e.dataTransfer.effectAllowed = 'move'; } catch {} }}
+    onDragOver={e => { if (!reorderMode) return; e.preventDefault(); setDropId(trip.id); try { e.dataTransfer.dropEffect = 'move'; } catch {} }}
+    onDragEnter={() => { if (reorderMode) setDropId(trip.id); }}
+    onDragLeave={(e) => { if (e.currentTarget.contains(e.relatedTarget)) return; if (dropId === trip.id) setDropId(null); }}
+    onDrop={() => { moveTrip(dragId, trip.id); setDragId(null); setDropId(null); }}
+    onDragEnd={() => { setDragId(null); setDropId(null); }}
   >
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
@@ -1205,13 +1209,10 @@ function calendarDays(year, month) {
 
 function insertChronologically(trips) { return sortTripsForEditor(trips).map((t, i) => ({ ...t, sortKey: t.sortKey || buildSortKey(t, i + 1) })); }
 function applyBucketOrder(rows) {
-  const counters = new Map();
-  return rows.map(t => {
-    const key = bucketKey(t);
-    const n = (counters.get(key) || 0) + 1;
-    counters.set(key, n);
-    return { ...t, sortKey: `${key}-${String(n).padStart(3,'0')}` };
-  }).sort((a,b) => String(a.sortKey).localeCompare(String(b.sortKey)));
+  return rows.map((t, i) => ({
+    ...t,
+    sortKey: `manual-${String(i + 1).padStart(5,'0')}-${bucketKey(t)}`
+  }));
 }
 function bucketKey(t) { return `${t.year}-${String(t.month || 13).padStart(2,'0')}-${String(t.day || 99).padStart(2,'0')}`; }
 function buildSortKey(t, n) { return `${bucketKey(t)}-${String(n).padStart(3,'0')}`; }
