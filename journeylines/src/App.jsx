@@ -282,7 +282,7 @@ export default function App() {
       <h1>GlobeHoppers</h1>
       <p>All your hops, skips & jumps, replayed across a living globe.</p>
       <div className="hero-actions">
-        <button className="primary big" onClick={play}>Play GlobeHopper Timeline</button>
+        <button className="primary big" onClick={play}>Play Globehopper Timeline</button>
         <button className="primary big hero-add-hop" onClick={addTravelTimelineEntry}>Add Hop</button>
         <button className="secondary big" onClick={viewGlobe}>View Globe</button>
       </div>
@@ -448,39 +448,40 @@ async function commitSingleJsonFile(repo, token, path, data, message) {
   const headers = {
     Accept: 'application/vnd.github+json',
     Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'X-GitHub-Api-Version': '2022-11-28'
   };
-  const refRes = await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/main`, { headers });
-  if (!refRes.ok) throw new Error(await refRes.text());
-  const ref = await refRes.json();
-  const headSha = ref.object?.sha;
-  const commitRes = await fetch(`https://api.github.com/repos/${repo}/git/commits/${headSha}`, { headers });
-  if (!commitRes.ok) throw new Error(await commitRes.text());
-  const headCommit = await commitRes.json();
-  const treeRes = await fetch(`https://api.github.com/repos/${repo}/git/trees`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      base_tree: headCommit.tree.sha,
-      tree: [{ path, mode: '100644', type: 'blob', content: JSON.stringify(data, null, 2) + '\n' }]
-    })
-  });
-  if (!treeRes.ok) throw new Error(await treeRes.text());
-  const tree = await treeRes.json();
-  const newCommitRes = await fetch(`https://api.github.com/repos/${repo}/git/commits`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ message, tree: tree.sha, parents: [headSha] })
-  });
-  if (!newCommitRes.ok) throw new Error(await newCommitRes.text());
-  const newCommit = await newCommitRes.json();
-  const updateRefRes = await fetch(`https://api.github.com/repos/${repo}/git/refs/heads/main`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ sha: newCommit.sha })
-  });
-  if (!updateRefRes.ok) throw new Error(await updateRefRes.text());
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2) + '\n')));
+
+  async function getCurrentSha() {
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path).replaceAll('%2F','/')}?ref=main`, { headers, cache: 'no-store' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(await res.text());
+    const json = await res.json();
+    return json.sha || null;
+  }
+
+  let lastError = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const sha = await getCurrentSha();
+    const body = { message, content, branch: 'main' };
+    if (sha) body.sha = sha;
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path).replaceAll('%2F','/')}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body)
+    });
+    if (res.ok) return await res.json();
+    const text = await res.text();
+    lastError = new Error(text);
+    // GitHub may still be processing the previous website commit. Refetch the
+    // latest file SHA and retry rather than surfacing a stale/422 error.
+    if (![409, 422].includes(res.status)) throw lastError;
+    await new Promise(resolve => setTimeout(resolve, 350 + attempt * 350));
+  }
+  throw lastError || new Error('GitHub commit failed');
 }
+
 
 function buildTripTimeline(trips, legs, locById, hopperData) {
   const firstLegByTrip = new Map();

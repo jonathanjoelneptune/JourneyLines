@@ -49,7 +49,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
-  const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
+  const safeHopperData = hopperData || { hoppers: [{ id:'joey', name:'Joey', color:'#ff8a00', colorName:'orange' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8', colorName:'pink' }], hopSquads: [{ id:'neptunes', name:'The Neptunes', hopperIds:['joey','bonnie'], color:'#00e5ff', colorName:'cyan' }], palette: [{ name:'orange', label:'Orange', color:'#ff8a00' }, { name:'pink', label:'Pink', color:'#ff4fd8' }, { name:'gray', label:'Gray', color:'#8e99a8' }, { name:'green', label:'Green', color:'#44f48a' }, { name:'blue', label:'Blue', color:'#2f80ff' }, { name:'cyan', label:'Cyan', color:'#00e5ff' }] };
+  const normalizedHoppers = useMemo(() => normalizeHopperData(safeHopperData), [safeHopperData]);
 
   function previewMapLocation(location) {
     if (!location || location.lon == null || location.lat == null) return;
