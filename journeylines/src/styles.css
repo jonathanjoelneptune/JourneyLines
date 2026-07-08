@@ -5555,3 +5555,91 @@ textarea,
 .route-preview-icon .vessel-mode-icon img {
   filter: drop-shadow(0 0 8px rgba(0,0,0,.22));
 }
+
+
+/* GlobeHoppers v3.53 Studio icon cleanup + calmer bottom timeline */
+
+/* Do not use the large PNG vessel icons inside Add/Edit Hop Studio controls.
+   Dynamic recolored vessel PNGs remain enabled for the actual moving map vessel. */
+.vessel-mode-icon,
+.mode-tile .vessel-mode-icon,
+.route-preview-icon .vessel-mode-icon {
+  display: none !important;
+}
+
+/* Keep the active squad badge aligned with the Hoppers heading, without pushing the row down. */
+.section-heading-inline {
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+.section-heading-inline h3 {
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+.section-heading-inline .active-squad-badge {
+  font-size: 13px !important;
+  line-height: 1 !important;
+  min-height: 0 !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  font-weight: 850 !important;
+}
+.section-heading-inline .active-squad-badge span {
+  width: 8px !important;
+  height: 8px !important;
+  margin: 0 !important;
+}
+
+/* Bottom timeline: make the trip dots read as quiet ticks instead of a wall of bright circles. */
+.timeline-marker {
+  width: 8px !important;
+  height: 8px !important;
+  border: 1px solid rgba(230,244,255,.42) !important;
+  background: color-mix(in srgb, var(--marker-color, #00e5ff), transparent 16%) !important;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 70%) !important;
+  opacity: .72 !important;
+  transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease, border-color .16s ease !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1.55) !important;
+  border-color: rgba(255,255,255,.92) !important;
+  box-shadow:
+    0 0 0 2px rgba(4,11,20,.9),
+    0 0 14px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 38%) !important;
+  z-index: 4 !important;
+}
+
+/* Calm tooltip: centered text, GlobeHoppers glass styling, less harsh than the default browser-feeling popup. */
+.timeline-marker__tooltip {
+  min-width: 138px !important;
+  max-width: 210px !important;
+  padding: 9px 11px !important;
+  text-align: center !important;
+  background:
+    linear-gradient(180deg, rgba(8, 18, 32, .96), rgba(5, 12, 22, .94)) !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color, #00e5ff), transparent 52%) !important;
+  color: #f2fbff !important;
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.40),
+    inset 0 1px 0 rgba(255,255,255,.07) !important;
+  white-space: normal !important;
+}
+.timeline-marker__tooltip small {
+  text-align: center !important;
+  color: rgba(225,240,255,.74) !important;
+}
+
+/* Year labels stay useful, but take a step back visually. */
+.timeline-year-scale {
+  height: 16px !important;
+}
+.timeline-year-scale__segment {
+  border-top-color: rgba(255,255,255,.08) !important;
+}
+.timeline-year-scale__segment b {
+  color: rgba(225,240,255,.54) !important;
+  font-size: .62rem !important;
+}

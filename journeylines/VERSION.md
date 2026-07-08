@@ -1,1 +1,1 @@
-GlobeHoppers v3.52 — Timeline Markers + Dynamic Vessel Recoloring
+GlobeHoppers v3.53 — Timeline Calm + Studio Icon Cleanup
