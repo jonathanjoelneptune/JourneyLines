@@ -995,6 +995,7 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
   }, [open, currentColor]);
 
   const draft = hexToRgbDraft(draftColor);
+  const hue = rgbToHslDraft(draft.r, draft.g, draft.b).h;
   const hueColor = rgbHueColor(draft.r, draft.g, draft.b);
 
   function openCustomPicker() {
@@ -1015,8 +1016,17 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
   }
 
   function setHueFromInput(e) {
-    const hue = Number(e.target.value) || 0;
-    const rgb = hslToRgbDraft(hue / 360, 0.82, 0.52);
+    const nextHue = Number(e.target.value) || 0;
+    const currentHsv = rgbToHsvDraft(draft.r, draft.g, draft.b);
+    const rgb = hsvToRgbDraft(nextHue / 360, currentHsv.s || 0.75, currentHsv.v || 0.85);
+    setDraftColor(rgbToHexDraft(rgb.r, rgb.g, rgb.b));
+  }
+
+  function chooseFromField(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / Math.max(1, rect.width)));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / Math.max(1, rect.height)));
+    const rgb = hsvToRgbDraft(hue, x, 1 - y);
     setDraftColor(rgbToHexDraft(rgb.r, rgb.g, rgb.b));
   }
 
@@ -1026,12 +1036,17 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
       {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label || c.name} onClick={() => onChoose?.(c.name, c.color)} />)}
       <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} style={{ '--custom-swatch': value === 'custom' ? currentColor : 'transparent' }} title="Custom color" onClick={openCustomPicker} />
       {customOpen && <span className="custom-color-panel glass">
-        <span className="custom-color-field" style={{ '--hue-color': hueColor }}>
-          <input type="color" value={draftColor} onChange={(e) => setDraftColor(normalizeHexColor(e.target.value))} />
+        <span
+          className="custom-color-field"
+          style={{ '--hue-color': hueColor }}
+          onPointerDown={(e) => { e.currentTarget.setPointerCapture?.(e.pointerId); chooseFromField(e); }}
+          onPointerMove={(e) => { if (e.buttons) chooseFromField(e); }}
+        >
+          <span className="custom-color-field-cursor" style={{ left: `${Math.max(0, Math.min(1, rgbToHsvDraft(draft.r, draft.g, draft.b).s)) * 100}%`, top: `${(1 - Math.max(0, Math.min(1, rgbToHsvDraft(draft.r, draft.g, draft.b).v))) * 100}%` }} />
         </span>
         <span className="custom-color-row">
           <span className="custom-color-preview" style={{ '--swatch': draftColor }} />
-          <input className="custom-hue-slider" type="range" min="0" max="360" value={Math.round(rgbToHslDraft(draft.r, draft.g, draft.b).h * 360)} onChange={setHueFromInput} />
+          <input className="custom-hue-slider" type="range" min="0" max="360" value={Math.round(hue * 360)} onChange={setHueFromInput} />
         </span>
         <span className="custom-rgb-row">
           <label><input value={draft.r} onChange={(e) => setDraftRgb('r', e.target.value)} /><b>R</b></label>
@@ -1066,6 +1081,42 @@ function rgbHueColor(r, g, b) {
   const rgb = hslToRgbDraft(h, 0.82, 0.52);
   return rgbToHexDraft(rgb.r, rgb.g, rgb.b);
 }
+function rgbToHsvDraft(r, g, b) {
+  r = clampRgb(r) / 255; g = clampRgb(g) / 255; b = clampRgb(b) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
+      case g: h = ((b - r) / d + 2); break;
+      default: h = ((r - g) / d + 4); break;
+    }
+    h /= 6;
+  }
+  return { h, s: max === 0 ? 0 : d / max, v: max };
+}
+function hsvToRgbDraft(h, s, v) {
+  h = ((Number(h) || 0) % 1 + 1) % 1;
+  s = Math.max(0, Math.min(1, Number(s) || 0));
+  v = Math.max(0, Math.min(1, Number(v) || 0));
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  let r, g, b;
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    default: r = v; g = p; b = q; break;
+  }
+  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+}
+
 function rgbToHslDraft(r, g, b) {
   r = clampRgb(r) / 255; g = clampRgb(g) / 255; b = clampRgb(b) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);

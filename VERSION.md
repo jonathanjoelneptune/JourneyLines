@@ -1,1 +1,1 @@
-GlobeHoppers v3.61 — Timeline Pin Overlay + Picker Position Fix
+GlobeHoppers v3.62 — Custom Spectrum Fix + Timeline Pin Spread

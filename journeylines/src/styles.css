@@ -2674,7 +2674,6 @@ option {
   position: absolute !important;
   top: calc(100% + 8px) !important;
   right: 0 !important;
-  left: auto !important;
   width: min(330px, 92vw) !important;
   padding: 12px !important;
   max-height: none !important;
@@ -6797,7 +6796,6 @@ button.custom-rainbow-swatch.is-selected,
 
 /* Keep the custom color panel from being clipped off the right side of the screen. */
 .custom-color-panel {
-  left: auto !important;
   right: 0 !important;
   top: calc(100% + 10px) !important;
   transform: none !important;
@@ -6806,7 +6804,6 @@ button.custom-rainbow-swatch.is-selected,
 .color-popover__menu--custom {
   position: absolute !important;
   right: 0 !important;
-  left: auto !important;
   z-index: 130 !important;
 }
 
@@ -6851,7 +6848,6 @@ button.custom-rainbow-swatch.is-selected,
 /* Every trip marker is a pushpin overlay. The needle tip lands on the existing timeline bar. */
 .timeline-marker {
   position: absolute !important;
-  left: auto;
   top: -14px !important;
   width: 13px !important;
   height: 20px !important;
@@ -6935,4 +6931,62 @@ button.custom-rainbow-swatch.is-selected,
   margin-top: 1px !important;
   position: relative !important;
   z-index: 1 !important;
+}
+
+
+/* GlobeHoppers v3.62: color spectrum no longer opens native picker + timeline pins spread fix */
+
+/* Keep the custom panel left of the edge and make the spectrum itself an in-app selector, not native input. */
+.custom-color-panel {
+  right: 0 !important;
+  top: calc(100% + 10px) !important;
+  transform: none !important;
+  width: 245px !important;
+  z-index: 160 !important;
+}
+.custom-color-field {
+  cursor: crosshair !important;
+  touch-action: none !important;
+}
+.custom-color-field input[type='color'] {
+  display: none !important;
+}
+.custom-color-field-cursor {
+  position: absolute !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 999px !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.65) !important;
+  transform: translate(-50%, -50%) !important;
+  pointer-events: none !important;
+}
+
+/* The previous v3.61 CSS accidentally overrode inline left values. This restores per-trip spacing. */
+.timeline-marker {
+  left: var(--timeline-marker-left, auto);
+}
+
+/* Inline React style left must win, so no fixed/auto left override. */
+.timeline-marker[style] {
+  left: attr(style) !important;
+}
+
+/* attr() cannot apply to left in CSS reliably, so reset the bad rule by not setting left at all below.
+   The actual inline `left: N%` from React is now allowed to control spacing. */
+.timeline-marker {
+  left: unset;
+}
+
+/* Higher-specificity correction: do not override inline left, only define shape/position. */
+.timeline-marker-layer > .timeline-marker {
+  top: -14px !important;
+  width: 13px !important;
+  height: 20px !important;
+}
+
+/* If older CSS left:auto remains earlier in the cascade, this class avoids centering all pins by using
+   transform only and letting inline left place each marker. */
+.timeline-marker-layer button.timeline-marker {
+  left: revert-layer;
 }
