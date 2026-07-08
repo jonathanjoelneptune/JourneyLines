@@ -2669,6 +2669,31 @@
     "occasion": ""
   },
   {
+    "id": "2026-137-atlanta",
+    "year": 2026,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-12-99-012",
+    "label": "Atlanta",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
     "id": "2026-126-washington-dc",
     "year": 2026,
     "month": null,
