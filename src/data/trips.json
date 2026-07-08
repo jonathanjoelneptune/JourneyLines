@@ -2404,15 +2404,15 @@
     ],
     "mode": "plane",
     "roundTrip": false,
-    "fromLocationId": null,
-    "toLocationId": "st-louis-mo",
+    "fromLocationId": "san-diego-ca",
+    "toLocationId": "chicago-il",
     "route": [
       {
         "locationId": "san-diego-ca",
         "modeFromPrevious": null
       },
       {
-        "locationId": "st-louis-mo",
+        "locationId": "chicago-il",
         "modeFromPrevious": "plane"
       },
       {
@@ -2429,7 +2429,9 @@
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": ""
   },
   {
     "id": "2025-112-seoul-and-tokyo",
