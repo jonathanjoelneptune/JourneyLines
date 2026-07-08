@@ -3050,5 +3050,32 @@
     "route": [],
     "notes": "",
     "occasion": ""
+  },
+  {
+    "id": "2026-138-london",
+    "year": 2026,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-08-99-012",
+    "label": "London",
+    "travelers": [
+      "joey",
+      "bonnie",
+      "hopper-mrbokhmr"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "london-uk",
+    "route": [],
+    "notes": "",
+    "occasion": ""
   }
 ]
