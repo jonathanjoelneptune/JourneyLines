@@ -1,9 +1,10 @@
-# GlobeHoppers v3.26
+# GlobeHoppers v3.27
 
-Placard flicker and globe pause/resume polish:
-- Globe mode freezes playback timing the same way Edit Travel Timeline does
-- Play from globe mode resumes the exact current trip and mid-leg progress
-- Globe transition no longer resets the route progress to zero after the zoom-in
-- Placards now use visibility hysteresis near the horizon/screen edge to prevent flickering
-- Rapid visible/hidden toggles are detected and temporarily locked hidden before reappearing
+Playback placard stability:
+- Persistent placards now use a separate playback visibility model from globe overview
+- Playback mode uses a smaller safe zone so placards hide before reaching the unstable rim
+- Persistent placards use separate show/hide thresholds instead of a single toggle threshold
+- Non-current placards update visibility more slowly during playback
+- Rapid edge toggles are temporarily locked hidden before reappearing
+- Current route origin/destination placards remain responsive
 - package intentionally omits src/data/trips.json and package-lock.json

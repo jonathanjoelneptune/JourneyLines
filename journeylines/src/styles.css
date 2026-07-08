@@ -4130,3 +4130,11 @@ option {
   visibility: hidden !important;
   display: none !important;
 }
+
+
+/* GlobeHoppers v3.27 playback placard stability */
+.jl-map-pin.is-flicker-locked {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+}

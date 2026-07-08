@@ -106,6 +106,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const lastActiveRouteUpdateRef = useRef(0);
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
   const labelVisibilityStateRef = useRef(new Map());
+  const placardRuntimeRef = useRef({ playback: false, overview: false, activeIds: new Set() });
   const introLaunchRef = useRef({ active: false, key: null });
   const resetAnimatingRef = useRef(false);
   const forceSceneJumpRef = useRef(false);
@@ -125,6 +126,17 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const completedLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex)), [overviewMode, completedMode, legs, activeIndex]);
   const visibleLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1)), [overviewMode, completedMode, legs, activeIndex]);
   const labelCompletedMode = overviewMode || completedMode;
+  useEffect(() => {
+    const ids = new Set();
+    if (active?.leg?.from?.id) ids.add(active.leg.from.id);
+    if (active?.leg?.to?.id) ids.add(active.leg.to.id);
+    placardRuntimeRef.current = {
+      playback: Boolean(isPlaying && !overviewMode && !completedMode),
+      overview: Boolean(overviewMode || completedMode),
+      activeIds: ids
+    };
+  }, [isPlaying, overviewMode, completedMode, active?.leg?.from?.id, active?.leg?.to?.id]);
+
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -285,7 +297,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const map = mapRef.current;
     if (!map) return;
     const refresh = () => {
-      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef, labelVisibilityStateRef);
+      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef, labelVisibilityStateRef, placardRuntimeRef);
       const state = currentOverlayStateRef.current;
       if (!state) return;
       updateOverlay(map, state.active, state.scene, state.color);
@@ -952,21 +964,29 @@ function updateVisitTicks(container, visitColors = []) {
   container.__jlTickColors = colors;
 }
 
-function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, visibilityStateRef) {
+function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, visibilityStateRef, runtimeRef) {
   const now = performance.now();
-  // Marker positions are now owned by MapLibre. We only update opacity/culling,
-  // so this can run at a moderate cadence without causing placard wobble.
-  if (throttleRef?.current?.t && now - throttleRef.current.t < 80) return;
+  const runtime = runtimeRef?.current || {};
+  // Globe mode works well because the camera moves slowly. Playback gets a
+  // stricter, slower placard pass so persistent labels do not toggle at the rim.
+  const minInterval = runtime.playback ? 145 : 80;
+  if (throttleRef?.current?.t && now - throttleRef.current.t < minInterval) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
-  refreshPersistentPinPositions(map, labelsRef, null);
+  refreshPersistentPinPositions(map, labelsRef, visibilityStateRef, runtimeRef);
 }
 
-function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null) {
+function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null, runtimeRef = null) {
   if (!map || !labelsRef?.current) return;
   const canvas = map.getCanvas();
   const w = canvas?.clientWidth || window.innerWidth;
   const h = canvas?.clientHeight || window.innerHeight;
   const zoom = map.getZoom?.() || 1.5;
+  const runtime = runtimeRef?.current || {};
+  const activeIds = runtime.activeIds || new Set();
+  const playback = Boolean(runtime.playback);
+  const centerX = w / 2;
+  const centerY = h / 2;
+  const globeRadius = Math.min(w, h) / 2;
 
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
@@ -974,57 +994,60 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     const pt = map.project([loc.lon, loc.lat]);
     const angularDistance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
     const milesFromFocus = milesFromMapCenter(map, loc.lon, loc.lat);
-    const onScreen = pt.x > -130 && pt.x < w + 130 && pt.y > -130 && pt.y < h + 130;
+    const activePlacard = activeIds.has(loc.id);
+    const distFromScreenCenter = Math.hypot(pt.x - centerX, pt.y - centerY);
 
-    // v2.35: two independent culling guards:
-    // 1) hard horizon guard so placards do not dim/reappear on the back side
-    //    of the globe, and
-    // 2) maximum distance guard so places on the far side of the visible
-    //    hemisphere, such as Tokyo/Seoul/Alaska while focused on Amsterdam, do
-    //    not remain visible just because MapLibre can still project them.
-    // The distance limits are intentionally relaxed enough to keep regional
-    // context like Chicago/Atlanta/Kentucky visible while focused on Florida.
-    const horizonCutoff = hardPlacardHorizonCutoffDeg(zoom);
-    const maxMiles = maxPlacardDistanceMiles(zoom);
-    const wasVisible = el.__jlVisible === true;
-    const horizonHysteresis = 1.8;
-    const milesHysteresis = 180;
-    const frontSide = wasVisible
-      ? angularDistance <= horizonCutoff + horizonHysteresis
-      : angularDistance <= horizonCutoff - horizonHysteresis;
-    const closeEnough = wasVisible
-      ? milesFromFocus <= maxMiles + milesHysteresis
-      : milesFromFocus <= maxMiles - milesHysteresis;
-    const rawVisible = Boolean(onScreen && frontSide && closeEnough);
+    // Playback uses a smaller safe zone than globe overview. This is the key
+    // difference: labels at the visible globe rim are hidden early instead of
+    // being allowed into the unstable edge band.
+    const rimShow = playback && !activePlacard ? globeRadius * 0.74 : globeRadius * 0.94;
+    const rimHide = playback && !activePlacard ? globeRadius * 0.82 : globeRadius * 1.04;
+    const onScreenShow = pt.x > 24 && pt.x < w - 24 && pt.y > 24 && pt.y < h - 24 && distFromScreenCenter < rimShow;
+    const onScreenHide = pt.x > -90 && pt.x < w + 90 && pt.y > -90 && pt.y < h + 90 && distFromScreenCenter < rimHide;
+
+    const baseHorizon = hardPlacardHorizonCutoffDeg(zoom);
+    const baseMiles = maxPlacardDistanceMiles(zoom);
+    const showCutoff = playback && !activePlacard ? baseHorizon - 12 : baseHorizon - 2;
+    const hideCutoff = playback && !activePlacard ? baseHorizon - 5 : baseHorizon + 1.8;
+    const showMiles = playback && !activePlacard ? baseMiles - 600 : baseMiles - 180;
+    const hideMiles = playback && !activePlacard ? baseMiles - 150 : baseMiles + 180;
+
+    const showCandidate = Boolean(onScreenShow && angularDistance <= showCutoff && milesFromFocus <= showMiles);
+    const hideCandidate = Boolean(!onScreenHide || angularDistance > hideCutoff || milesFromFocus > hideMiles);
+
     const now = performance.now();
     const stateMap = visibilityStateRef?.current;
-    const prior = stateMap?.get(loc.id) || { visible: false, switchedAt: 0, rawLast: false, flips: 0, lockedUntil: 0 };
+    const prior = stateMap?.get(loc.id) || { visible: false, switchedAt: 0, showSince: 0, flips: 0, lockedUntil: 0 };
     let visible = prior.visible;
 
-    // Hysteresis prevents edge-of-globe labels from flickering when the camera is
-    // near the horizon threshold. A label must be safely visible for a short
-    // dwell before reappearing; hidden states apply immediately.
-    if (!rawVisible) {
+    if (activePlacard) {
+      // Origin/destination placards can stay responsive. They are central to the
+      // current route and are not the flickering edge labels.
+      visible = showCandidate || (!hideCandidate && prior.visible);
+    } else if (hideCandidate) {
       visible = false;
-      if (prior.rawLast) prior.flips = (prior.flips || 0) + 1;
-      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + 450);
-    } else if (!prior.visible) {
-      const dwell = prior.flips >= 2 ? 900 : 260;
-      visible = now >= (prior.lockedUntil || 0) && now - (prior.switchedAt || 0) >= dwell;
+      if (prior.visible) prior.flips = (prior.flips || 0) + 1;
+      prior.showSince = 0;
+      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 900 : 220));
+    } else if (showCandidate) {
+      if (!prior.showSince) prior.showSince = now;
+      const dwell = playback ? (prior.flips >= 2 ? 1200 : 520) : 120;
+      visible = now >= (prior.lockedUntil || 0) && now - prior.showSince >= dwell;
+      if (visible) prior.flips = 0;
     } else {
-      visible = true;
-      prior.flips = 0;
+      // Buffer zone: preserve prior state. This is the separate enter/exit
+      // threshold that prevents visible/hidden/visible/hidden flutter.
+      visible = prior.visible;
     }
 
     if (visible !== prior.visible) {
       prior.switchedAt = now;
     }
     prior.visible = visible;
-    prior.rawLast = rawVisible;
     if (stateMap) stateMap.set(loc.id, prior);
 
     el.classList.toggle('is-culled', !visible);
-    el.classList.toggle('is-flicker-locked', Boolean(rawVisible && !visible));
+    el.classList.toggle('is-flicker-locked', Boolean(showCandidate && !visible));
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     el.__jlVisible = visible;
     if (visible) {
