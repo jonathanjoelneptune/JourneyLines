@@ -1,1 +1,1 @@
-GlobeHoppers v3.70 — Drawer parity + black timeline + freer reordering
+GlobeHoppers v3.71 — Hoppers drawer parity + progress bar outline fix
