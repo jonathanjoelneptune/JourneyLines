@@ -2,6 +2,30 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, tripMarkers = [], yearSegments = [] }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
+  function markerFromPointerEvent(e) {
+    const rail = e.currentTarget.closest('.progress--scrubbable');
+    if (!rail) return null;
+    const rect = rail.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    // Only activate pins from the pin band above the rail, not from general timeline hover.
+    if (y < -24 || y > 8) return null;
+    let best = null;
+    let bestDist = Infinity;
+    for (const marker of tripMarkers || []) {
+      const mx = marker.progress * rect.width;
+      const dx = Math.abs(x - mx);
+      if (dx < bestDist) {
+        best = marker;
+        bestDist = dx;
+      }
+    }
+    return bestDist <= 7 ? best : null;
+  }
+  function handleMarkerLayerMove(e) {
+    const next = markerFromPointerEvent(e);
+    setHoverMarker(next);
+  }
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
   const advancedRef = useRef(null);
@@ -21,15 +45,18 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
       <div className="timeline-scrubber-stack">
         <div className="progress progress--scrubbable">
           <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
-          <div className="timeline-marker-layer" aria-hidden="true">
+          <div
+            className="timeline-marker-layer"
+            aria-hidden="true"
+            onPointerMove={handleMarkerLayerMove}
+            onPointerLeave={() => setHoverMarker(null)}
+          >
             {tripMarkers.map(marker => <button
               key={marker.id}
               type="button"
-              className="timeline-marker"
+              className={hoverMarker?.id === marker.id ? 'timeline-marker is-active' : 'timeline-marker'}
               style={{ '--marker-left': `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff' }}
               aria-label={`${marker.title} · ${marker.date}`}
-              onMouseEnter={() => setHoverMarker(marker)}
-              onMouseLeave={() => setHoverMarker(null)}
               onFocus={() => setHoverMarker(marker)}
               onBlur={() => setHoverMarker(null)}
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}

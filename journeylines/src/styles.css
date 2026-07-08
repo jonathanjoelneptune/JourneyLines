@@ -7053,3 +7053,153 @@ button.custom-rainbow-swatch.is-selected,
       #ff00ff 83.333%,
       #ff0000 100%) !important;
 }
+
+
+/* GlobeHoppers v3.64 color picker polish + timeline hover guard */
+
+/* Color picker: remove white edge artifacts and tighten spacing. */
+.custom-color-panel {
+  right: calc(100% + 12px) !important;
+  left: auto !important;
+  width: 238px !important;
+  padding: 9px !important;
+  gap: 6px !important;
+  overflow: visible !important;
+}
+.custom-color-field {
+  height: 136px !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  background:
+    linear-gradient(to top, #000 0%, transparent 100%),
+    linear-gradient(to right, #fff 0%, var(--hue-color, #00e5ff) 100%) !important;
+  background-clip: padding-box !important;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.28) !important;
+}
+.custom-color-field::before,
+.custom-color-field::after {
+  content: none !important;
+  display: none !important;
+}
+.custom-color-field-cursor {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+/* Thinner, cleaner hue bar. */
+.custom-color-row {
+  grid-template-columns: 26px 1fr !important;
+  gap: 7px !important;
+}
+.custom-color-preview {
+  width: 24px !important;
+  height: 24px !important;
+}
+.custom-hue-slider {
+  height: 8px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.38),
+    0 0 0 1px rgba(255,255,255,.22) !important;
+}
+.custom-hue-slider::-webkit-slider-thumb {
+  width: 14px !important;
+  height: 14px !important;
+}
+.custom-hue-slider::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+}
+.custom-hue-slider::-moz-range-track {
+  height: 8px !important;
+}
+
+/* Tighter RGB fields. */
+.custom-rgb-row {
+  gap: 6px !important;
+}
+.custom-rgb-row input {
+  height: 22px !important;
+  padding: 2px 4px !important;
+  font-size: 11px !important;
+}
+.custom-rgb-row label {
+  gap: 2px !important;
+}
+.custom-rgb-row b {
+  font-size: 9px !important;
+}
+.custom-color-ok {
+  height: 28px !important;
+  min-width: 44px !important;
+  padding: 0 12px !important;
+}
+
+/* Timeline marker hover should be controlled by pointer proximity, not broad CSS hover. */
+.timeline-marker-layer {
+  pointer-events: auto !important;
+  overflow: visible !important;
+}
+.timeline-marker {
+  pointer-events: none !important;
+  top: -15px !important;
+  width: 13px !important;
+  height: 22px !important;
+}
+
+/* More elegant teardrop pushpin head with needle landing on the locked timeline bar. */
+.timeline-marker::before {
+  width: 9px !important;
+  height: 10px !important;
+  border-radius: 999px 999px 999px 3px !important;
+  transform: translateX(-50%) rotate(-45deg) !important;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.54), transparent 32%),
+    var(--marker-color, #00e5ff) !important;
+}
+.timeline-marker::after {
+  top: 8px !important;
+  height: 13px !important;
+  background:
+    linear-gradient(to bottom,
+      rgba(255,255,255,.86),
+      color-mix(in srgb, var(--marker-color, #00e5ff), transparent 18%)) !important;
+}
+
+/* No CSS hover activation. Only the React-assigned active class grows the pin. */
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  transform: translateX(-50%) !important;
+  opacity: .78 !important;
+}
+.timeline-marker.is-active,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translateX(-50%) scale(1.22) !important;
+  z-index: 70 !important;
+}
+.timeline-marker.is-active::before,
+.timeline-marker:focus-visible::before {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.82),
+    0 0 14px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 38%) !important;
+}
+
+/* Tooltip can escape the timeline base visually and stays above the active pin. */
+.controls,
+.timeline-scrubber,
+.timeline-scrubber-stack,
+.progress--scrubbable,
+.timeline-marker-layer {
+  overflow: visible !important;
+}
+.timeline-marker__tooltip {
+  bottom: calc(100% + 16px) !important;
+  z-index: 200 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+}
