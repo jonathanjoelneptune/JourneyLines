@@ -33,7 +33,11 @@
     {
       "id": "squad-mrbpqgve",
       "name": "Small Council",
-      "hopperIds": [],
+      "hopperIds": [
+        "hopper-mrbokhmr",
+        "bonnie",
+        "joey"
+      ],
       "colorName": "gray",
       "color": "#8e99a8"
     }
