@@ -7437,3 +7437,95 @@ button.custom-rainbow-swatch.is-selected,
   opacity: .86 !important;
   transform: translateX(-50%) !important;
 }
+
+
+/* GlobeHoppers v3.67 final polish */
+/* Opaque custom color panel */
+.custom-color-panel {
+  background: #09131f !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow: 0 18px 36px rgba(0,0,0,.42) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+/* Slightly larger RGB labels, same visual size as values */
+.custom-rgb-row {
+  gap: 5px !important;
+}
+.custom-rgb-row label {
+  gap: 2px !important;
+}
+.custom-rgb-row input {
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 1px 3px !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  border-radius: 10px !important;
+}
+.custom-rgb-row b {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  color: rgba(230,242,255,.88) !important;
+}
+/* Neutral timeline rail and a cleaner progress fill. Pins now carry the trip colors. */
+.progress {
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 2px 5px rgba(0,0,0,.38) !important;
+}
+.progress span {
+  background: linear-gradient(90deg, #43e7ff 0%, #66ecff 52%, #89f0ff 100%) !important;
+}
+.progress--scrubbable span {
+  box-shadow: 0 0 10px rgba(67,231,255,.35) !important;
+}
+/* Marker button hit area stays easy to use. */
+.timeline-marker {
+  pointer-events: auto !important;
+}
+/* Small drop shadow for pin head and stem */
+.timeline-marker::before {
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.48),
+    0 0 0 1px rgba(2,8,16,.78),
+    0 0 8px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 64%) !important;
+}
+.timeline-marker::after {
+  box-shadow: 0 2px 3px rgba(0,0,0,.45) !important;
+}
+/* Tooltip slightly higher and truly vertically centered */
+.timeline-marker__tooltip {
+  bottom: calc(100% + 48px) !important;
+  padding: 6px 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  line-height: 1 !important;
+}
+.timeline-marker__tooltip-title,
+.timeline-marker__tooltip-date {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.timeline-marker__tooltip-title {
+  font-weight: 900 !important;
+}
+.timeline-marker__tooltip-date {
+  font-size: .9em !important;
+  font-weight: 750 !important;
+  color: rgba(225,240,255,.80) !important;
+  position: relative !important;
+  top: 0 !important;
+}
+/* Clear stale hover when mouse is on the rail, but not on actual pin buttons. */
+.progress--scrubbable:hover .timeline-marker.is-active:not(:hover):not(:focus-visible) {
+  opacity: .86 !important;
+  transform: translateX(-50%) !important;
+}

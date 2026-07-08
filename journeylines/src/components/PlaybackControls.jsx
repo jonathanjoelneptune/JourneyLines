@@ -19,7 +19,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
     <button className="controls-play-pill" onClick={isPlaying ? onPause : onPlay}>{isPlaying ? 'Pause' : 'Play'}</button>
     <label className="timeline-scrubber">Timeline
       <div className="timeline-scrubber-stack">
-        <div className="progress progress--scrubbable">
+        <div className="progress progress--scrubbable" onMouseMove={(e) => { if (e.target === e.currentTarget || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN') setHoverMarker(null); }} onMouseLeave={() => setHoverMarker(null)}>
           <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
           <div className="timeline-marker-layer" aria-hidden="true">
             {tripMarkers.map(marker => <button
@@ -35,7 +35,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
             />)}
             {hoverMarker && <span className="timeline-marker__tooltip is-visible" style={{ '--marker-left': `${hoverMarker.progress * 100}%`, '--marker-color': hoverMarker.color || '#00e5ff' }}>
-              <strong>{hoverMarker.title}</strong><small>{hoverMarker.date}</small>
+              <strong className="timeline-marker__tooltip-title">{hoverMarker.title}</strong><small className="timeline-marker__tooltip-date">{hoverMarker.date}</small>
             </span>}
           </div>
           <input
