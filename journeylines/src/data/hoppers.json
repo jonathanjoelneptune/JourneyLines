@@ -17,54 +17,6 @@
       "name": "Bernard",
       "colorName": "green",
       "color": "#44f48a"
-    },
-    {
-      "id": "hopper-mrchqdp4",
-      "name": "New Hopper",
-      "colorName": "blue",
-      "color": "#2f80ff"
-    },
-    {
-      "id": "hopper-mrchqdzk",
-      "name": "New Hopper",
-      "colorName": "blue",
-      "color": "#2f80ff"
-    },
-    {
-      "id": "hopper-mrchqe7q",
-      "name": "New Hopper",
-      "colorName": "blue",
-      "color": "#2f80ff"
-    },
-    {
-      "id": "hopper-mrchqeid",
-      "name": "New Hopper",
-      "colorName": "blue",
-      "color": "#2f80ff"
-    },
-    {
-      "id": "hopper-mrchqesp",
-      "name": "New Hopper",
-      "colorName": "blue",
-      "color": "#2f80ff"
-    },
-    {
-      "id": "hopper-mrchqf1x",
-      "name": "New Hopper",
-      "colorName": "blue",
-      "color": "#2f80ff"
-    },
-    {
-      "id": "hopper-mrchqfd8",
-      "name": "Tito",
-      "colorName": "blue",
-      "color": "#2f80ff"
-    },
-    {
-      "id": "hopper-mrchqg0s",
-      "name": "Jamil",
-      "colorName": "blue",
-      "color": "#2f80ff"
     }
   ],
   "hopSquads": [
@@ -84,8 +36,7 @@
       "hopperIds": [
         "bonnie",
         "joey",
-        "hopper-mrchqg0s",
-        "hopper-mrchqfd8"
+        "hopper-mrcdkasg"
       ],
       "colorName": "yellow",
       "color": "#ffd60a"
