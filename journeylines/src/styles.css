@@ -8104,81 +8104,97 @@ button.small {
   line-height: 1 !important;
 }
 
-
-/* GlobeHoppers v3.73 */
+/* GlobeHoppers v3.74
+   Compact hopper rows by default, unify green action buttons,
+   keep timeline stems above playback bar, and hero copy refresh. */
 :root {
-  --gh-action-green-1: #baf7e7;
-  --gh-action-green-2: #ebe7ac;
-  --gh-action-green-border: rgba(205, 255, 238, 0.28);
+  --gh-action-green-1: #44f48a;
+  --gh-action-green-2: #dff29a;
+  --gh-action-green-text: #03120a;
 }
 
-/* Use the same mint-green action look across Add Hopper, Add Squad,
-   Save Hoppers, Save order, and Save and commit. */
+/* Use the same green action styling across Add Hopper, Add Squad,
+   Save Hoppers, Save order, Save and commit, top Add Hop, and hero Add Hop. */
 button.primary,
-.studio-panel button.primary,
-.studio-modal button.primary,
-.hopper-editor button.primary {
+.topbar-add,
+.hero .hero-add-hop,
+.hero-actions .hero-add-hop {
   background: linear-gradient(135deg, var(--gh-action-green-1), var(--gh-action-green-2)) !important;
-  color: #07111d !important;
-  border: 1px solid var(--gh-action-green-border) !important;
-  box-shadow: 0 10px 20px rgba(133, 236, 202, 0.12) !important;
+  border: 1px solid rgba(101,255,161,.44) !important;
+  color: var(--gh-action-green-text) !important;
+  font-weight: 900 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.42),
+    0 0 20px rgba(68,244,138,.20),
+    0 10px 24px rgba(0,0,0,.18) !important;
 }
 button.primary:hover,
-.studio-panel button.primary:hover,
-.studio-modal button.primary:hover,
-.hopper-editor button.primary:hover {
-  filter: brightness(1.02) !important;
-  box-shadow: 0 12px 24px rgba(133, 236, 202, 0.18) !important;
+.topbar-add:hover,
+.hero .hero-add-hop:hover,
+.hero-actions .hero-add-hop:hover {
+  background: linear-gradient(135deg, #67ffa2, #f0f7aa) !important;
+  transform: translateY(-1px);
+}
+button.primary:disabled {
+  opacity: .7 !important;
+  filter: saturate(.75) !important;
 }
 .topbar-hoppers-icon {
-  color: #7ff0b8 !important;
-  text-shadow: 0 0 10px rgba(127,240,184,.24) !important;
+  color: var(--gh-action-green-1) !important;
+  text-shadow: 0 0 12px rgba(68,244,138,.20) !important;
 }
 
-/* Default to the compact Hopper/HopSquad row sizing, even for short lists. */
+/* Make the Hoppers drawer default to the tighter row density even when only a few items exist. */
+.hopper-editor.hopper-editor-drawer,
+.hopper-editor.hopper-editor-drawer.hopper-editor--compact {
+  padding: 16px !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-editor__header {
+  padding: 0 0 10px 0 !important;
+}
 .hopper-editor.hopper-editor-drawer .hopper-editor__body {
-  gap: 10px !important;
   padding: 10px 4px 0 0 !important;
+  gap: 12px !important;
 }
 .hopper-editor.hopper-editor-drawer .hopper-editor__body > section {
   gap: 6px !important;
 }
+.hopper-editor.hopper-editor-drawer .hopper-editor__footer {
+  padding: 10px 0 0 !important;
+  gap: 8px !important;
+}
 .hopper-section-title {
   margin: 0 !important;
-  padding: 0 2px !important;
+  gap: 8px !important;
 }
 .hopper-section-title h3 {
-  font-size: 0.9rem !important;
+  line-height: 1.05 !important;
 }
 .hopper-list {
   gap: 6px !important;
 }
 .hopper-card--row,
-.hopper-card--squad {
-  border-radius: 14px !important;
+.hopper-card--squad .squad-row-top {
+  grid-template-columns: minmax(0, 1fr) auto auto auto !important;
+  min-height: 38px !important;
+  gap: 8px !important;
 }
 .hopper-card--row {
-  min-height: 0 !important;
-  padding: 6px 8px !important;
-  gap: 7px !important;
+  padding: 6px 10px !important;
 }
 .hopper-card--squad {
-  padding: 8px !important;
+  padding: 8px 10px !important;
 }
 .hopper-card--squad .squad-row-top {
-  min-height: 0 !important;
   margin-bottom: 6px !important;
-  gap: 7px !important;
 }
 .hopper-card input {
   min-height: 32px !important;
-  height: 32px !important;
   padding: 6px 10px !important;
-  font-size: 0.95rem !important;
 }
 .hopper-color-label {
-  font-size: .72rem !important;
-  letter-spacing: .04em !important;
+  font-size: .74rem !important;
+  line-height: 1 !important;
 }
 .color-popover__trigger {
   width: 28px !important;
@@ -8187,44 +8203,48 @@ button.primary:hover,
 }
 .compact-delete,
 .hopper-section-title .small,
-.hopper-editor .secondary,
-.hopper-editor .primary {
+.hopper-editor__footer .primary,
+.hopper-editor__footer .secondary {
   min-height: 30px !important;
   height: 30px !important;
-  padding: 0 12px !important;
-  font-size: .82rem !important;
+  padding: 0 11px !important;
+  font-size: .8rem !important;
 }
 .squad-members {
   gap: 6px !important;
 }
 .squad-members button {
   min-height: 26px !important;
-  height: 26px !important;
-  padding: 0 11px !important;
-  font-size: .82rem !important;
-}
-.hopper-editor__footer {
-  padding-top: 10px !important;
+  padding: 0 10px !important;
+  font-size: .84rem !important;
 }
 
-/* Make timeline pin stems render on top of the playback bar. */
-.timeline-marker-layer {
-  z-index: 72 !important;
+/* Ensure marker stems render above the playback bar. */
+.progress.progress--scrubbable,
+.progress--scrubbable {
+  position: relative !important;
+  overflow: visible !important;
 }
-.timeline-marker,
-.timeline-marker-layer > button.timeline-marker {
-  z-index: 73 !important;
-}
-.timeline-marker::before {
-  z-index: 3 !important;
-}
-.timeline-marker::after {
-  z-index: 2 !important;
-}
-.progress,
-.progress--scrubbable,
-.progress span,
-.progress--scrubbable span {
+.progress--scrubbable > span {
   position: relative !important;
   z-index: 1 !important;
+}
+.progress--scrubbable input[type='range'] {
+  position: absolute !important;
+  z-index: 2 !important;
+}
+.timeline-marker-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  overflow: visible !important;
+  z-index: 6 !important;
+}
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  z-index: 7 !important;
+  overflow: visible !important;
+}
+.timeline-marker::before {
+  z-index: 7 !important;
+  opacity: .9 !important;
 }

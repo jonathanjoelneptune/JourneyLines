@@ -310,9 +310,9 @@ export default function App() {
       <h1>GlobeHoppers</h1>
       <p>All your hops, skips & jumps, replayed across a living globe.</p>
       <div className="hero-actions">
-        <button className="primary big" onClick={play}>Play GlobeHopper Timeline</button>
+        <button className="primary big" onClick={play}>Start the Journey</button>
         <button className="primary big hero-add-hop" onClick={addTravelTimelineEntry}>Add Hop</button>
-        <button className="secondary big" onClick={viewGlobe}>View Globe</button>
+        <button className="secondary big" onClick={viewGlobe}>Explore the Globe</button>
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
