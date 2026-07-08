@@ -3,20 +3,20 @@
     {
       "id": "joey",
       "name": "Joey",
-      "colorName": "cyan",
-      "color": "#00e5ff"
+      "colorName": "orange",
+      "color": "#ff8a00"
     },
     {
       "id": "bonnie",
       "name": "Bonnie",
-      "colorName": "green",
-      "color": "#44f48a"
+      "colorName": "pink",
+      "color": "#ff4fd8"
     },
     {
-      "id": "hopper-mrbokhmr",
+      "id": "hopper-mrcdkasg",
       "name": "Bernard",
-      "colorName": "purple",
-      "color": "#9b5cff"
+      "colorName": "blue",
+      "color": "#2f80ff"
     }
   ],
   "hopSquads": [
@@ -27,19 +27,8 @@
         "joey",
         "bonnie"
       ],
-      "colorName": "yellow",
-      "color": "#ffd60a"
-    },
-    {
-      "id": "squad-mrbpqgve",
-      "name": "Small Council",
-      "hopperIds": [
-        "hopper-mrbokhmr",
-        "bonnie",
-        "joey"
-      ],
-      "colorName": "green",
-      "color": "#44f48a"
+      "colorName": "cyan",
+      "color": "#00e5ff"
     }
   ],
   "palette": [
