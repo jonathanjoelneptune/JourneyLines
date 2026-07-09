@@ -21,7 +21,7 @@
     "stripeSpread": 0
   },
   "timelineTuning": {
-    "inactiveHeadSize": 14,
+    "inactiveHeadSize": 12,
     "inactiveStemLength": 24,
     "activeHeadSize": 14,
     "activeStemLength": 42,
