@@ -29,7 +29,7 @@
     "pinBaseY": 1,
     "playbackBarHeight": 10,
     "yearOffsetY": -7,
-    "tooltipOffsetY": 62,
+    "tooltipOffsetY": 65,
     "animationMs": 450,
     "animationOvershoot": 1.12
   }
