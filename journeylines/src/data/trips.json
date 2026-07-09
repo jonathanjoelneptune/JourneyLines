@@ -3223,6 +3223,8 @@
     "toLocationId": "las-vegas-nv",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   }
 ]
