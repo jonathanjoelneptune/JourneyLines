@@ -1,1 +1,1 @@
-GlobeHoppers v3.89 — persistent timeline borders, trail utility cancel, stronger route tube effect
+GlobeHoppers v3.90 — route stacking return lanes, persistent timeline borders, and trail utility thickness range

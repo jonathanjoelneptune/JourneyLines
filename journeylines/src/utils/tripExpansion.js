@@ -86,27 +86,56 @@ export function flattenLegs(trips, locationsById, homeBases) {
 
 function applyRouteStackOffsets(entries = []) {
   const groups = new Map();
+
   for (const entry of entries) {
     const key = routeStackKey(entry?.leg);
     if (!key) continue;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(entry);
   }
+
   for (const rows of groups.values()) {
     if (rows.length <= 1) continue;
+
+    // Outbound and return legs for the same trip should share the same lane.
+    // Separate trips with the same unordered endpoint pair still get their own lanes,
+    // regardless of which travelers were on the trip.
+    const laneEntries = [];
+    const laneByTrip = new Map();
+    for (const entry of rows) {
+      const laneKey = String(entry?.trip?.id || `${entry?.trip?.year || ''}-${entry?.trip?.month || ''}-${entry?.trip?.label || entry?.trip?.title || ''}`);
+      if (!laneByTrip.has(laneKey)) {
+        laneByTrip.set(laneKey, laneEntries.length);
+        laneEntries.push({ laneKey, entries: [] });
+      }
+      laneEntries[laneByTrip.get(laneKey)].entries.push(entry);
+    }
+
+    if (laneEntries.length <= 1) continue;
+
     const spacing = 3.1;
-    rows.forEach((entry, index) => {
-      const offset = (index - (rows.length - 1) / 2) * spacing;
-      entry.leg = { ...entry.leg, routeStackOffset: offset, routeStackCount: rows.length, routeStackIndex: index };
+    laneEntries.forEach((lane, laneIndex) => {
+      const offset = (laneIndex - (laneEntries.length - 1) / 2) * spacing;
+      lane.entries.forEach(entry => {
+        entry.leg = {
+          ...entry.leg,
+          routeStackOffset: offset,
+          routeStackCount: laneEntries.length,
+          routeStackIndex: laneIndex
+        };
+      });
     });
   }
+
   return entries;
 }
 
 function routeStackKey(leg) {
   const from = leg?.from?.id || leg?.from?.name;
   const to = leg?.to?.id || leg?.to?.name;
-  return from && to ? `${from}→${to}` : '';
+  if (!from || !to) return '';
+  const pair = [String(from), String(to)].sort();
+  return `${pair[0]}↔${pair[1]}`;
 }
 
 function timelineDateValue(item, isHomeMove = false) {

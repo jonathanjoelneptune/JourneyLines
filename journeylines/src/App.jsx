@@ -450,7 +450,7 @@ function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
     <p className="trail-tuning__note">Demo mode hides the real trip trails and shows Solid, Stripe, Ribbon, and Spiral coast-to-coast for live tuning.</p>
     <section>
       <h4>Solid</h4>
-      {row('solidThickness', 'Thickness', 0.6, 2.4, 0.05, 'x')}
+      {row('solidThickness', 'Thickness', 0.6, 5.0, 0.05, 'x')}
       {row('solidGlow', 'Glow', 0, 2, 0.05, 'x')}
     </section>
     <section>
@@ -460,7 +460,7 @@ function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
     </section>
     <section>
       <h4>Stripe</h4>
-      {row('stripeThickness', 'Thickness', 0.8, 3.4, 0.05, 'x')}
+      {row('stripeThickness', 'Thickness', 0.8, 5.0, 0.05, 'x')}
       {row('stripeSegmentMiles', 'Segment length', 5, 650, 5, ' mi')}
       {row('stripeSeparator', 'Dark transition', 0, 2.4, 0.05, 'x')}
       {row('stripeGlow', 'Glow', 0, 2, 0.05, 'x')}

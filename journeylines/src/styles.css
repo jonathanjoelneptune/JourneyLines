@@ -9627,3 +9627,71 @@ button.primary:disabled {
   position: relative !important;
   z-index: 2 !important;
 }
+
+
+/* GlobeHoppers v3.90: persistent segmented traveler borders for GlobeHopper Timeline rows. */
+.trip-drawer__row {
+  position: relative !important;
+  isolation: isolate !important;
+  border: 2px solid transparent !important;
+  background:
+    linear-gradient(180deg, rgba(10, 23, 40, 0.96), rgba(6, 15, 28, 0.96)) padding-box,
+    var(--trip-border, var(--accent, #00e5ff)) border-box !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 0 0 1px rgba(0,0,0,.25) !important;
+}
+.trip-drawer__row::before {
+  display: none !important;
+}
+.trip-drawer__row::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 2px !important;
+  border-radius: calc(var(--row-radius, 18px) - 2px) !important;
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 90%), transparent 32%),
+    linear-gradient(180deg, rgba(9, 20, 36, 0.52), rgba(5, 14, 26, 0.42)) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+  transition: opacity .18s ease, background .18s ease, box-shadow .18s ease !important;
+}
+.trip-drawer__row:hover::after,
+.trip-drawer__row:focus-visible::after {
+  opacity: 1 !important;
+}
+.trip-drawer__row.is-active {
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--accent, #00e5ff), transparent 80%),
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 0 0 1px rgba(0,0,0,.25) !important;
+}
+.trip-drawer__row.is-active::after {
+  opacity: .72 !important;
+}
+.trip-drawer__row.trip-row-view--expanded {
+  --row-radius: 18px;
+  border-radius: 18px !important;
+}
+.trip-drawer__row.trip-row-view--compact {
+  --row-radius: 16px;
+  border-radius: 16px !important;
+}
+.trip-drawer__row.trip-row-view--card {
+  --row-radius: 14px;
+  border-radius: 14px !important;
+}
+.trip-drawer__row > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+.trip-drawer__row,
+.trip-drawer__row:hover,
+.trip-drawer__row:focus-visible,
+.trip-drawer__row.is-active {
+  border-left-width: 2px !important;
+  border-right-width: 2px !important;
+  border-top-width: 2px !important;
+  border-bottom-width: 2px !important;
+}

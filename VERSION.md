@@ -1,1 +1,1 @@
-GlobeHoppers v3.85 — zoom-aware trails, segmented traveler card borders, and Ribbon default
+GlobeHoppers v3.90 — route stacking return lanes, persistent timeline borders, and trail utility thickness range
