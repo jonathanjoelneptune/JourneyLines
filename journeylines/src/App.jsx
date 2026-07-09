@@ -1007,24 +1007,20 @@ function linearStops(colors = [], direction = '90deg') {
 
 function TimelineRowBorder({ colors = [], fallback = '#00e5ff' }) {
   const list = splitTimelineBorderColors(colors, fallback);
-  const top = borderSegmentForSide(list, 'top', fallback);
-  const right = borderSegmentForSide(list, 'right', fallback);
-  const bottom = borderSegmentForSide(list, 'bottom', fallback);
-  const left = borderSegmentForSide(list, 'left', fallback);
   return <span
-    className="trip-drawer__foreground-border"
+    className="gh-timeline-row-border"
     aria-hidden="true"
     style={{
-      '--row-border-top': top,
-      '--row-border-right': right,
-      '--row-border-bottom': bottom,
-      '--row-border-left': left
+      '--gh-row-border-top': borderSegmentForSide(list, 'top', fallback),
+      '--gh-row-border-right': borderSegmentForSide(list, 'right', fallback),
+      '--gh-row-border-bottom': borderSegmentForSide(list, 'bottom', fallback),
+      '--gh-row-border-left': borderSegmentForSide(list, 'left', fallback)
     }}
   >
-    <span className="trip-drawer__border-strip trip-drawer__border-strip--top" />
-    <span className="trip-drawer__border-strip trip-drawer__border-strip--right" />
-    <span className="trip-drawer__border-strip trip-drawer__border-strip--bottom" />
-    <span className="trip-drawer__border-strip trip-drawer__border-strip--left" />
+    <span className="gh-row-border-strip gh-row-border-strip--top" />
+    <span className="gh-row-border-strip gh-row-border-strip--right" />
+    <span className="gh-row-border-strip gh-row-border-strip--bottom" />
+    <span className="gh-row-border-strip gh-row-border-strip--left" />
   </span>;
 }
 
@@ -1152,7 +1148,7 @@ function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
   return <div
     role="button"
     tabIndex={0}
-    className={`trip-drawer__row ${active ? 'is-active' : ''} trip-row-view--${viewType}`}
+    className={`gh-timeline-trip-row ${active ? 'is-active' : ''} gh-timeline-trip-row--${viewType}`}
     style={{ '--accent': row.color, '--trip-border': row.borderGradient || row.color }}
     onClick={() => onJump(row.firstIndex)}
     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onJump(row.firstIndex); } }}

@@ -1,1 +1,1 @@
-GlobeHoppers v3.96 — high-specificity multiperson timeline row borders
+GlobeHoppers v3.97 — clean-room timeline trip rows

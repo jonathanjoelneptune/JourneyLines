@@ -9758,3 +9758,226 @@ button.primary:disabled {
   position: relative !important;
   z-index: 2 !important;
 }
+
+
+/* GlobeHoppers v3.97: clean-room GlobeHopper Timeline rows.
+   These rows intentionally do NOT use .trip-drawer__row, so none of the old
+   trip border/hover experiments can override the new border behavior. */
+
+.gh-timeline-trip-row {
+  --gh-row-radius: 18px;
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-columns: 96px minmax(0, 1fr) 88px 112px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-height: 50px !important;
+  padding: 9px 14px !important;
+  border: 0 !important;
+  border-radius: var(--gh-row-radius) !important;
+  background:
+    linear-gradient(180deg, rgba(10, 22, 39, 0.96), rgba(5, 14, 27, 0.96)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 8px 16px rgba(0,0,0,.10) !important;
+  cursor: pointer !important;
+}
+
+.gh-timeline-trip-row:hover,
+.gh-timeline-trip-row:focus-visible {
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 84%), transparent 43%),
+    linear-gradient(180deg, rgba(13, 31, 54, 0.98), rgba(7, 19, 35, 0.97)) !important;
+  filter: brightness(1.04) saturate(1.04);
+  outline: none !important;
+}
+
+.gh-timeline-trip-row.is-active {
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 80%), transparent 43%),
+    linear-gradient(180deg, rgba(14, 34, 58, 0.99), rgba(7, 19, 35, 0.98)) !important;
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%),
+    inset 0 1px 0 rgba(255,255,255,.055) !important;
+}
+
+.gh-timeline-trip-row > :not(.gh-timeline-row-border) {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.gh-timeline-row-border {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: 50 !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+}
+
+.gh-row-border-strip {
+  position: absolute !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: 51 !important;
+  opacity: 1 !important;
+  filter: saturate(1.12) brightness(1.1) !important;
+  box-shadow: 0 0 7px color-mix(in srgb, var(--accent, #00e5ff), transparent 75%);
+}
+
+.gh-row-border-strip--top {
+  left: 2px !important;
+  right: 2px !important;
+  top: 0 !important;
+  height: 3px !important;
+  background: var(--gh-row-border-top, var(--accent, #00e5ff)) !important;
+  border-radius: 999px 999px 0 0 !important;
+}
+
+.gh-row-border-strip--right {
+  top: 2px !important;
+  bottom: 2px !important;
+  right: 0 !important;
+  width: 3px !important;
+  background: var(--gh-row-border-right, var(--accent, #00e5ff)) !important;
+  border-radius: 0 999px 999px 0 !important;
+}
+
+.gh-row-border-strip--bottom {
+  left: 2px !important;
+  right: 2px !important;
+  bottom: 0 !important;
+  height: 3px !important;
+  background: var(--gh-row-border-bottom, var(--accent, #00e5ff)) !important;
+  border-radius: 0 0 999px 999px !important;
+}
+
+.gh-row-border-strip--left {
+  top: 2px !important;
+  bottom: 2px !important;
+  left: 0 !important;
+  width: 3px !important;
+  background: var(--gh-row-border-left, var(--accent, #00e5ff)) !important;
+  border-radius: 999px 0 0 999px !important;
+}
+
+.gh-timeline-trip-row:hover .gh-row-border-strip,
+.gh-timeline-trip-row:focus-visible .gh-row-border-strip,
+.gh-timeline-trip-row.is-active .gh-row-border-strip {
+  filter: saturate(1.25) brightness(1.22) !important;
+  box-shadow: 0 0 11px color-mix(in srgb, var(--accent, #00e5ff), transparent 62%) !important;
+}
+
+/* Recreate expanded/compact/card layout without using .trip-drawer__row. */
+.trip-drawer--expanded .gh-timeline-trip-row {
+  --gh-row-radius: 18px;
+  min-height: 50px !important;
+  grid-template-columns: 96px minmax(0, 1fr) 88px 112px !important;
+  padding: 9px 14px !important;
+}
+
+.trip-drawer--compact .gh-timeline-trip-row {
+  --gh-row-radius: 16px;
+  min-height: 42px !important;
+  height: 42px !important;
+  grid-template-columns: 116px minmax(0, 1fr) 104px !important;
+  padding: 5px 12px !important;
+  gap: 10px !important;
+}
+
+.trip-drawer--compact .gh-timeline-trip-row .trip-drawer__main small,
+.trip-drawer--compact .gh-timeline-trip-row .trip-drawer__meta {
+  display: none !important;
+}
+
+.trip-drawer--compact .gh-timeline-trip-row .trip-drawer__date {
+  font-size: .76rem !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+
+.trip-drawer--compact .gh-timeline-trip-row .trip-drawer__main strong {
+  font-size: .92rem !important;
+  line-height: 1.05 !important;
+}
+
+.trip-drawer--card .gh-timeline-trip-row {
+  --gh-row-radius: 15px;
+  min-height: 82px !important;
+  height: 82px !important;
+  grid-template-columns: 1fr !important;
+  align-content: space-between !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+  padding: 9px !important;
+}
+
+.trip-drawer--card .gh-timeline-trip-row .trip-drawer__date {
+  grid-column: 1 / -1 !important;
+  font-size: .72rem !important;
+  line-height: 1.04 !important;
+}
+
+.trip-drawer--card .gh-timeline-trip-row .trip-drawer__main,
+.trip-drawer--card .gh-timeline-trip-row .trip-drawer__main strong {
+  grid-column: 1 / -1 !important;
+}
+
+.trip-drawer--card .gh-timeline-trip-row .trip-drawer__main strong {
+  font-size: .84rem !important;
+  line-height: 1.04 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal !important;
+  overflow: hidden !important;
+}
+
+.trip-drawer--card .gh-timeline-trip-row .trip-drawer__main small,
+.trip-drawer--card .gh-timeline-trip-row .trip-drawer__meta,
+.trip-drawer--card .gh-timeline-trip-row .trip-drawer__more {
+  display: none !important;
+}
+
+.gh-timeline-trip-row .trip-drawer__date {
+  color: var(--accent, #00e5ff) !important;
+  font-weight: 950 !important;
+  align-self: center !important;
+  line-height: 1.15 !important;
+}
+
+.gh-timeline-trip-row .trip-drawer__main {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 2px !important;
+  align-self: center !important;
+}
+
+.gh-timeline-trip-row .trip-drawer__main strong {
+  color: var(--accent, #00e5ff) !important;
+  font-weight: 950 !important;
+  line-height: 1.12 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.gh-timeline-trip-row .trip-drawer__main small,
+.gh-timeline-trip-row .trip-drawer__meta {
+  color: rgba(210,225,240,.72) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.gh-timeline-trip-row .trip-drawer__more {
+  justify-self: end !important;
+  width: auto !important;
+  min-width: 42px !important;
+  height: 30px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+}
