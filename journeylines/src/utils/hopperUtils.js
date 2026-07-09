@@ -17,12 +17,50 @@ export function exactSquadForIds(ids = [], hopSquads = []) {
   return hopSquads.find(s => idsKey(s.hopperIds || []) === key) || null;
 }
 
+function uniqueColors(colors = []) {
+  return [...new Set((colors || []).filter(Boolean))];
+}
+
+function squadMemberColors(squad, hById) {
+  return uniqueColors((squad?.hopperIds || []).map(id => hById[id]?.color).filter(Boolean));
+}
+
+export function segmentedCircleBackground(colors = [], fallback = '#5d7288', glossy = false) {
+  const list = uniqueColors(colors);
+  const base = list[0] || fallback;
+  const fill = list.length <= 1
+    ? base
+    : `conic-gradient(from -90deg, ${list.map((color, index) => {
+        const start = (index / list.length) * 360;
+        const end = ((index + 1) / list.length) * 360;
+        return `${color} ${start}deg ${end}deg`;
+      }).join(', ')})`;
+  if (!glossy) return fill;
+  return [
+    'radial-gradient(circle at 34% 26%, rgba(255,255,255,.62), rgba(255,255,255,.26) 17%, transparent 40%)',
+    'linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 44%, rgba(0,0,0,.1) 100%)',
+    fill
+  ].join(', ');
+}
+
+export function multiMemberCircleBackground(colors = [], fallback = '#5d7288') {
+  return segmentedCircleBackground(colors, fallback, false);
+}
+
 export function resolveTripVisual(trip = {}, hopperData = {}) {
   const { hoppers, hopSquads } = normalizeHopperData(hopperData);
   const hById = Object.fromEntries(hoppers.map(h => [h.id, h]));
   const permanentIds = Array.isArray(trip.travelers) ? trip.travelers : [];
   const guests = Array.isArray(trip.guestHoppers) ? trip.guestHoppers : [];
   const squad = exactSquadForIds(permanentIds, hopSquads);
+
+  const memberHoppers = permanentIds.map(id => hById[id]).filter(Boolean);
+  const guestMembers = guests.map(g => ({ ...g, isGuest: true }));
+  const members = [...memberHoppers, ...guestMembers];
+  const memberColors = uniqueColors(members.map(m => m?.color).filter(Boolean));
+  const squadColors = squadMemberColors(squad, hById);
+  const circleColors = squad && guests.length === 0 ? (squadColors.length ? squadColors : memberColors) : memberColors;
+
   if (squad && guests.length === 0) {
     const c = squad.color || DEFAULT_HOPPER_COLOR;
     return {
@@ -31,16 +69,17 @@ export function resolveTripVisual(trip = {}, hopperData = {}) {
       color: c,
       primaryColor: c,
       colors: [c],
+      memberColors,
+      circleColors: circleColors.length ? circleColors : [c],
       accentColors: [],
       isSquad: true,
       isEmpty: false,
-      squad
+      squad,
+      members
     };
   }
-  const memberHoppers = permanentIds.map(id => hById[id]).filter(Boolean);
-  const guestMembers = guests.map(g => ({ ...g, isGuest: true }));
-  const members = [...memberHoppers, ...guestMembers];
-  const colors = members.map(m => m?.color).filter(Boolean);
+
+  const colors = memberColors;
   const name = members.length ? members.map(m => m.name || m.label || 'Guest').join(' + ') : 'No hoppers selected';
   const primary = memberHoppers[0]?.color || colors[0] || EMPTY_HOPPER_COLOR;
   return {
@@ -49,28 +88,52 @@ export function resolveTripVisual(trip = {}, hopperData = {}) {
     color: primary,
     primaryColor: primary,
     colors,
+    memberColors: colors,
+    circleColors: colors,
     accentColors: colors.slice(1),
     isSquad: false,
     isEmpty: members.length === 0,
     members,
-    guests: guestMembers
+    guests: guestMembers,
+    squad: null
   };
 }
 
-export function multiMemberCircleBackground(colors = [], fallback = '#5d7288') {
-  const list = (colors || []).filter(Boolean);
-  const base = list[0] || fallback;
-  if (list.length <= 1) return base;
+export function resolveTrailVisual(trip = {}, hopperData = {}) {
+  const visual = resolveTripVisual(trip, hopperData);
+  const memberColors = uniqueColors(visual.circleColors || visual.memberColors || visual.colors || [visual.color]);
+  const hasMultiplePeople = memberColors.length > 1;
+  const requestedMode = trip?.trailColorMode || (visual.isSquad && hasMultiplePeople ? 'squad' : 'members');
+  let style = (trip?.trailStyle || 'solid').toLowerCase();
+  let colorMode = requestedMode;
 
-  const layers = [];
-  // Match Hop Preview logic:
-  // primary/base owns the left side; additional members are placed clockwise:
-  // guest/member 1 top-right, guest/member 2 bottom-right, guest/member 3 bottom-left.
-  if (list[1]) layers.push(`linear-gradient(${list[1]}, ${list[1]}) top right / 50% 50% no-repeat`);
-  if (list[2]) layers.push(`linear-gradient(${list[2]}, ${list[2]}) bottom right / 50% 50% no-repeat`);
-  if (list[3]) layers.push(`linear-gradient(${list[3]}, ${list[3]}) bottom left / 50% 50% no-repeat`);
-  layers.push(base);
-  return layers.join(', ');
+  if (!hasMultiplePeople) {
+    style = 'solid';
+    colorMode = 'members';
+  }
+
+  if (colorMode === 'squad') {
+    style = 'solid';
+    return {
+      style,
+      colorMode,
+      colors: [visual.color || DEFAULT_HOPPER_COLOR],
+      baseColor: visual.color || DEFAULT_HOPPER_COLOR,
+      circleColors: memberColors.length ? memberColors : [visual.color || DEFAULT_HOPPER_COLOR],
+      visual
+    };
+  }
+
+  const trailColors = memberColors.length ? memberColors : [visual.color || DEFAULT_HOPPER_COLOR];
+  if (!['solid', 'stripe', 'ribbon'].includes(style)) style = 'solid';
+  return {
+    style,
+    colorMode,
+    colors: style === 'solid' ? [trailColors[0]] : trailColors,
+    baseColor: trailColors[0] || visual.color || DEFAULT_HOPPER_COLOR,
+    circleColors: trailColors,
+    visual
+  };
 }
 
 export function travelerListForLegacy(hopperData = {}) {

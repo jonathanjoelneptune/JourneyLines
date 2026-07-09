@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { colorGradient, normalizeHopperData, resolveTripVisual } from '../utils/hopperUtils.js';
+import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground } from '../utils/hopperUtils.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -28,7 +28,7 @@ const MONTH_OPTIONS = [
 ];
 const empty = {
   year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: [], mode: 'plane',
-  roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
+  roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
 };
 
 export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip }) {
@@ -196,7 +196,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       validateHopDraftForSave(draft);
       setBusy(true);
       const currentScroll = studioListRef.current?.scrollTop ?? null;
-      const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases);
+      const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases, normalizedHoppers);
       const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
       setTrips(nextTrips);
@@ -562,6 +562,11 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const currentHopSquadColor = currentHopSquad?.color || null;
   const currentDraftVisual = resolveTripVisual(draft, normalizedHoppers || {});
   const currentVisualColor = currentHopSquadColor || currentDraftVisual?.color || '#00e5ff';
+  const currentCircleColors = (currentDraftVisual?.circleColors || currentDraftVisual?.memberColors || currentDraftVisual?.colors || []).filter(Boolean);
+  const selectedTravelerCount = (draft.travelers?.length || 0) + ((draft.guestHoppers || []).length || 0);
+  const defaultTrailColorMode = currentHopSquad && !((draft.guestHoppers || []).length) && selectedTravelerCount > 1 ? 'squad' : 'members';
+  const effectiveTrailColorMode = draft.trailColorMode || defaultTrailColorMode;
+  const effectiveTrailStyle = effectiveTrailColorMode === 'squad' ? 'solid' : (draft.trailStyle || 'solid');
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -617,6 +622,16 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
     if (!guestDraft.name.trim()) return;
     setDraft(d => ({ ...d, guestHoppers: [...(d.guestHoppers || []), { ...guestDraft, name: guestDraft.name.trim() }] }));
     setGuestPopupOpen(false);
+  }
+  function setTrailStyle(style) {
+    setDraft(d => ({ ...d, trailStyle: style }));
+  }
+  function setTrailColorMode(mode) {
+    setDraft(d => ({
+      ...d,
+      trailColorMode: mode,
+      trailStyle: mode === 'squad' ? 'solid' : (d.trailStyle || 'solid')
+    }));
   }
 
   function selectCalendarDay(day) {
@@ -755,7 +770,19 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           </section>
         </div>
 
-        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} hopperData={normalizedHoppers} />
+        <div className="studio-modal-sidecol">
+          <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} hopperData={normalizedHoppers} />
+          <TrailStylePanel
+            draft={draft}
+            currentHopSquad={currentHopSquad}
+            currentDraftVisual={currentDraftVisual}
+            selectedTravelerCount={selectedTravelerCount}
+            effectiveTrailColorMode={effectiveTrailColorMode}
+            effectiveTrailStyle={effectiveTrailStyle}
+            onSetTrailStyle={setTrailStyle}
+            onSetTrailColorMode={setTrailColorMode}
+          />
+        </div>
 
       </div>
     </div>
@@ -780,20 +807,8 @@ function previewGroupLabel(draft = {}, visual = {}) {
   return 'Solo hop';
 }
 
-function previewDotBackground(colors = [], fallback = '#5d7288') {
-  const list = colors.filter(Boolean);
-  const base = list[0] || fallback;
-  if (list.length <= 1) return base;
-  const layers = [];
-  // Primary hopper owns the base fill. Additional members appear in this order:
-  // 2nd member -> top-right quadrant, 3rd member -> bottom-right quadrant,
-  // 4th member -> bottom-left quadrant. This keeps the left side primary when there
-  // are three total members, matching the GlobeHoppers preview vision.
-  if (list[1]) layers.push(`linear-gradient(${list[1]}, ${list[1]}) top right / 50% 50% no-repeat`);
-  if (list[2]) layers.push(`linear-gradient(${list[2]}, ${list[2]}) bottom right / 50% 50% no-repeat`);
-  if (list[3]) layers.push(`linear-gradient(${list[3]}, ${list[3]}) bottom left / 50% 50% no-repeat`);
-  layers.push(base);
-  return layers.join(', ');
+function previewDotBackground(colors = [], fallback = '#5d7288', glossy = false) {
+  return segmentedCircleBackground(colors, fallback, glossy);
 }
 
 function TripRoutePreview({ draft, locById, locs, startLocation, destination, onSetLegMode, hopperData }) {
@@ -825,10 +840,13 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
   const isMixed = !visual.isSquad && mixedColors.length > 1;
   return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''} ${isMixed ? 'route-preview-card--mixed' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-accent-2': accentColor, '--trip-accent-3': accentColor3, '--trip-accent-4': accentColor4, '--trip-gradient': colorGradient(mixedColors, visual.color || '#5d7288') }}>
     <p className="eyebrow">Hop preview</p>
-    <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
+    <div className="route-preview-title-row">
+      <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
+      <b className={`route-preview-title-dot ${isMixed ? 'is-group-dot' : ''}`} style={{ background: noHoppers ? 'transparent' : previewDotBackground(visual.circleColors || mixedColors, visual.color, true) }}></b>
+    </div>
     <div className="route-preview-meta">
       <span>{formatDateRangeLabel(draft) || (draft.year ? [monthLabel(draft.month), draft.year].filter(Boolean).join(' ') : 'Dates pending')}</span>
-      <span><b className={isMixed ? 'is-group-dot' : ''} style={{ background: noHoppers ? 'transparent' : previewDotBackground(mixedColors, visual.color) }}></b>{visual.name} · {previewGroupLabel(draft, visual)}</span>
+      <span>{visual.name} · {previewGroupLabel(draft, visual)}</span>
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
     <div className="route-preview-list">
@@ -839,6 +857,36 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
       </div>)}
     </div>
   </aside>;
+}
+
+function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedTravelerCount, effectiveTrailColorMode, effectiveTrailStyle, onSetTrailStyle, onSetTrailColorMode }) {
+  const memberColors = (currentDraftVisual?.circleColors || currentDraftVisual?.memberColors || currentDraftVisual?.colors || []).filter(Boolean);
+  const showMultiOptions = selectedTravelerCount > 1;
+  const showColorMode = !!currentHopSquad && showMultiOptions;
+  const styleOptions = showMultiOptions && effectiveTrailColorMode !== 'squad'
+    ? [
+        { id: 'solid', label: 'Solid Trail', hint: 'Single-color trail.' },
+        { id: 'stripe', label: 'Stripe', hint: 'Repeating member-color segments along the path.' },
+        { id: 'ribbon', label: 'Ribbon', hint: 'Parallel member-color ribbons that share the trail width.' }
+      ]
+    : [{ id: 'solid', label: 'Solid Trail', hint: showColorMode ? 'Uses the HopSquad color.' : 'Single-color trail.' }];
+  return <section className="trail-style-panel compact-section">
+    <div className="section-heading-inline">
+      <h3>Trail style</h3>
+      <span className="trail-style-summary">{showMultiOptions ? `${memberColors.length || selectedTravelerCount} colors available` : 'Solo trail'}</span>
+    </div>
+    {showColorMode && <div className="trail-color-mode-toggle" role="group" aria-label="Trail color mode">
+      <button type="button" className={effectiveTrailColorMode === 'squad' ? 'is-selected' : ''} onClick={() => onSetTrailColorMode('squad')}>Squad color</button>
+      <button type="button" className={effectiveTrailColorMode === 'members' ? 'is-selected' : ''} onClick={() => onSetTrailColorMode('members')}>Member colors</button>
+    </div>}
+    <div className="trail-style-options">
+      {styleOptions.map(option => <button key={option.id} type="button" className={`trail-style-option ${effectiveTrailStyle === option.id ? 'is-selected' : ''}`} onClick={() => onSetTrailStyle(option.id)}>
+        <span className={`trail-style-swatch trail-style-swatch--${option.id}`} style={{ '--trail-preview': colorGradient(memberColors, currentDraftVisual?.color || '#5d7288'), '--trail-color': currentHopSquad?.color || currentDraftVisual?.color || '#5d7288', '--trail-member-count': Math.max(1, memberColors.length || selectedTravelerCount || 1) }}></span>
+        <strong>{option.label}</strong>
+        <small>{option.hint}</small>
+      </button>)}
+    </div>
+  </section>;
 }
 
 function PreviewModeButton({ mode, target, onSetLegMode }) {
@@ -881,7 +929,7 @@ function AutocompleteField({ label, value, onChange, matches, onChoose, compact,
   </label>;
 }
 
-function normalizeTrip(draft, trips, locations, homeBases) {
+function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
   if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
   if (!draft.travelers?.length && !(draft.guestHoppers || []).length) throw new Error('Select at least one Hopper or Guest Hopper before saving.');
   let nextLocations = locations;
@@ -934,6 +982,7 @@ function normalizeTrip(draft, trips, locations, homeBases) {
   }
 
   const count = trips.filter(t => Number(t.year) === Number(draft.year)).length + 1;
+  const derivedTrailColorMode = draft.trailColorMode || (activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) && ((draft.travelers || []).length + (draft.guestHoppers || []).length) > 1 ? 'squad' : 'members');
   const label = draft.label || displayNameFromLocation(nextLocations.find(l => l.id === toLocationId)) || draft.toLocationText || 'Trip';
   const clean = {
     id: draft.id || `${draft.year}-${String(trips.length + 1).padStart(3,'0')}-${slug(label)}`,
@@ -956,7 +1005,9 @@ function normalizeTrip(draft, trips, locations, homeBases) {
     toLocationId,
     route,
     notes: draft.notes || '',
-    occasion: draft.occasion || ''
+    occasion: draft.occasion || '',
+    trailStyle: derivedTrailColorMode === 'squad' ? 'solid' : (draft.trailStyle || 'solid'),
+    trailColorMode: derivedTrailColorMode
   };
   return { trip: clean, nextLocations };
 }

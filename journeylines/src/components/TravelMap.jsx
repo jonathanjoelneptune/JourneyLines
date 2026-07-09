@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { geoInterpolate } from 'd3-geo';
 import LegacySvgMap from './LegacySvgMap.jsx';
 import { flattenLegs, getTravelerKey } from '../utils/tripExpansion.js';
-import { resolveTripVisual } from '../utils/hopperUtils.js';
+import { resolveTripVisual, resolveTrailVisual } from '../utils/hopperUtils.js';
 import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
@@ -460,7 +460,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     const now = performance.now();
     if (now - lastActiveRouteUpdateRef.current > 45 || scene.lineProgress >= 0.995) {
-      syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries);
+      syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById);
       lastActiveRouteUpdateRef.current = now;
     }
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
@@ -602,9 +602,9 @@ function addRouteSourcesAndLayers(map) {
   }
   if (!map.getSource('active-route')) {
     map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'active-route-glow-wide', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18 } });
-    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 10 } });
-    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] } });
+    map.addLayer({ id: 'active-route-glow-wide', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 10, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
   }
   if (!map.getSource('visited-points')) {
     map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
@@ -623,18 +623,19 @@ function addPulseLayer(map) {
 }
 
 function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}) {
-  const features = showTrails ? completedLegs.map((l, i) => {
-    const color = colorForLeg(l, travelersById);
-    return routeFeature(l.leg, color, l.trip.id, i, Math.max(0.9, opacity), width, false, 1, routedGeometries);
+  const features = showTrails ? completedLegs.flatMap((l, i) => {
+    const trail = trailVisualForLeg(l, travelersById);
+    return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, false, 1, routedGeometries);
   }) : [];
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
 }
 
-function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeometries = {}) {
+function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeometries = {}, travelerData = null) {
   if (!active) { map.getSource('active-route')?.setData(emptyCollection()); return; }
-  const feature = routeFeature(active.leg, color, active.trip.id, active.legIndex, 1, 2, true, progress, routedGeometries);
-  map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [feature] });
+  const trail = travelerData ? trailVisualForLeg(active, travelerData) : { style: 'solid', colors: [color], baseColor: color };
+  const featureList = routeFeaturesForTrail(active.leg, trail, active.trip.id, active.legIndex, 1, 2, true, progress, routedGeometries);
+  map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: featureList });
 
 }
 
@@ -643,10 +644,51 @@ function syncPulse(map, loc, color) {
   map.getSource('arrival-pulse')?.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { color }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }] });
 }
 
-function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+function trailVisualForLeg(active, travelerData) {
+  if (active?.trip?.isHomeMove || active?.leg?.mode === 'move') return { style: 'solid', colors: ['#050607'], baseColor: '#050607' };
+  if (travelerData?.hoppers || travelerData?.hopSquads) return resolveTrailVisual(active?.trip || {}, travelerData);
+  const color = travelerData?.[getTravelerKey(active.trip)]?.color || '#00e5ff';
+  return { style: 'solid', colors: [color], baseColor: color };
+}
+
+function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+  const colors = (trail?.colors || []).filter(Boolean);
+  const baseColor = trail?.baseColor || colors[0] || '#00e5ff';
+  const style = trail?.style || 'solid';
+  if (style === 'ribbon' && colors.length > 1) return ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
+  if (style === 'stripe' && colors.length > 1) return stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
+  return [routeFeature(leg, baseColor, tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+}
+
+function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+  const coords = routeCoordinates(leg, progress, active ? 96 : 24, routedGeometries);
+  if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+  const stride = active ? 3 : 2;
+  const features = [];
+  let stripeIndex = 0;
+  for (let start = 0; start < coords.length - 1; start += stride) {
+    const end = Math.min(coords.length, start + stride + 1);
+    const segment = coords.slice(start, end);
+    if (segment.length < 2) continue;
+    features.push(routeFeatureFromCoordinates(segment, colors[stripeIndex % colors.length], tripId, `${index}-stripe-${stripeIndex}`, opacity, width, active, leg.mode, 0));
+    stripeIndex += 1;
+  }
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+}
+
+function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+  const total = colors.length;
+  const perRibbon = Math.max(1.15, width / total);
+  return colors.map((color, ribbonIndex) => {
+    const offset = (ribbonIndex - (total - 1) / 2) * perRibbon;
+    return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, perRibbon, active, progress, routedGeometries, offset);
+  });
+}
+
+function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, lineOffset = 0) {
   const isAir = leg.mode === 'plane' || leg.mode === 'move';
   const mainOpacity = active && isAir ? 0.52 : active ? 1 : Math.max(0.86, opacity);
-  const mainWidth = active ? (isAir ? 2.6 : 4.25) : Math.max(width, 2.15);
+  const mainWidth = active ? (isAir ? Math.max(width, 1.85) : Math.max(width, 2.35)) : Math.max(width, 2.15);
   return {
     type: 'Feature',
     properties: {
@@ -656,13 +698,36 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       mode: leg.mode,
       width: mainWidth,
       opacity: mainOpacity,
-      glowWidth: active ? (isAir ? 12.0 : 12.5) : Math.max(width * 5.2, 8.8),
+      glowWidth: active ? (isAir ? Math.max(mainWidth * 4.2, 7.5) : Math.max(mainWidth * 4.4, 8.2)) : Math.max(mainWidth * 5.2, 8.8),
       glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.min(0.62, Math.max(0.42, opacity * 0.68)),
-      outerGlowWidth: active ? (isAir ? 24 : 26) : Math.max(width * 9.0, 16),
+      outerGlowWidth: active ? Math.max(mainWidth * 8.1, 14) : Math.max(mainWidth * 9.0, 16),
       outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
-      dash: dashForMode(leg.mode)
+      dash: dashForMode(leg.mode),
+      lineOffset
     },
     geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 22, routedGeometries) }
+  };
+}
+
+function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, width, active = false, mode = 'plane', lineOffset = 0) {
+  const isAir = mode === 'plane' || mode === 'move';
+  return {
+    type: 'Feature',
+    properties: {
+      tripId,
+      index,
+      color,
+      mode,
+      width: active ? (isAir ? Math.max(width, 1.85) : Math.max(width, 2.35)) : Math.max(width, 2.15),
+      opacity: active && isAir ? 0.52 : active ? 1 : Math.max(0.86, opacity),
+      glowWidth: active ? (isAir ? Math.max(width * 4.2, 7.5) : Math.max(width * 4.4, 8.2)) : Math.max(width * 5.2, 8.8),
+      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.min(0.62, Math.max(0.42, opacity * 0.68)),
+      outerGlowWidth: active ? Math.max(width * 7.8, 14) : Math.max(width * 9.0, 16),
+      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
+      dash: dashForMode(mode),
+      lineOffset
+    },
+    geometry: { type: 'LineString', coordinates: coords }
   };
 }
 
@@ -778,7 +843,7 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
 
 function colorForLeg(active, travelerData) {
   if (active?.trip?.isHomeMove || active?.leg?.mode === 'move') return '#050607';
-  if (travelerData?.hoppers || travelerData?.hopSquads) return resolveTripVisual(active?.trip || {}, travelerData).color || '#00e5ff';
+  if (travelerData?.hoppers || travelerData?.hopSquads) return resolveTrailVisual(active?.trip || {}, travelerData).baseColor || resolveTripVisual(active?.trip || {}, travelerData).color || '#00e5ff';
   return travelerData?.[getTravelerKey(active.trip)]?.color || '#00e5ff';
 }
 

@@ -1,1 +1,1 @@
-GlobeHoppers v3.78 — safe timeline pin multi-hopper color fix
+GlobeHoppers v3.79 — animated active timeline pins, trail styles, and segmented multi-hopper circles
