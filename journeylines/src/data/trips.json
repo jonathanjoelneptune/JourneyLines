@@ -2447,7 +2447,7 @@
     ],
     "mode": "plane",
     "roundTrip": false,
-    "fromLocationId": null,
+    "fromLocationId": "san-diego-ca",
     "toLocationId": "tokyo-jp",
     "route": [
       {
@@ -2472,7 +2472,11 @@
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   },
   {
     "id": "2025-113-miami",
