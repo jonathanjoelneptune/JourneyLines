@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, tripMarkers = [], activeMarkerId = null, yearSegments = [] }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [] }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -9,6 +9,8 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
   const advancedRef = useRef(null);
   const previousActiveIdRef = useRef(activeMarkerId);
   const transitionTimerRef = useRef(null);
+  const playClickCountRef = useRef(0);
+  const playClickTimerRef = useRef(null);
 
   useEffect(() => {
     if (!advancedOpen) return;
@@ -33,11 +35,38 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
     return () => window.clearTimeout(transitionTimerRef.current);
   }, [activeMarkerId]);
 
+
+  const handlePlayPauseClick = () => {
+    window.clearTimeout(playClickTimerRef.current);
+    playClickCountRef.current += 1;
+    playClickTimerRef.current = window.setTimeout(() => { playClickCountRef.current = 0; }, 900);
+    if (playClickCountRef.current >= 5) {
+      playClickCountRef.current = 0;
+      onToggleTimelineUtility?.();
+      return;
+    }
+    (isPlaying ? onPause : onPlay)?.();
+  };
+
+  const timelineStyle = {
+    '--tl-inactive-head': `${Number(timelineTuning.inactiveHeadSize ?? 14)}px`,
+    '--tl-inactive-stem': `${Number(timelineTuning.inactiveStemLength ?? 8)}px`,
+    '--tl-active-head': `${Number(timelineTuning.activeHeadSize ?? 14)}px`,
+    '--tl-active-stem': `${Number(timelineTuning.activeStemLength ?? 42)}px`,
+    '--tl-active-lift': `${Number(timelineTuning.activeLift ?? 34)}px`,
+    '--tl-pin-base-y': `${Number(timelineTuning.pinBaseY ?? 1)}px`,
+    '--tl-bar-height': `${Number(timelineTuning.playbackBarHeight ?? 4)}px`,
+    '--tl-year-offset': `${Number(timelineTuning.yearOffsetY ?? 5)}px`,
+    '--tl-tooltip-offset': `${Number(timelineTuning.tooltipOffsetY ?? 68)}px`,
+    '--tl-animation-ms': `${Number(timelineTuning.animationMs ?? 360)}ms`,
+    '--tl-overshoot': `${Number(timelineTuning.animationOvershoot ?? 1.12)}`
+  };
+
   const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
   const tooltipMarker = hoverMarker || activeMarker;
 
-  return <div className="controls glass">
-    <button className="controls-play-pill" onClick={isPlaying ? onPause : onPlay}>{isPlaying ? 'Pause' : 'Play'}</button>
+  return <div className="controls glass" style={timelineStyle}>
+    <button className="controls-play-pill" onClick={handlePlayPauseClick}>{isPlaying ? 'Pause' : 'Play'}</button>
     <label className="timeline-scrubber">Timeline
       <div className="timeline-scrubber-stack">
         <div className="progress progress--scrubbable" onMouseMove={(e) => { if (e.target === e.currentTarget || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN') setHoverMarker(null); }} onMouseLeave={() => setHoverMarker(null)}>

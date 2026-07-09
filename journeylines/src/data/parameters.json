@@ -1,0 +1,35 @@
+{
+  "trailTuning": {
+    "solidThickness": 2.4,
+    "solidGlow": 0.5,
+    "borderThickness": 1.35,
+    "stripeThickness": 2.5,
+    "stripeSegmentMiles": 80,
+    "stripeSeparator": 0.45,
+    "stripeGlow": 0.75,
+    "stripeBevel": 0.45,
+    "stripeLaneEffect": 0.4,
+    "ribbonThickness": 5.0,
+    "ribbonSpread": 2.5,
+    "ribbonGap": 0.75,
+    "ribbonGlow": 0.0,
+    "spiralThickness": 1.55,
+    "spiralSegmentMiles": 50,
+    "spiralAmplitude": 0.3,
+    "spiralGlow": 1.2,
+    "spiralAnimate": false
+  },
+  "timelineTuning": {
+    "inactiveHeadSize": 14,
+    "inactiveStemLength": 8,
+    "activeHeadSize": 14,
+    "activeStemLength": 42,
+    "activeLift": 34,
+    "pinBaseY": 1,
+    "playbackBarHeight": 4,
+    "yearOffsetY": 5,
+    "tooltipOffsetY": 68,
+    "animationMs": 360,
+    "animationOvershoot": 1.12
+  }
+}

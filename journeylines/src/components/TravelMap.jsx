@@ -15,21 +15,23 @@ const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 2.55;
 
 const DEFAULT_TRAIL_TUNING = {
-  solidThickness: 1.0,
-  solidGlow: 0.65,
-  borderThickness: 0.0,
-  stripeThickness: 2.0,
-  stripeSegmentMiles: 260,
-  stripeSeparator: 0.85,
-  stripeGlow: 0.55,
-  ribbonThickness: 1.45,
-  ribbonGap: 0.55,
-  ribbonSpread: 0.0,
-  ribbonGlow: 0.9,
+  solidThickness: 2.4,
+  solidGlow: 0.5,
+  borderThickness: 1.35,
+  stripeThickness: 2.5,
+  stripeSegmentMiles: 80,
+  stripeSeparator: 0.45,
+  stripeGlow: 0.75,
+  stripeBevel: 0.45,
+  stripeLaneEffect: 0.4,
+  ribbonThickness: 5.0,
+  ribbonGap: 0.75,
+  ribbonSpread: 2.5,
+  ribbonGlow: 0.0,
   spiralThickness: 1.55,
-  spiralSegmentMiles: 120,
-  spiralAmplitude: 1.15,
-  spiralGlow: 1.0,
+  spiralSegmentMiles: 50,
+  spiralAmplitude: 0.3,
+  spiralGlow: 1.2,
   spiralAnimate: false
 };
 
@@ -719,35 +721,61 @@ function trailBorderThickness(config) {
 
 function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
   const config = { ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) };
+  const stackOffset = Number(leg?.routeStackOffset) || 0;
+  const withStack = (features) => applyRouteStackOffset(features, stackOffset);
   const colors = (trail?.colors || []).filter(Boolean);
   const baseColor = trail?.baseColor || colors[0] || '#00e5ff';
   const style = trail?.style || 'solid';
-  if (style === 'ribbon' && colors.length > 1) return ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
-  if (style === 'stripe' && colors.length > 1) return stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
-  if (style === 'spiral' && colors.length > 1) return spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
+  if (style === 'ribbon' && colors.length > 1) return withStack(ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config));
+  if (style === 'stripe' && colors.length > 1) return withStack(stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config));
+  if (style === 'spiral' && colors.length > 1) return withStack(spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config));
   const solidWidth = width * Math.max(0.2, Number(config.solidThickness) || 1);
   const border = trailBorderThickness(config);
   const out = [];
   if (border > 0) out.push(routeFeature(leg, '#020407', tripId, `${index}-solid-border`, opacity, solidWidth + border * 2, active, progress, routedGeometries, 0, withTrailGlow(config, 0, width)));
   out.push(routeFeature(leg, baseColor, tripId, index, opacity, solidWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.solidGlow, width)));
-  return out;
+  return withStack(out);
+}
+
+function applyRouteStackOffset(features = [], offset = 0) {
+  if (!offset) return features;
+  return features.map(feature => ({
+    ...feature,
+    properties: {
+      ...(feature.properties || {}),
+      lineOffset: (Number(feature.properties?.lineOffset) || 0) + offset
+    }
+  }));
 }
 
 function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
-  const coords = routeCoordinates(leg, progress, active ? 220 : 160, routedGeometries);
+  const coords = routeCoordinates(leg, progress, active ? 260 : 190, routedGeometries);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
   const separatorWidth = Math.max(0, Number(config.stripeSeparator) || 0);
   const border = trailBorderThickness(config);
-  const segments = splitRouteIntoUniformSegments(coords, Number(config.stripeSegmentMiles) || 260);
+  const segmentMiles = Math.max(5, Number(config.stripeSegmentMiles) || 260);
   const features = [];
+  const segments = splitRouteIntoUniformSegments(coords, segmentMiles);
   if (border > 0) features.push(routeFeatureFromCoordinates(coords, '#020407', tripId, `${index}-stripe-border`, opacity, stripeWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
-  features.push(routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.62)', tripId, `${index}-stripe-underlay`, Math.max(0.10, opacity * 0.16 * (Number(config.stripeGlow) || 1)), stripeWidth + separatorWidth, false, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
+  const bevel = Math.max(0, Number(config.stripeBevel) || 0);
+  const laneEffect = Math.max(0, Number(config.stripeLaneEffect) || 0);
+  if ((Number(config.stripeGlow) || 0) > 0) {
+    features.push(routeFeatureFromCoordinates(coords, averageColor(colors, colors[0]), tripId, `${index}-stripe-glow`, Math.max(0.02, opacity * 0.08 * (Number(config.stripeGlow) || 1)), stripeWidth + Math.max(0.4, Number(config.stripeGlow) || 1), false, leg.mode, 0, withTrailGlow(config, config.stripeGlow * 0.45, width)));
+  }
   segments.forEach((segment, segmentIndex) => {
-    if (separatorWidth > 0) {
-      features.push(routeFeatureFromCoordinates(segment, 'rgba(4,8,16,0.86)', tripId, `${index}-stripe-separator-${segmentIndex}`, Math.max(0.12, opacity * 0.22), stripeWidth + separatorWidth, false, leg.mode, 0, withTrailGlow(config, 0, width)));
+    const color = colors[segmentIndex % colors.length];
+    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
+    if (bevel > 0) {
+      features.push(routeFeatureFromCoordinates(segment, 'rgba(255,255,255,0.34)', tripId, `${index}-stripe-bevel-${segmentIndex}`, Math.min(0.38, opacity * 0.18 * bevel), Math.max(0.8, stripeWidth * 0.18 * bevel), false, leg.mode, -Math.max(0.25, stripeWidth * 0.2), withTrailGlow(config, 0, width)));
     }
-    features.push(routeFeatureFromCoordinates(segment, colors[segmentIndex % colors.length], tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
+    if (laneEffect > 0) {
+      features.push(routeFeatureFromCoordinates(segment, 'rgba(0,0,0,0.30)', tripId, `${index}-stripe-edge-${segmentIndex}`, Math.min(0.32, opacity * 0.16 * laneEffect), Math.max(0.6, stripeWidth * 0.12 * laneEffect), false, leg.mode, Math.max(0.25, stripeWidth * 0.22), withTrailGlow(config, 0, width)));
+    }
+    if (separatorWidth > 0) {
+      const boundary = boundarySegmentAroundJoin(segment, segments[segmentIndex + 1]);
+      if (boundary) features.push(routeFeatureFromCoordinates(boundary, 'rgba(4,8,16,0.86)', tripId, `${index}-stripe-boundary-${segmentIndex}`, Math.max(0.12, opacity * 0.22), stripeWidth + separatorWidth, false, leg.mode, 0, withTrailGlow(config, 0, width)));
+    }
   });
   return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.stripeGlow, width))];
 }
@@ -837,7 +865,7 @@ function averageColor(colors = [], fallback = '#00e5ff') {
 
 function splitRouteIntoUniformSegments(coords = [], segmentMiles = 150) {
   if (!Array.isArray(coords) || coords.length < 2) return [];
-  const target = Math.max(30, Number(segmentMiles) || 150);
+  const target = Math.max(5, Number(segmentMiles) || 150);
   const out = [];
   let current = [coords[0]];
   let carried = 0;

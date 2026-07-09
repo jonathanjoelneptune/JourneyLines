@@ -564,9 +564,9 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const currentVisualColor = currentHopSquadColor || currentDraftVisual?.color || '#00e5ff';
   const currentCircleColors = (currentDraftVisual?.circleColors || currentDraftVisual?.memberColors || currentDraftVisual?.colors || []).filter(Boolean);
   const selectedTravelerCount = (draft.travelers?.length || 0) + ((draft.guestHoppers || []).length || 0);
-  const defaultTrailColorMode = currentHopSquad && !((draft.guestHoppers || []).length) && selectedTravelerCount > 1 ? 'squad' : 'members';
+  const defaultTrailColorMode = 'members';
   const effectiveTrailColorMode = draft.trailColorMode || defaultTrailColorMode;
-  const effectiveTrailStyle = effectiveTrailColorMode === 'squad' ? 'solid' : (draft.trailStyle || 'solid');
+  const effectiveTrailStyle = draft.trailStyle || 'solid';
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -624,7 +624,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
     setGuestPopupOpen(false);
   }
   function setTrailStyle(style) {
-    setDraft(d => ({ ...d, trailStyle: style }));
+    setDraft(d => ({ ...d, trailStyle: style, trailColorMode: currentHopSquad && !(d.guestHoppers || []).length && style === 'solid' ? 'squad' : 'members' }));
   }
   function setTrailColorMode(mode) {
     setDraft(d => ({
@@ -862,30 +862,23 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
 function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedTravelerCount, effectiveTrailColorMode, effectiveTrailStyle, onSetTrailStyle, onSetTrailColorMode }) {
   const squadMemberColors = (currentDraftVisual?.squadMemberColors || currentDraftVisual?.memberColors || []).filter(Boolean);
   const squadColor = currentHopSquad?.color || currentDraftVisual?.color;
-  const memberColors = (effectiveTrailColorMode === 'squad'
-    ? [squadColor].filter(Boolean)
-    : (squadMemberColors.length ? squadMemberColors : (currentDraftVisual?.circleColors || currentDraftVisual?.colors || []).filter(Boolean)));
+  const memberColors = (squadMemberColors.length ? squadMemberColors : (currentDraftVisual?.circleColors || currentDraftVisual?.colors || []).filter(Boolean));
   const availableColorCount = memberColors.length || selectedTravelerCount;
   const showMultiOptions = availableColorCount > 1;
-  const showColorMode = !!currentHopSquad && showMultiOptions;
   const styleOptions = [
-    { id: 'solid', label: 'Solid Trail', disabled: false },
-    { id: 'stripe', label: 'Stripe Trail', disabled: !showMultiOptions || effectiveTrailColorMode === 'squad' },
-    { id: 'ribbon', label: 'Ribbon Trail', disabled: !showMultiOptions || effectiveTrailColorMode === 'squad' },
-    { id: 'spiral', label: 'Spiral Trail', disabled: !showMultiOptions || effectiveTrailColorMode === 'squad' }
+    { id: 'solid', label: 'Solid Trail', disabled: false, colors: [squadColor || currentDraftVisual?.color || '#5d7288'].filter(Boolean), colorMode: currentHopSquad ? 'squad' : 'members' },
+    { id: 'stripe', label: 'Stripe Trail', disabled: !showMultiOptions, colors: memberColors, colorMode: 'members' },
+    { id: 'ribbon', label: 'Ribbon Trail', disabled: !showMultiOptions, colors: memberColors, colorMode: 'members' },
+    { id: 'spiral', label: 'Spiral Trail', disabled: !showMultiOptions, colors: memberColors, colorMode: 'members' }
   ];
   return <section className="trail-style-panel compact-section">
     <div className="section-heading-inline">
       <h3>Trail style</h3>
       <span className="trail-style-summary">{showMultiOptions ? `${availableColorCount} colors available` : 'Solo trail'}</span>
     </div>
-    {showColorMode && <div className="trail-color-mode-toggle" role="group" aria-label="Trail color mode">
-      <button type="button" className={effectiveTrailColorMode === 'squad' ? 'is-selected' : ''} onClick={() => onSetTrailColorMode('squad')}>Squad color</button>
-      <button type="button" className={effectiveTrailColorMode === 'members' ? 'is-selected' : ''} onClick={() => onSetTrailColorMode('members')}>Member colors</button>
-    </div>}
     <div className="trail-style-options">
       {styleOptions.map(option => <button key={option.id} type="button" disabled={option.disabled} aria-disabled={option.disabled ? 'true' : 'false'} className={`trail-style-option ${effectiveTrailStyle === option.id ? 'is-selected' : ''} ${option.disabled ? 'is-disabled' : ''}`} onClick={() => { if (!option.disabled) onSetTrailStyle(option.id); }}>
-        <span className={`trail-style-swatch trail-style-swatch--${option.id}`} style={{ '--trail-preview': colorGradient(memberColors, currentDraftVisual?.color || '#5d7288'), '--trail-color': currentHopSquad?.color || currentDraftVisual?.color || '#5d7288', '--trail-member-count': Math.max(1, memberColors.length || selectedTravelerCount || 1) }}></span>
+        <span className={`trail-style-swatch trail-style-swatch--${option.id}`} style={{ '--trail-preview': colorGradient(option.colors, currentDraftVisual?.color || '#5d7288'), '--trail-color': (option.colors || [])[0] || currentHopSquad?.color || currentDraftVisual?.color || '#5d7288', '--trail-member-count': Math.max(1, (option.colors || []).length || selectedTravelerCount || 1) }}></span>
         <strong>{option.label}</strong>
       </button>)}
     </div>
@@ -985,7 +978,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
   }
 
   const count = trips.filter(t => Number(t.year) === Number(draft.year)).length + 1;
-  const derivedTrailColorMode = draft.trailColorMode || (activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) && ((draft.travelers || []).length + (draft.guestHoppers || []).length) > 1 ? 'squad' : 'members');
+  const derivedTrailColorMode = draft.trailColorMode || (activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) && (draft.trailStyle || 'solid') === 'solid' ? 'squad' : 'members');
   const label = draft.label || displayNameFromLocation(nextLocations.find(l => l.id === toLocationId)) || draft.toLocationText || 'Trip';
   const clean = {
     id: draft.id || `${draft.year}-${String(trips.length + 1).padStart(3,'0')}-${slug(label)}`,
@@ -1009,7 +1002,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     route,
     notes: draft.notes || '',
     occasion: draft.occasion || '',
-    trailStyle: derivedTrailColorMode === 'squad' ? 'solid' : (draft.trailStyle || 'solid'),
+    trailStyle: draft.trailStyle || 'solid',
     trailColorMode: derivedTrailColorMode
   };
   return { trip: clean, nextLocations };

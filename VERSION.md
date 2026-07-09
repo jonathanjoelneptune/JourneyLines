@@ -1,1 +1,1 @@
-GlobeHoppers v3.82.3 — pin sizing/animation, ordering fix, ribbon range/member colors, and trail antialias polish
+GlobeHoppers v3.83 — timeline utility, parameter persistence, home-move removal, squad trail simplification, stripe effects, and route offset stacking

@@ -9218,3 +9218,115 @@ button.primary:disabled {
 .trail-tuning-row {
   grid-template-columns: 132px 1fr 70px !important;
 }
+
+/* GlobeHoppers v3.83: live timeline tuning, route stacking, and final timeline CSS variable hooks. */
+.app.is-playing .controls,
+.app.is-playing .controls:hover,
+.controls,
+.controls:hover {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+.timeline-scrubber-stack {
+  transform: translateY(calc(11px + var(--tl-pin-base-y, 1px))) !important;
+  overflow: visible !important;
+}
+.progress.progress--scrubbable,
+.progress--scrubbable {
+  height: var(--tl-bar-height, 4px) !important;
+  overflow: visible !important;
+}
+.progress--scrubbable > span,
+.progress > span {
+  height: var(--tl-bar-height, 4px) !important;
+}
+.timeline-year-scale {
+  margin-top: calc(7px + var(--tl-year-offset, 5px)) !important;
+}
+.timeline-marker-layer,
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker,
+.timeline-marker__tooltip {
+  overflow: visible !important;
+}
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  width: calc(max(var(--tl-inactive-head, 14px), var(--tl-active-head, 14px)) + 8px) !important;
+  height: calc(var(--tl-active-lift, 34px) + var(--tl-active-stem, 42px) + var(--tl-active-head, 14px) + 10px) !important;
+  top: 0 !important;
+  transform: translate(-50%, calc(-52% - var(--tl-pin-base-y, 1px))) !important;
+  transition: transform var(--tl-animation-ms, 360ms) cubic-bezier(.18,.92,.18,1.08), opacity .22s ease !important;
+  will-change: transform !important;
+}
+.timeline-marker::before,
+.timeline-marker::after {
+  transition: transform var(--tl-animation-ms, 360ms) cubic-bezier(.18,.92,.18,1.08), height var(--tl-animation-ms, 360ms) cubic-bezier(.18,.92,.18,1.08), top var(--tl-animation-ms, 360ms) ease, width var(--tl-animation-ms, 360ms) ease, box-shadow .24s ease !important;
+}
+.timeline-marker::before {
+  top: calc(2px + var(--tl-active-lift, 34px)) !important;
+  width: var(--tl-inactive-head, 14px) !important;
+  height: var(--tl-inactive-head, 14px) !important;
+  border-width: 1.5px !important;
+}
+.timeline-marker::after {
+  top: calc(2px + var(--tl-active-lift, 34px) + var(--tl-inactive-head, 14px) - 1px) !important;
+  width: 2px !important;
+  height: var(--tl-inactive-stem, 8px) !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  transform: translate(-50%, calc(-58% - var(--tl-pin-base-y, 1px))) !important;
+}
+.timeline-marker.is-current,
+.timeline-marker.is-active.is-current,
+.progress--scrubbable:hover .timeline-marker.is-active.is-current:not(:hover):not(:focus-visible) {
+  z-index: 30 !important;
+  transform: translate(-50%, calc(-52% - var(--tl-active-lift, 34px) - var(--tl-pin-base-y, 1px))) !important;
+}
+.timeline-marker.is-current::before,
+.timeline-marker.is-active.is-current::before,
+.timeline-marker.is-entering::before {
+  top: 2px !important;
+  width: var(--tl-active-head, 14px) !important;
+  height: var(--tl-active-head, 14px) !important;
+  transform: translateX(-50%) scale(1.08) !important;
+}
+.timeline-marker.is-current::after,
+.timeline-marker.is-active.is-current::after,
+.timeline-marker.is-entering::after {
+  top: calc(var(--tl-active-head, 14px) + 1px) !important;
+  height: var(--tl-active-stem, 42px) !important;
+  width: 2px !important;
+}
+.timeline-marker.is-entering {
+  z-index: 30 !important;
+  animation: ghTimelineLiftV383 var(--tl-animation-ms, 360ms) cubic-bezier(.18,.92,.18,1.08) 1 both !important;
+}
+.timeline-marker.is-leaving {
+  animation: ghTimelineSettleV383 calc(var(--tl-animation-ms, 360ms) * .82) cubic-bezier(.4,0,.2,1) 1 both !important;
+}
+@keyframes ghTimelineLiftV383 {
+  0% { transform: translate(-50%, calc(-52% - var(--tl-pin-base-y, 1px))); }
+  72% { transform: translate(-50%, calc(-52% - var(--tl-active-lift, 34px) - 6px - var(--tl-pin-base-y, 1px))); }
+  100% { transform: translate(-50%, calc(-52% - var(--tl-active-lift, 34px) - var(--tl-pin-base-y, 1px))); }
+}
+@keyframes ghTimelineSettleV383 {
+  0% { transform: translate(-50%, calc(-52% - var(--tl-active-lift, 34px) - var(--tl-pin-base-y, 1px))); }
+  100% { transform: translate(-50%, calc(-52% - var(--tl-pin-base-y, 1px))); }
+}
+.timeline-marker__tooltip.is-current {
+  bottom: calc(100% + var(--tl-tooltip-offset, 68px)) !important;
+}
+.timeline-marker__tooltip.is-hovered {
+  bottom: calc(100% + max(42px, var(--tl-tooltip-offset, 68px) - 24px)) !important;
+}
+.timeline-tuning {
+  right: 18px !important;
+  bottom: 96px !important;
+}
+.timeline-tuning-row {
+  grid-template-columns: 140px 1fr 74px !important;
+}
+.trail-style-panel .trail-color-mode-toggle {
+  display: none !important;
+}

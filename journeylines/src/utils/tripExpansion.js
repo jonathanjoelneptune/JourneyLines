@@ -75,25 +75,38 @@ function formatHomeMoveDate(value) {
 }
 
 export function flattenLegs(trips, locationsById, homeBases) {
-  const homeMoves = buildHomeMoveTrips(homeBases, locationsById)
-    .sort((a, b) => timelineDateValue(a, true) - timelineDateValue(b, true));
+  // Home bases are context only. They define the auto-derived start/return
+  // location for Hops, but they should not create playable timeline cards or
+  // playback entries.
+  const entries = (trips || []).flatMap(trip =>
+    expandTrip(trip, locationsById, homeBases).legs.map((leg, legIndex) => ({ trip, leg, legIndex }))
+  );
+  return applyRouteStackOffsets(entries);
+}
 
-  // Preserve the explicit/user-edited trip order from trips.json. Only weave
-  // automatic home-base moves into that order at their actual calendar point.
-  // Sorting all items by sortKey caused home moves whose keys start with a year
-  // (for example 2017-01) to play before every manual-* trip.
-  const timeline = [];
-  let moveCursor = 0;
-  for (const trip of trips || []) {
-    const tripValue = timelineDateValue(trip, false);
-    while (moveCursor < homeMoves.length && timelineDateValue(homeMoves[moveCursor], true) <= tripValue) {
-      timeline.push(homeMoves[moveCursor++]);
-    }
-    timeline.push(trip);
+function applyRouteStackOffsets(entries = []) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = routeStackKey(entry?.leg);
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
   }
-  while (moveCursor < homeMoves.length) timeline.push(homeMoves[moveCursor++]);
+  for (const rows of groups.values()) {
+    if (rows.length <= 1) continue;
+    const spacing = 3.1;
+    rows.forEach((entry, index) => {
+      const offset = (index - (rows.length - 1) / 2) * spacing;
+      entry.leg = { ...entry.leg, routeStackOffset: offset, routeStackCount: rows.length, routeStackIndex: index };
+    });
+  }
+  return entries;
+}
 
-  return timeline.flatMap(trip => expandTrip(trip, locationsById, homeBases).legs.map((leg, legIndex) => ({ trip, leg, legIndex })));
+function routeStackKey(leg) {
+  const from = leg?.from?.id || leg?.from?.name;
+  const to = leg?.to?.id || leg?.to?.name;
+  return from && to ? `${from}→${to}` : '';
 }
 
 function timelineDateValue(item, isHomeMove = false) {
