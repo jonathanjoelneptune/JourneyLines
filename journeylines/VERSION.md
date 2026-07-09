@@ -1,1 +1,1 @@
-GlobeHoppers v3.91 — persistent mixed-row borders + clean car stripe rendering
+GlobeHoppers v3.92 — explicit timeline row border ring + clean car route support layers

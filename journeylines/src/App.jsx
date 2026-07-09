@@ -1072,6 +1072,8 @@ function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
     onContextMenu={(e) => openMenu(e, row)}
     title="Click to play from here. Right-click or use ⋯ to edit."
   >
+    <span className="trip-drawer__border-ring" aria-hidden="true" />
+    <span className="trip-drawer__hover-fill" aria-hidden="true" />
     <span className="trip-drawer__date">{row.date}</span>
     <span className="trip-drawer__main">
       <strong>{row.title}</strong>

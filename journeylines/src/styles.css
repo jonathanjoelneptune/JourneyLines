@@ -9697,17 +9697,17 @@ button.primary:disabled {
 }
 
 
-/* GlobeHoppers v3.91: final persistent segmented borders for timeline rows.
-   Use an always-on foreground ring so older background/hover rules cannot cover it. */
+/* GlobeHoppers v3.92: explicit persistent segmented border element.
+   This avoids the previous cascade conflict where the Timeline row border only
+   appeared during hover/background states. */
 .trip-drawer__row {
   position: relative !important;
   isolation: isolate !important;
+  overflow: hidden !important;
   border: 0 !important;
-  overflow: visible !important;
-  background: linear-gradient(180deg, rgba(9, 21, 38, .96), rgba(5, 14, 27, .96)) !important;
+  background: linear-gradient(180deg, rgba(9, 21, 38, .97), rgba(5, 14, 27, .96)) !important;
 }
-.trip-drawer__row::before {
-  content: '' !important;
+.trip-drawer__border-ring {
   display: block !important;
   position: absolute !important;
   inset: 0 !important;
@@ -9719,39 +9719,40 @@ button.primary:disabled {
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
   mask-composite: exclude !important;
   pointer-events: none !important;
-  z-index: 2 !important;
+  z-index: 3 !important;
   opacity: 1 !important;
-  filter: saturate(1.08) brightness(1.03) !important;
+  filter: saturate(1.12) brightness(1.08) !important;
 }
-.trip-drawer__row::after {
-  content: '' !important;
+.trip-drawer__hover-fill {
   display: block !important;
   position: absolute !important;
   inset: 2px !important;
   border-radius: calc(var(--row-radius, 18px) - 2px) !important;
   background:
-    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 86%), transparent 38%),
-    linear-gradient(180deg, rgba(13, 31, 54, .56), rgba(7, 19, 35, .46)) !important;
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 84%), transparent 40%),
+    linear-gradient(180deg, rgba(13, 31, 54, .68), rgba(7, 19, 35, .48)) !important;
   opacity: 0 !important;
   pointer-events: none !important;
   z-index: 1 !important;
   transition: opacity .18s ease, filter .18s ease !important;
 }
-.trip-drawer__row:hover::after,
-.trip-drawer__row:focus-visible::after {
+.trip-drawer__row:hover .trip-drawer__hover-fill,
+.trip-drawer__row:focus-visible .trip-drawer__hover-fill,
+.trip-drawer__row.is-active .trip-drawer__hover-fill {
   opacity: 1 !important;
 }
-.trip-drawer__row:hover::before,
-.trip-drawer__row:focus-visible::before,
-.trip-drawer__row.is-active::before {
-  filter: saturate(1.22) brightness(1.16) !important;
+.trip-drawer__row:hover .trip-drawer__border-ring,
+.trip-drawer__row:focus-visible .trip-drawer__border-ring,
+.trip-drawer__row.is-active .trip-drawer__border-ring {
+  filter: saturate(1.28) brightness(1.18) !important;
 }
-.trip-drawer__row.is-active::after {
-  opacity: .76 !important;
-}
-.trip-drawer__row > * {
+.trip-drawer__row > :not(.trip-drawer__border-ring):not(.trip-drawer__hover-fill) {
   position: relative !important;
-  z-index: 3 !important;
+  z-index: 4 !important;
+}
+.trip-drawer__row::before,
+.trip-drawer__row::after {
+  display: none !important;
 }
 .trip-drawer__row.trip-row-view--expanded {
   --row-radius: 18px;

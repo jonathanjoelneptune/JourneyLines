@@ -768,24 +768,20 @@ function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   const coords = routeCoordinates(leg, progress, active ? 260 : 190, routedGeometries);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
-  const isRoadStripe = leg?.mode === 'car';
-  // Road geometry has lots of small bends, so wide/offset underlays create the dark
-  // sludge beside the line. Keep car stripes clean and centered.
-  const separatorWidth = isRoadStripe ? Math.min(0.35, Math.max(0, Number(config.stripeSeparator) || 0) * 0.35) : Math.max(0, Number(config.stripeSeparator) || 0);
-  const border = isRoadStripe ? 0 : trailBorderThickness(config);
+  const separatorWidth = Math.max(0, Number(config.stripeSeparator) || 0);
+  const border = trailBorderThickness(config);
   const segmentMiles = Math.max(5, Number(config.stripeSegmentMiles) || 260);
   const features = [];
   const segments = splitRouteIntoUniformSegments(coords, segmentMiles);
   if (border > 0) features.push(routeFeatureFromCoordinates(coords, '#020407', tripId, `${index}-stripe-border`, opacity, stripeWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
-  const bevel = isRoadStripe ? 0 : Math.max(0, Number(config.stripeBevel) || 0);
-  const laneEffect = isRoadStripe ? 0 : Math.max(0, Number(config.stripeLaneEffect) || 0);
-  const stripeGlow = isRoadStripe ? 0 : (Number(config.stripeGlow) || 0);
-  if (stripeGlow > 0) {
-    features.push(routeFeatureFromCoordinates(coords, averageColor(colors, colors[0]), tripId, `${index}-stripe-glow`, Math.max(0.02, opacity * 0.08 * stripeGlow), stripeWidth + Math.max(0.4, stripeGlow), false, leg.mode, 0, withTrailGlow(config, stripeGlow * 0.45, width)));
+  const bevel = Math.max(0, Number(config.stripeBevel) || 0);
+  const laneEffect = Math.max(0, Number(config.stripeLaneEffect) || 0);
+  if ((Number(config.stripeGlow) || 0) > 0) {
+    features.push(routeFeatureFromCoordinates(coords, averageColor(colors, colors[0]), tripId, `${index}-stripe-glow`, Math.max(0.02, opacity * 0.08 * (Number(config.stripeGlow) || 1)), stripeWidth + Math.max(0.4, Number(config.stripeGlow) || 1), false, leg.mode, 0, withTrailGlow(config, config.stripeGlow * 0.45, width)));
   }
   segments.forEach((segment, segmentIndex) => {
     const color = colors[segmentIndex % colors.length];
-    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, stripeGlow, width)));
+    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
     if (bevel > 0) {
       features.push(routeFeatureFromCoordinates(segment, 'rgba(255,255,255,0.34)', tripId, `${index}-stripe-bevel-${segmentIndex}`, Math.min(0.38, opacity * 0.18 * bevel), Math.max(0.8, stripeWidth * 0.18 * bevel), false, leg.mode, -0, withTrailGlow(config, 0, width)));
     }
@@ -927,37 +923,13 @@ function boundarySegmentAroundJoin(previousSegment, nextSegment) {
 
 
 function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, lineOffset = 0, config = DEFAULT_TRAIL_TUNING) {
-  const isAir = leg.mode === 'plane' || leg.mode === 'move';
-  const mainOpacity = active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity);
-  const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
-  const glowMult = Math.max(0, Number(config?._ghTrailGlow ?? 1));
-  const glowBase = Math.max(1, Number(config?._ghGlowBaseWidth ?? 2));
-  return {
-    type: 'Feature',
-    properties: {
-      tripId,
-      index,
-      color,
-      mode: leg.mode,
-      width: mainWidth,
-      opacity: mainOpacity,
-      glowWidth: active ? (isAir ? Math.max(glowBase * 4.2 * glowMult, 6.5 * glowMult) : Math.max(glowBase * 4.4 * glowMult, 7.2 * glowMult)) : Math.max(glowBase * 5.2 * glowMult, 7.4 * glowMult),
-      glowOpacity: active ? (isAir ? 0.56 * glowMult : 0.62 * glowMult) : Math.max(0.0, opacity * 0.58 * glowMult),
-      outerGlowWidth: active ? Math.max(glowBase * 8.1 * glowMult, 12 * glowMult) : Math.max(glowBase * 9.0 * glowMult, 14 * glowMult),
-      outerGlowOpacity: active ? ((isAir ? 0.20 : 0.24) * glowMult) : Math.max(0.0, opacity * 0.18 * glowMult),
-      dash: dashForMode(leg.mode),
-      lineOffset,
-      borderZoomFade: Number(config?.borderZoomFade ?? 1),
-      trailRole: trailRoleForFeature(index, color)
-    },
-    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 22, routedGeometries) }
-  };
-}
-
-function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, width, active = false, mode = 'plane', lineOffset = 0, config = DEFAULT_TRAIL_TUNING) {
+  const mode = leg.mode;
   const isAir = mode === 'plane' || mode === 'move';
+  const role = trailRoleForFeature(index, color);
+  const isRoadSupportLayer = mode === 'car' && role !== 'main';
+  const mainOpacity = isRoadSupportLayer ? 0 : (active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity));
   const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
-  const glowMult = Math.max(0, Number(config?._ghTrailGlow ?? 1));
+  const glowMult = isRoadSupportLayer ? 0 : Math.max(0, Number(config?._ghTrailGlow ?? 1));
   const glowBase = Math.max(1, Number(config?._ghGlowBaseWidth ?? 2));
   return {
     type: 'Feature',
@@ -967,7 +939,36 @@ function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, widt
       color,
       mode,
       width: mainWidth,
-      opacity: active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity),
+      opacity: mainOpacity,
+      glowWidth: active ? (isAir ? Math.max(glowBase * 4.2 * glowMult, 6.5 * glowMult) : Math.max(glowBase * 4.4 * glowMult, 7.2 * glowMult)) : Math.max(glowBase * 5.2 * glowMult, 7.4 * glowMult),
+      glowOpacity: active ? (isAir ? 0.56 * glowMult : 0.62 * glowMult) : Math.max(0.0, opacity * 0.58 * glowMult),
+      outerGlowWidth: active ? Math.max(glowBase * 8.1 * glowMult, 12 * glowMult) : Math.max(glowBase * 9.0 * glowMult, 14 * glowMult),
+      outerGlowOpacity: active ? ((isAir ? 0.20 : 0.24) * glowMult) : Math.max(0.0, opacity * 0.18 * glowMult),
+      dash: dashForMode(mode),
+      lineOffset,
+      borderZoomFade: Number(config?.borderZoomFade ?? 1),
+      trailRole: role
+    },
+    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 22, routedGeometries) }
+  };
+}
+
+function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, width, active = false, mode = 'plane', lineOffset = 0, config = DEFAULT_TRAIL_TUNING) {
+  const isAir = mode === 'plane' || mode === 'move';
+  const role = trailRoleForFeature(index, color);
+  const isRoadSupportLayer = mode === 'car' && role !== 'main';
+  const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
+  const glowMult = isRoadSupportLayer ? 0 : Math.max(0, Number(config?._ghTrailGlow ?? 1));
+  const glowBase = Math.max(1, Number(config?._ghGlowBaseWidth ?? 2));
+  return {
+    type: 'Feature',
+    properties: {
+      tripId,
+      index,
+      color,
+      mode,
+      width: mainWidth,
+      opacity: isRoadSupportLayer ? 0 : (active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity)),
       glowWidth: active ? (isAir ? Math.max(glowBase * 4.2 * glowMult, 6.5 * glowMult) : Math.max(glowBase * 4.4 * glowMult, 7.2 * glowMult)) : Math.max(glowBase * 5.2 * glowMult, 7.4 * glowMult),
       glowOpacity: active ? (isAir ? 0.56 * glowMult : 0.62 * glowMult) : Math.max(0.0, opacity * 0.58 * glowMult),
       outerGlowWidth: active ? Math.max(glowBase * 7.8 * glowMult, 12 * glowMult) : Math.max(glowBase * 9.0 * glowMult, 14 * glowMult),
@@ -975,7 +976,7 @@ function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, widt
       dash: dashForMode(mode),
       lineOffset,
       borderZoomFade: Number(config?.borderZoomFade ?? 1),
-      trailRole: trailRoleForFeature(index, color)
+      trailRole: role
     },
     geometry: { type: 'LineString', coordinates: coords }
   };
