@@ -1,1 +1,1 @@
-GlobeHoppers v3.98 — actual Studio/Reorder timeline row borders
+GlobeHoppers v3.99 — slimmer Studio Timeline row borders

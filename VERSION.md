@@ -1,1 +1,1 @@
-GlobeHoppers v3.97 — clean-room timeline trip rows
+GlobeHoppers v3.99 — slimmer Studio Timeline row borders
