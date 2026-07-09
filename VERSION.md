@@ -1,1 +1,1 @@
-GlobeHoppers v3.90 — route stacking return lanes, persistent timeline borders, and trail utility thickness range
+GlobeHoppers v3.91 — persistent mixed-row borders + clean car stripe rendering

@@ -768,20 +768,24 @@ function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   const coords = routeCoordinates(leg, progress, active ? 260 : 190, routedGeometries);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
-  const separatorWidth = Math.max(0, Number(config.stripeSeparator) || 0);
-  const border = trailBorderThickness(config);
+  const isRoadStripe = leg?.mode === 'car';
+  // Road geometry has lots of small bends, so wide/offset underlays create the dark
+  // sludge beside the line. Keep car stripes clean and centered.
+  const separatorWidth = isRoadStripe ? Math.min(0.35, Math.max(0, Number(config.stripeSeparator) || 0) * 0.35) : Math.max(0, Number(config.stripeSeparator) || 0);
+  const border = isRoadStripe ? 0 : trailBorderThickness(config);
   const segmentMiles = Math.max(5, Number(config.stripeSegmentMiles) || 260);
   const features = [];
   const segments = splitRouteIntoUniformSegments(coords, segmentMiles);
   if (border > 0) features.push(routeFeatureFromCoordinates(coords, '#020407', tripId, `${index}-stripe-border`, opacity, stripeWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
-  const bevel = Math.max(0, Number(config.stripeBevel) || 0);
-  const laneEffect = Math.max(0, Number(config.stripeLaneEffect) || 0);
-  if ((Number(config.stripeGlow) || 0) > 0) {
-    features.push(routeFeatureFromCoordinates(coords, averageColor(colors, colors[0]), tripId, `${index}-stripe-glow`, Math.max(0.02, opacity * 0.08 * (Number(config.stripeGlow) || 1)), stripeWidth + Math.max(0.4, Number(config.stripeGlow) || 1), false, leg.mode, 0, withTrailGlow(config, config.stripeGlow * 0.45, width)));
+  const bevel = isRoadStripe ? 0 : Math.max(0, Number(config.stripeBevel) || 0);
+  const laneEffect = isRoadStripe ? 0 : Math.max(0, Number(config.stripeLaneEffect) || 0);
+  const stripeGlow = isRoadStripe ? 0 : (Number(config.stripeGlow) || 0);
+  if (stripeGlow > 0) {
+    features.push(routeFeatureFromCoordinates(coords, averageColor(colors, colors[0]), tripId, `${index}-stripe-glow`, Math.max(0.02, opacity * 0.08 * stripeGlow), stripeWidth + Math.max(0.4, stripeGlow), false, leg.mode, 0, withTrailGlow(config, stripeGlow * 0.45, width)));
   }
   segments.forEach((segment, segmentIndex) => {
     const color = colors[segmentIndex % colors.length];
-    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
+    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, stripeGlow, width)));
     if (bevel > 0) {
       features.push(routeFeatureFromCoordinates(segment, 'rgba(255,255,255,0.34)', tripId, `${index}-stripe-bevel-${segmentIndex}`, Math.min(0.38, opacity * 0.18 * bevel), Math.max(0.8, stripeWidth * 0.18 * bevel), false, leg.mode, -0, withTrailGlow(config, 0, width)));
     }

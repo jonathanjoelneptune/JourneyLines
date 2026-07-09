@@ -9695,3 +9695,73 @@ button.primary:disabled {
   border-top-width: 2px !important;
   border-bottom-width: 2px !important;
 }
+
+
+/* GlobeHoppers v3.91: final persistent segmented borders for timeline rows.
+   Use an always-on foreground ring so older background/hover rules cannot cover it. */
+.trip-drawer__row {
+  position: relative !important;
+  isolation: isolate !important;
+  border: 0 !important;
+  overflow: visible !important;
+  background: linear-gradient(180deg, rgba(9, 21, 38, .96), rgba(5, 14, 27, .96)) !important;
+}
+.trip-drawer__row::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  padding: 2px !important;
+  border-radius: inherit !important;
+  background: var(--trip-border, var(--accent, #00e5ff)) !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
+  -webkit-mask-composite: xor !important;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
+  mask-composite: exclude !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 1 !important;
+  filter: saturate(1.08) brightness(1.03) !important;
+}
+.trip-drawer__row::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 2px !important;
+  border-radius: calc(var(--row-radius, 18px) - 2px) !important;
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 86%), transparent 38%),
+    linear-gradient(180deg, rgba(13, 31, 54, .56), rgba(7, 19, 35, .46)) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  transition: opacity .18s ease, filter .18s ease !important;
+}
+.trip-drawer__row:hover::after,
+.trip-drawer__row:focus-visible::after {
+  opacity: 1 !important;
+}
+.trip-drawer__row:hover::before,
+.trip-drawer__row:focus-visible::before,
+.trip-drawer__row.is-active::before {
+  filter: saturate(1.22) brightness(1.16) !important;
+}
+.trip-drawer__row.is-active::after {
+  opacity: .76 !important;
+}
+.trip-drawer__row > * {
+  position: relative !important;
+  z-index: 3 !important;
+}
+.trip-drawer__row.trip-row-view--expanded {
+  --row-radius: 18px;
+  border-radius: 18px !important;
+}
+.trip-drawer__row.trip-row-view--compact {
+  --row-radius: 16px;
+  border-radius: 16px !important;
+}
+.trip-drawer__row.trip-row-view--card {
+  --row-radius: 14px;
+  border-radius: 14px !important;
+}
