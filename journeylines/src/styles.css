@@ -10501,3 +10501,49 @@ button.primary:disabled {
 .gh-studio-row-border {
   z-index: 4 !important;
 }
+
+
+/* GlobeHoppers v4.03: taller expanded Studio Timeline pills with up to 3 text lines. */
+.gh-studio-trip-row--expanded,
+.studio-trip-list--expanded .gh-studio-trip-row {
+  min-height: 62px !important;
+  height: auto !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  align-items: center !important;
+}
+
+.gh-studio-trip-row--expanded .studio-trip-main,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-main {
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+}
+
+.gh-studio-trip-row--expanded .studio-trip-main strong,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-main strong {
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.gh-studio-trip-row--expanded .studio-trip-main small,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-main small {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.18 !important;
+  max-height: calc(1.18em * 2) !important;
+}
+
+/* Keep the date/actions vertically centered against the taller 3-line row. */
+.gh-studio-trip-row--expanded .studio-trip-date,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-date,
+.gh-studio-trip-row--expanded .studio-trip-buttons,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-buttons {
+  align-self: center !important;
+}

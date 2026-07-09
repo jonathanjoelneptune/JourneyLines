@@ -1,1 +1,1 @@
-GlobeHoppers v4.02 — thicker rounded Studio row borders and raised-pill bevel
+GlobeHoppers v4.03 — taller expanded Studio Timeline rows
