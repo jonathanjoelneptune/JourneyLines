@@ -43,6 +43,7 @@ export default function App() {
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const resumeAfterStudioRef = useRef(false);
+  const resumeAfterTabHiddenRef = useRef(false);
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
   const FRAME_MS = 33.333; // cap playback state updates around 30fps for smoother wall-display playback
 
@@ -63,6 +64,28 @@ export default function App() {
     window.addEventListener('globehoppers-close-studio', closeStudio);
     return () => window.removeEventListener('globehoppers-close-studio', closeStudio);
   }, []);
+
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (isPlaying) {
+          resumeAfterTabHiddenRef.current = true;
+          freezePlaybackClock();
+          tRef.current.last = null;
+          setIsPlaying(false);
+        }
+        return;
+      }
+      if (resumeAfterTabHiddenRef.current) {
+        resumeAfterTabHiddenRef.current = false;
+        tRef.current.last = null;
+        setIsPlaying(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isPlaying, activeIndex, legProgress, legs, speed]);
 
 
   const sortedTrips = useMemo(() => sortTrips(trips), [trips]);
@@ -203,7 +226,7 @@ export default function App() {
     setIsPlaying(false);
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-open-new-trip')), 80);
   }
-  function pause() { freezePlaybackClock(); setIsPlaying(false); }
+  function pause() { resumeAfterTabHiddenRef.current = false; freezePlaybackClock(); setIsPlaying(false); }
   function viewGlobe() {
     resumeAfterStudioRef.current = isPlaying;
     freezePlaybackClock();
@@ -755,7 +778,9 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       mode: trip.mode || tripLegs[0]?.leg?.mode || 'plane',
       traveler: traveler?.name || 'Travel',
       color: traveler?.color || '#00e5ff',
-      markerBackground: multiMemberCircleBackground(traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff'], traveler?.color || '#00e5ff'),
+      markerBackground: traveler?.isSquad
+        ? (traveler?.color || '#00e5ff')
+        : multiMemberCircleBackground(traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff'], traveler?.color || '#00e5ff'),
       route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
       legCount: tripLegs.length,
       year: trip.year || String(trip.date || '').slice(0, 4) || '',

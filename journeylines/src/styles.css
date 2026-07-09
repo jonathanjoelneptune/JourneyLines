@@ -8672,3 +8672,141 @@ button.primary:disabled {
   0% { transform: translateX(-50%) scale(1.12); box-shadow: 0 0 0 1px rgba(6,18,36,.82), 0 0 0 4px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 77%), 0 8px 16px rgba(0,0,0,.28); }
   100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 1px rgba(5,10,18,.78), 0 4px 10px rgba(0,0,0,.24); }
 }
+
+/* GlobeHoppers v3.81: tab-hidden pause, tighter trail options, and lifted active timeline pins. */
+.trail-style-option.is-disabled,
+.trail-style-option:disabled {
+  opacity: 0.42 !important;
+  filter: saturate(0.65) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+.trail-style-option.is-disabled strong,
+.trail-style-option:disabled strong {
+  color: rgba(238, 247, 255, 0.62) !important;
+}
+.trail-style-option.is-disabled .trail-style-swatch,
+.trail-style-option:disabled .trail-style-swatch {
+  opacity: 0.62 !important;
+}
+.trail-style-swatch {
+  height: 14px !important;
+}
+.trail-style-swatch--solid {
+  background: var(--trail-color, #00e5ff) !important;
+}
+.trail-style-swatch--stripe {
+  position: relative !important;
+  background: var(--trail-preview, linear-gradient(90deg, #00e5ff, #ff4fd8)) !important;
+  background-size: 30px 100% !important;
+}
+.trail-style-swatch--stripe::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: repeating-linear-gradient(90deg,
+    rgba(0,0,0,0) 0 9px,
+    rgba(4, 10, 18, 0.36) 9px 10px,
+    rgba(255,255,255,0) 10px 100%) !important;
+  opacity: 0.9 !important;
+}
+.trail-style-swatch--ribbon {
+  height: 16px !important;
+  background: var(--trail-preview, linear-gradient(90deg, #00e5ff, #ff4fd8)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 0 12px rgba(0,229,255,.16), 0 5px 14px rgba(0,0,0,.18) !important;
+}
+.trail-style-swatch--ribbon::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: -1px !important;
+  border-radius: inherit !important;
+  background: linear-gradient(180deg, rgba(0,229,255,.12), rgba(0,0,0,0)) !important;
+  z-index: 0 !important;
+}
+.trail-style-swatch--ribbon::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: repeating-linear-gradient(90deg,
+    rgba(0,0,0,0) 0 calc(100% / var(--trail-member-count, 2) - 1px),
+    rgba(7,12,20,.55) calc(100% / var(--trail-member-count, 2) - 1px) calc(100% / var(--trail-member-count, 2) + 1px)) !important;
+  opacity: 0.9 !important;
+}
+.trail-style-swatch--spiral {
+  height: 16px !important;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,0) 0 5px,
+      rgba(255,255,255,.34) 5px 7px,
+      rgba(255,255,255,0) 7px 11px),
+    var(--trail-preview, linear-gradient(90deg, #00e5ff, #ff4fd8)) !important;
+  background-size: 16px 100%, 30px 100% !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 0 12px rgba(0,229,255,.18), 0 5px 14px rgba(0,0,0,.18) !important;
+}
+
+.controls,
+.progress--scrubbable,
+.timeline-marker-layer {
+  overflow: visible !important;
+}
+.timeline-marker-layer {
+  z-index: 12 !important;
+}
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  width: 20px !important;
+  height: 34px !important;
+  top: calc(50% - 1px) !important;
+  transform: translate(-50%, -63%) !important;
+  transition: transform .28s cubic-bezier(.22,.75,.2,1), opacity .22s ease !important;
+}
+.timeline-marker::before {
+  top: 4px !important;
+  width: 12px !important;
+  height: 12px !important;
+  border: 1.5px solid rgba(246, 254, 255, 0.92) !important;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255,255,255,.64), rgba(255,255,255,.22) 24%, transparent 44%),
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 50%, rgba(0,0,0,.16) 100%),
+    var(--marker-background, var(--marker-color, #00e5ff)) !important;
+  box-shadow: 0 0 0 1px rgba(5, 10, 18, 0.78), 0 4px 10px rgba(0, 0, 0, 0.24) !important;
+}
+.timeline-marker::after {
+  top: 15px !important;
+  width: 2px !important;
+  height: 15px !important;
+  background: linear-gradient(180deg, rgba(240, 248, 255, 0.96), rgba(240, 248, 255, 0.18)) !important;
+  box-shadow: 0 0 0 1px rgba(5, 10, 18, 0.42) !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  transform: translate(-50%, -71%) !important;
+}
+.timeline-marker.is-current,
+.timeline-marker.is-entering {
+  z-index: 20 !important;
+  transform: translate(-50%, -112%) !important;
+}
+.timeline-marker.is-leaving {
+  z-index: 18 !important;
+}
+.timeline-marker.is-active::before,
+.timeline-marker:hover::before,
+.timeline-marker:focus-visible::before,
+.timeline-marker.is-current::before {
+  transform: translateX(-50%) scale(1.16) !important;
+  box-shadow: 0 0 0 1px rgba(6, 18, 36, 0.86), 0 0 0 5px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 76%), 0 10px 18px rgba(0,0,0,.3) !important;
+}
+.timeline-marker.is-current::after,
+.timeline-marker.is-entering::after {
+  transform: translateX(-50%) scaleY(1.08) !important;
+}
+@keyframes ghTimelinePinSelect {
+  0% { transform: translateX(-50%) scale(.84); box-shadow: 0 0 0 1px rgba(6,18,36,.65), 0 0 0 0 rgba(0,229,255,.34); }
+  45% { transform: translateX(-50%) scale(1.34); box-shadow: 0 0 0 1px rgba(6,18,36,.9), 0 0 0 8px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 78%); }
+  100% { transform: translateX(-50%) scale(1.16); box-shadow: 0 0 0 1px rgba(6,18,36,.86), 0 0 0 5px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 76%), 0 10px 18px rgba(0,0,0,.3); }
+}
+@keyframes ghTimelinePinDeselect {
+  0% { transform: translateX(-50%) scale(1.16); box-shadow: 0 0 0 1px rgba(6,18,36,.86), 0 0 0 5px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 76%), 0 10px 18px rgba(0,0,0,.3); }
+  100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 1px rgba(5,10,18,.78), 0 4px 10px rgba(0,0,0,.24); }
+}

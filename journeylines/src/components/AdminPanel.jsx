@@ -863,14 +863,12 @@ function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedT
   const memberColors = (currentDraftVisual?.circleColors || currentDraftVisual?.memberColors || currentDraftVisual?.colors || []).filter(Boolean);
   const showMultiOptions = selectedTravelerCount > 1;
   const showColorMode = !!currentHopSquad && showMultiOptions;
-  const styleOptions = showMultiOptions && effectiveTrailColorMode !== 'squad'
-    ? [
-        { id: 'solid', label: 'Solid Trail' },
-        { id: 'stripe', label: 'Stripe Trail' },
-        { id: 'ribbon', label: 'Ribbon Trail' },
-        { id: 'spiral', label: 'Spiral Trail' }
-      ]
-    : [{ id: 'solid', label: 'Solid Trail' }];
+  const styleOptions = [
+    { id: 'solid', label: 'Solid Trail', disabled: false },
+    { id: 'stripe', label: 'Stripe Trail', disabled: !showMultiOptions || effectiveTrailColorMode === 'squad' },
+    { id: 'ribbon', label: 'Ribbon Trail', disabled: !showMultiOptions || effectiveTrailColorMode === 'squad' },
+    { id: 'spiral', label: 'Spiral Trail', disabled: !showMultiOptions || effectiveTrailColorMode === 'squad' }
+  ];
   return <section className="trail-style-panel compact-section">
     <div className="section-heading-inline">
       <h3>Trail style</h3>
@@ -881,7 +879,7 @@ function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedT
       <button type="button" className={effectiveTrailColorMode === 'members' ? 'is-selected' : ''} onClick={() => onSetTrailColorMode('members')}>Member colors</button>
     </div>}
     <div className="trail-style-options">
-      {styleOptions.map(option => <button key={option.id} type="button" className={`trail-style-option ${effectiveTrailStyle === option.id ? 'is-selected' : ''}`} onClick={() => onSetTrailStyle(option.id)}>
+      {styleOptions.map(option => <button key={option.id} type="button" disabled={option.disabled} aria-disabled={option.disabled ? 'true' : 'false'} className={`trail-style-option ${effectiveTrailStyle === option.id ? 'is-selected' : ''} ${option.disabled ? 'is-disabled' : ''}`} onClick={() => { if (!option.disabled) onSetTrailStyle(option.id); }}>
         <span className={`trail-style-swatch trail-style-swatch--${option.id}`} style={{ '--trail-preview': colorGradient(memberColors, currentDraftVisual?.color || '#5d7288'), '--trail-color': currentHopSquad?.color || currentDraftVisual?.color || '#5d7288', '--trail-member-count': Math.max(1, memberColors.length || selectedTravelerCount || 1) }}></span>
         <strong>{option.label}</strong>
       </button>)}

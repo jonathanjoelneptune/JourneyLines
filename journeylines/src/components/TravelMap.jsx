@@ -662,54 +662,60 @@ function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active
 }
 
 function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
-  const coords = routeCoordinates(leg, progress, active ? 96 : 24, routedGeometries);
+  const coords = routeCoordinates(leg, progress, active ? 220 : 160, routedGeometries);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
-  const stride = active ? 3 : 2;
-  const features = [];
-  let stripeIndex = 0;
-  for (let start = 0; start < coords.length - 1; start += stride) {
-    const end = Math.min(coords.length, start + stride + 1);
-    const segment = coords.slice(start, end);
-    if (segment.length < 2) continue;
-    features.push(routeFeatureFromCoordinates(segment, colors[stripeIndex % colors.length], tripId, `${index}-stripe-${stripeIndex}`, opacity, width, active, leg.mode, 0));
-    stripeIndex += 1;
-  }
-  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+  const stripeWidth = Math.max(width, width * 1.04);
+  const segments = splitRouteIntoUniformSegments(coords, 150);
+  const features = [
+    routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.60)', tripId, `${index}-stripe-underlay`, Math.max(0.16, opacity * 0.18), stripeWidth + 0.5, false, leg.mode, 0)
+  ];
+  segments.forEach((segment, segmentIndex) => {
+    features.push(routeFeatureFromCoordinates(segment, colors[segmentIndex % colors.length], tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0));
+    const boundary = boundarySegmentAroundJoin(segment, segments[segmentIndex + 1]);
+    if (boundary) features.push(routeFeatureFromCoordinates(boundary, 'rgba(4,8,16,0.85)', tripId, `${index}-stripe-separator-${segmentIndex}`, Math.max(0.18, opacity * 0.24), stripeWidth + 0.28, false, leg.mode, 0));
+  });
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0)];
 }
 
 function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
   const total = colors.length;
-  const perRibbon = Math.max(1.15, width / total);
-  return colors.map((color, ribbonIndex) => {
-    const offset = (ribbonIndex - (total - 1) / 2) * perRibbon;
-    return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, perRibbon, active, progress, routedGeometries, offset);
-  });
+  const totalWidth = Math.max(width * 1.34, width + 1.1);
+  const slotWidth = totalWidth / total;
+  const lineWidth = Math.max(1.65, slotWidth - 0.2);
+  const sharedColor = averageColor(colors, colors[0]);
+  const features = [routeFeature(leg, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.14, opacity * 0.18), totalWidth + 0.85, false, progress, routedGeometries, 0)];
+  return [
+    ...features,
+    ...colors.map((color, ribbonIndex) => {
+      const offset = (ribbonIndex - (total - 1) / 2) * slotWidth;
+      return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, lineWidth, active, progress, routedGeometries, offset);
+    })
+  ];
 }
 
-
 function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
-  const coords = routeCoordinates(leg, progress, active ? 96 : 24, routedGeometries);
+  const coords = routeCoordinates(leg, progress, active ? 240 : 170, routedGeometries);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
-  const amplitude = Math.max(0.8, width * 0.42);
-  const stride = active ? 2 : 2;
-  const features = [];
-  let phase = 0;
-  for (let start = 0; start < coords.length - 1; start += stride) {
-    const end = Math.min(coords.length, start + stride + 1);
-    const segment = coords.slice(start, end);
-    if (segment.length < 2) continue;
+  const totalWidth = Math.max(width * 1.42, width + 1.2);
+  const amplitude = Math.max(1.15, totalWidth * 0.62);
+  const segmentWidth = Math.max(1.9, totalWidth / Math.max(colors.length * 0.8, 1.85));
+  const sharedColor = averageColor(colors, colors[0]);
+  const segments = splitRouteIntoUniformSegments(coords, 115);
+  const phaseOffset = active ? Math.floor((Math.max(0, Math.min(1, progress)) * segments.length) * 1.35) : 0;
+  const features = [routeFeatureFromCoordinates(coords, sharedColor, tripId, `${index}-spiral-glow`, Math.max(0.14, opacity * 0.2), totalWidth + 1.0, false, leg.mode, 0)];
+  segments.forEach((segment, segmentIndex) => {
+    const phase = segmentIndex + phaseOffset;
     const color = colors[phase % colors.length];
-    const angle = (phase / Math.max(colors.length, 2)) * Math.PI * 2;
+    const angle = (phase / Math.max(colors.length, 2)) * Math.PI * 1.8;
     const offset = Math.sin(angle) * amplitude;
-    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-spiral-${phase}`, opacity, Math.max(1.4, width / Math.max(colors.length * 0.95, 2)), active, leg.mode, offset));
-    phase += 1;
-  }
-  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-spiral-${phase}`, opacity, segmentWidth, active, leg.mode, offset));
+  });
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, totalWidth, active, progress, routedGeometries, 0)];
 }
 function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, lineOffset = 0) {
   const isAir = leg.mode === 'plane' || leg.mode === 'move';
-  const mainOpacity = active && isAir ? 0.52 : active ? 1 : Math.max(0.86, opacity);
-  const mainWidth = active ? (isAir ? Math.max(width, 1.85) : Math.max(width, 2.35)) : Math.max(width, 2.15);
+  const mainOpacity = active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity);
+  const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
   return {
     type: 'Feature',
     properties: {
@@ -720,9 +726,9 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       width: mainWidth,
       opacity: mainOpacity,
       glowWidth: active ? (isAir ? Math.max(mainWidth * 4.2, 7.5) : Math.max(mainWidth * 4.4, 8.2)) : Math.max(mainWidth * 5.2, 8.8),
-      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.min(0.62, Math.max(0.42, opacity * 0.68)),
+      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.max(0.06, opacity * 0.58),
       outerGlowWidth: active ? Math.max(mainWidth * 8.1, 14) : Math.max(mainWidth * 9.0, 16),
-      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
+      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : Math.max(0.03, opacity * 0.2),
       dash: dashForMode(leg.mode),
       lineOffset
     },
@@ -730,8 +736,69 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
   };
 }
 
+function averageColor(colors = [], fallback = '#00e5ff') {
+  const list = (colors || []).filter(Boolean);
+  if (!list.length) return fallback;
+  const rgb = list.reduce((acc, color) => {
+    const hex = String(color).replace('#', '').trim();
+    const normalized = hex.length === 3 ? hex.split('').map(ch => ch + ch).join('') : hex;
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return acc;
+    acc.r += parseInt(normalized.slice(0, 2), 16);
+    acc.g += parseInt(normalized.slice(2, 4), 16);
+    acc.b += parseInt(normalized.slice(4, 6), 16);
+    return acc;
+  }, { r: 0, g: 0, b: 0 });
+  const count = Math.max(1, list.length);
+  const toHex = (value) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0');
+  return `#${toHex(rgb.r / count)}${toHex(rgb.g / count)}${toHex(rgb.b / count)}`;
+}
+
+function splitRouteIntoUniformSegments(coords = [], segmentMiles = 150) {
+  if (!Array.isArray(coords) || coords.length < 2) return [];
+  const target = Math.max(30, Number(segmentMiles) || 150);
+  const out = [];
+  let current = [coords[0]];
+  let carried = 0;
+  for (let i = 1; i < coords.length; i++) {
+    let start = current[current.length - 1];
+    const end = coords[i];
+    let remaining = milesBetween({ lon: start[0], lat: start[1] }, { lon: end[0], lat: end[1] });
+    if (!remaining) continue;
+    while (remaining > 0.0001) {
+      const room = target - carried;
+      if (remaining > room && room > 0.0001) {
+        const t = room / remaining;
+        const cut = [lerp(start[0], end[0], t), lerp(start[1], end[1], t)];
+        current.push(cut);
+        if (current.length > 1) out.push(current);
+        current = [cut];
+        start = cut;
+        remaining = milesBetween({ lon: start[0], lat: start[1] }, { lon: end[0], lat: end[1] });
+        carried = 0;
+      } else {
+        current.push(end);
+        carried += remaining;
+        remaining = 0;
+      }
+    }
+  }
+  if (current.length > 1) out.push(current);
+  return out.filter(segment => segment.length > 1);
+}
+
+function boundarySegmentAroundJoin(previousSegment, nextSegment) {
+  if (!previousSegment || !nextSegment) return null;
+  const prevA = previousSegment[previousSegment.length - 2];
+  const prevB = previousSegment[previousSegment.length - 1];
+  const nextA = nextSegment[0];
+  const nextB = nextSegment[1];
+  if (!prevA || !prevB || !nextA || !nextB) return null;
+  return [prevA, prevB, nextB];
+}
+
 function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, width, active = false, mode = 'plane', lineOffset = 0) {
   const isAir = mode === 'plane' || mode === 'move';
+  const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
   return {
     type: 'Feature',
     properties: {
@@ -739,12 +806,12 @@ function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, widt
       index,
       color,
       mode,
-      width: active ? (isAir ? Math.max(width, 1.85) : Math.max(width, 2.35)) : Math.max(width, 2.15),
-      opacity: active && isAir ? 0.52 : active ? 1 : Math.max(0.86, opacity),
-      glowWidth: active ? (isAir ? Math.max(width * 4.2, 7.5) : Math.max(width * 4.4, 8.2)) : Math.max(width * 5.2, 8.8),
-      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.min(0.62, Math.max(0.42, opacity * 0.68)),
-      outerGlowWidth: active ? Math.max(width * 7.8, 14) : Math.max(width * 9.0, 16),
-      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
+      width: mainWidth,
+      opacity: active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity),
+      glowWidth: active ? (isAir ? Math.max(mainWidth * 4.2, 7.5) : Math.max(mainWidth * 4.4, 8.2)) : Math.max(mainWidth * 5.2, 8.8),
+      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.max(0.06, opacity * 0.58),
+      outerGlowWidth: active ? Math.max(mainWidth * 7.8, 14) : Math.max(mainWidth * 9.0, 16),
+      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : Math.max(0.03, opacity * 0.2),
       dash: dashForMode(mode),
       lineOffset
     },

@@ -1,1 +1,1 @@
-GlobeHoppers v3.80 — compact trail styles, spiral trail, vertical 2-person circles, and restored 3.77-style animated timeline pins
+GlobeHoppers v3.81 — pause on tab hide, slimmer timeline pins with stronger active lift, HopSquad timeline colors, and refined stripe/ribbon/spiral trails
