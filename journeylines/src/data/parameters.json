@@ -2,7 +2,7 @@
   "trailTuning": {
     "solidThickness": 3.5,
     "solidGlow": 0.5,
-    "borderThickness": 0.3,
+    "borderThickness": 0.95,
     "borderZoomFade": 1,
     "stripeThickness": 3.5,
     "stripeSegmentMiles": 50,
