@@ -3,24 +3,26 @@
     "solidThickness": 2.4,
     "solidGlow": 0.5,
     "borderThickness": 1.35,
+    "borderZoomFade": 1,
     "stripeThickness": 2.5,
-    "stripeSegmentMiles": 80,
-    "stripeSeparator": 0.45,
+    "stripeSegmentMiles": 50,
+    "stripeSeparator": 0,
     "stripeGlow": 0.75,
-    "stripeBevel": 0.45,
+    "stripeBevel": 1.25,
     "stripeLaneEffect": 0.4,
-    "ribbonThickness": 5.0,
-    "ribbonSpread": 2.5,
+    "ribbonThickness": 2.5,
     "ribbonGap": 0.75,
-    "ribbonGlow": 0.0,
+    "ribbonSpread": 0,
+    "ribbonGlow": 0,
     "spiralThickness": 1.55,
     "spiralSegmentMiles": 50,
     "spiralAmplitude": 0.3,
     "spiralGlow": 1.2,
-    "spiralAnimate": false
+    "spiralAnimate": false,
+    "stripeSpread": 0
   },
   "timelineTuning": {
-    "inactiveHeadSize": 14,
+    "inactiveHeadSize": 10,
     "inactiveStemLength": 20,
     "activeHeadSize": 16,
     "activeStemLength": 37,
@@ -32,5 +34,5 @@
     "animationMs": 450,
     "animationOvershoot": 1.12
   },
-  "routeStackingEnabled": false
+  "routeStackingEnabled": true
 }
