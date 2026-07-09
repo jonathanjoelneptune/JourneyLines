@@ -1,1 +1,1 @@
-GlobeHoppers v4.03 — taller expanded Studio Timeline rows
+GlobeHoppers v4.04 — visual softening pass

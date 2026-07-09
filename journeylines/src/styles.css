@@ -10547,3 +10547,384 @@ button.primary:disabled {
 .studio-trip-list--expanded .gh-studio-trip-row .studio-trip-buttons {
   align-self: center !important;
 }
+
+
+/* GlobeHoppers v4.04 — visual softening pass
+   Goal: keep the playful GlobeHoppers identity while making the UI lighter,
+   airier, less heavy, and more refined. Styling-only changes. */
+
+:root {
+  --gh-soft-panel-bg: rgba(5, 14, 27, 0.78);
+  --gh-soft-panel-bg-strong: rgba(6, 16, 30, 0.86);
+  --gh-soft-surface: rgba(11, 25, 43, 0.72);
+  --gh-soft-surface-hover: rgba(15, 34, 55, 0.78);
+  --gh-soft-border: rgba(170, 213, 232, 0.18);
+  --gh-soft-border-strong: rgba(185, 226, 244, 0.28);
+  --gh-soft-text: rgba(235, 244, 255, 0.94);
+  --gh-soft-muted: rgba(205, 222, 238, 0.66);
+  --gh-soft-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+  --gh-soft-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.075);
+  --gh-soft-radius: 22px;
+}
+
+/* Global typography softening without changing hierarchy. */
+button,
+input,
+textarea,
+select,
+.bubble-select,
+.gh-studio-trip-row,
+.studio-modal,
+.studio-panel,
+.trip-drawer,
+.admin-panel,
+.route-preview-card,
+.trail-style-panel,
+.hopper-chip,
+.hopper-pill {
+  font-weight: 650 !important;
+}
+
+small,
+.studio-trip-main small,
+.trip-drawer__main small,
+.route-preview-card small,
+.preview-subtext,
+.preview-muted,
+.meta,
+.description,
+.helper,
+.hint,
+label,
+.section-label {
+  font-weight: 470 !important;
+  color: var(--gh-soft-muted) !important;
+}
+
+/* Major headings remain strong, but not overly heavy. */
+h1, h2, h3,
+.studio-panel h1,
+.studio-panel h2,
+.studio-modal h1,
+.studio-modal h2,
+.hero-card h1,
+.globe-title {
+  font-weight: 780 !important;
+  letter-spacing: -0.035em !important;
+}
+
+/* Panels/modals: softer glass, less hard-outline control-panel feel. */
+.studio-panel,
+.admin-panel,
+.trip-drawer,
+.hoppers-panel,
+.hopper-editor-panel,
+.studio-modal,
+.modal-shell,
+.hero-card,
+.route-preview-card,
+.trail-style-panel {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.045), transparent 38%),
+    linear-gradient(180deg, var(--gh-soft-panel-bg-strong), var(--gh-soft-panel-bg)) !important;
+  border-color: var(--gh-soft-border) !important;
+  box-shadow: var(--gh-soft-shadow), var(--gh-soft-inner-highlight) !important;
+  backdrop-filter: blur(14px) saturate(1.04) !important;
+}
+
+/* Soften dividers and interior rails. */
+hr,
+.panel-divider,
+.studio-divider,
+.modal-divider,
+.repo-settings,
+.route-section,
+.route-card,
+.form-section,
+fieldset {
+  border-color: rgba(180, 220, 240, 0.12) !important;
+}
+
+/* Buttons and chips: less chunky, lower-contrast outlines, smoother hover. */
+button,
+.button,
+.ghost-button,
+.secondary-button,
+.view-type-selector button,
+.studio-trip-buttons button,
+.trip-drawer__more,
+.close-button,
+.cancel-button,
+.reorder-button,
+.repo-grid button,
+.hopper-chip,
+.hopper-pill,
+.transport-pill,
+.hop-type-pill,
+.bubble-option,
+.bubble-trigger {
+  border-color: rgba(200, 228, 244, 0.20) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.065),
+    0 6px 16px rgba(0,0,0,.13) !important;
+  text-shadow: none !important;
+  font-weight: 650 !important;
+}
+
+button:hover,
+.button:hover,
+.ghost-button:hover,
+.secondary-button:hover,
+.view-type-selector button:hover,
+.studio-trip-buttons button:hover,
+.trip-drawer__more:hover,
+.close-button:hover,
+.cancel-button:hover,
+.reorder-button:hover,
+.repo-grid button:hover,
+.hopper-chip:hover,
+.hopper-pill:hover,
+.transport-pill:hover,
+.hop-type-pill:hover,
+.bubble-option:hover,
+.bubble-trigger:hover {
+  border-color: rgba(220, 241, 250, 0.30) !important;
+  filter: brightness(1.035) saturate(1.02) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.09),
+    0 8px 18px rgba(0,0,0,.16) !important;
+}
+
+/* Primary green actions stay prominent, but a touch softer. */
+button.primary,
+.primary-button,
+.add-hop-button,
+.add-leg-button,
+.save-button,
+.save-hoppers-button,
+.save-order-button,
+.hero-card button.primary,
+.hero-card .primary,
+button[class*="save"],
+button[class*="add"] {
+  box-shadow:
+    0 8px 20px rgba(85, 255, 150, 0.16),
+    inset 0 1px 0 rgba(255,255,255,.18) !important;
+  font-weight: 720 !important;
+}
+
+/* Inputs: thinner, softer borders. */
+input,
+textarea,
+select,
+.bubble-select,
+.input-shell,
+.field-shell,
+.destination-input,
+.location-input {
+  border-color: rgba(0, 214, 232, 0.23) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 0 0 1px rgba(0,0,0,.10) !important;
+  background: rgba(2, 17, 31, 0.70) !important;
+}
+
+/* Add/Edit Hop modal: lighter density and improved breathing room. */
+.studio-modal {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255,255,255,.04), transparent 35%),
+    linear-gradient(180deg, rgba(5, 15, 28, 0.91), rgba(3, 12, 24, 0.89)) !important;
+}
+
+.studio-modal-layout {
+  gap: 22px !important;
+}
+
+.studio-modal-sidecol {
+  gap: 14px !important;
+  padding-top: 12px !important;
+}
+
+.route-preview-card {
+  border-width: 1px !important;
+}
+
+.trail-style-panel {
+  border-width: 1px !important;
+}
+
+/* Hoppers/HopSquads menu: reduce block heaviness. */
+.hopper-row,
+.hopper-card,
+.hopper-squad-card,
+.hopper-list-row,
+.squad-row {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255,255,255,.045), transparent 38%),
+    rgba(9, 22, 39, 0.66) !important;
+  border-width: 1px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.055),
+    0 8px 18px rgba(0,0,0,.12) !important;
+}
+
+/* GlobeHopper Timeline trip rows: taller expanded, lighter raised-pill look. */
+.gh-studio-trip-row {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.055), transparent 42%),
+    linear-gradient(180deg, rgba(14, 29, 49, 0.90) 0%, rgba(8, 20, 36, 0.86) 52%, rgba(4, 12, 24, 0.84) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.095),
+    inset 0 -1px 0 rgba(0,0,0,.32),
+    0 6px 14px rgba(0,0,0,.16) !important;
+}
+
+.gh-studio-trip-row::after {
+  opacity: .56 !important;
+}
+
+.gh-studio-row-border {
+  opacity: .82 !important;
+  filter: saturate(.96) brightness(.98) !important;
+}
+
+.gh-studio-trip-row:hover,
+.gh-studio-trip-row:focus-visible {
+  filter: none !important;
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 90%), transparent 44%),
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.065), transparent 42%),
+    linear-gradient(180deg, rgba(17, 35, 58, 0.94) 0%, rgba(9, 23, 41, 0.91) 52%, rgba(5, 14, 27, 0.90) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(0,0,0,.34),
+    0 8px 16px rgba(0,0,0,.18) !important;
+}
+
+.gh-studio-trip-row:hover .gh-studio-row-border,
+.gh-studio-trip-row:focus-visible .gh-studio-row-border,
+.gh-studio-trip-row.is-active .gh-studio-row-border {
+  filter: brightness(1.04) saturate(1.04) !important;
+}
+
+/* Expanded pills: 25% taller than the previous 62px target and roomy for three lines. */
+.gh-studio-trip-row--expanded,
+.studio-trip-list--expanded .gh-studio-trip-row {
+  min-height: 78px !important;
+  height: auto !important;
+  padding-top: 13px !important;
+  padding-bottom: 13px !important;
+  gap: 14px !important;
+}
+
+.gh-studio-trip-row--expanded .studio-trip-main,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-main {
+  gap: 4px !important;
+}
+
+.gh-studio-trip-row--expanded .studio-trip-main strong,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-main strong {
+  font-weight: 760 !important;
+  line-height: 1.12 !important;
+}
+
+.gh-studio-trip-row--expanded .studio-trip-main small,
+.studio-trip-list--expanded .gh-studio-trip-row .studio-trip-main small {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.24 !important;
+  max-height: calc(1.24em * 2) !important;
+  font-weight: 470 !important;
+}
+
+/* Compact/Card get the softer surface but no functional layout changes. */
+.gh-studio-trip-row--compact .studio-trip-main strong,
+.studio-trip-list--compact .gh-studio-trip-row .studio-trip-main strong,
+.gh-studio-trip-row--card .studio-trip-main strong,
+.studio-trip-list--card .gh-studio-trip-row .studio-trip-main strong {
+  font-weight: 720 !important;
+}
+
+/* Slightly airier list rhythm without making panels huge. */
+.studio-trip-list,
+.studio-trip-list--expanded {
+  gap: 8px !important;
+  row-gap: 8px !important;
+}
+
+.studio-trip-list--compact {
+  gap: 5px !important;
+  row-gap: 5px !important;
+}
+
+.studio-trip-list--card {
+  gap: 10px !important;
+  row-gap: 10px !important;
+}
+
+/* Make small labels less loud. */
+.section-pill,
+.form-label,
+.field-label,
+.studio-kicker,
+.panel-kicker,
+.route-label,
+.preview-label,
+.mode-label {
+  font-weight: 650 !important;
+  letter-spacing: .06em !important;
+  opacity: .88 !important;
+}
+
+/* Hero splash: keep playful, make it more premium and less heavy. */
+.hero-card {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255,255,255,.055), transparent 38%),
+    linear-gradient(180deg, rgba(13, 24, 40, 0.82), rgba(6, 15, 29, 0.82)) !important;
+  border-color: rgba(200, 230, 245, 0.16) !important;
+}
+
+.hero-card h1 {
+  font-weight: 780 !important;
+  text-shadow: 0 10px 34px rgba(0,0,0,.22) !important;
+}
+
+.hero-card button {
+  font-weight: 680 !important;
+}
+
+/* Bottom timeline: slightly less HUD-heavy. */
+.playback-timeline,
+.timeline-shell,
+.timeline-panel {
+  background: rgba(8, 18, 32, 0.72) !important;
+  border-color: rgba(200, 230, 245, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.045),
+    0 10px 28px rgba(0,0,0,.20) !important;
+}
+
+/* Location placards and map labels: keep style, reduce harshness. */
+.location-label,
+.map-label,
+.place-label,
+.route-label-card {
+  border-width: 1px !important;
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+/* Delete remains clearly destructive, but less chunky. */
+button.delete,
+.delete-button,
+.studio-trip-buttons button:last-child {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 6px 14px rgba(0,0,0,.14) !important;
+  font-weight: 650 !important;
+}
