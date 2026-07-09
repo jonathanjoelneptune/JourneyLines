@@ -14,6 +14,23 @@ import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseV
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 2.55;
 
+const DEFAULT_TRAIL_TUNING = {
+  solidThickness: 1.0,
+  stripeThickness: 2.0,
+  stripeSegmentMiles: 260,
+  stripeSeparator: 0.85,
+  stripeGlow: 0.55,
+  ribbonThickness: 1.45,
+  ribbonGap: 0.55,
+  ribbonGlow: 0.9,
+  spiralThickness: 1.55,
+  spiralSegmentMiles: 120,
+  spiralAmplitude: 1.15,
+  spiralGlow: 1.0,
+  spiralAnimate: false
+};
+
+
 const MAP_STYLE = {
   version: 8,
   name: 'GlobeHoppers Terrain Globe',
@@ -83,7 +100,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -113,6 +130,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const manualSpinResumeTimerRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
+  const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
 
   useEffect(() => { preloadBaseVesselIcons(); }, []);
 
@@ -175,10 +193,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       } catch {}
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
-      syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
+      if (trailTuningOpen) syncTrailTuningDemo(map, trailTuningConfig, trailWidth);
+      else syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+      const visited = trailTuningOpen ? [] : buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
-      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, hopperData || travById), null, droppedPinIdsRef);
+      if (!trailTuningOpen) updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, hopperData || travById), null, droppedPinIdsRef);
       setMapReady(true);
     });
 
@@ -404,22 +423,38 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // Completed route history is static map data. Only rebuild it when a leg
     // completes, route cache changes, or display settings change. Avoid doing
     // this in the per-frame playback loop.
-    syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
+    if (trailTuningOpen) syncTrailTuningDemo(map, trailTuningConfig, trailWidth);
+    else syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
     // Visited points and labels change only when the timeline reaches a new
     // destination, not on every animation frame.
+    if (trailTuningOpen) {
+      syncVisitedPoints(map, [], lastVisitedSigRef);
+      updatePersistentLabels(map, [], persistentLabelElsRef, visitedLabelsRef, 'transparent', null, droppedPinIdsRef);
+      return;
+    }
     const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, hopperData || travById), scene?.newArrivalId || null, droppedPinIdsRef);
-  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying, globeOverview]);
+  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying, globeOverview, trailTuningOpen]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
+
+    if (trailTuningOpen) {
+      syncTrailTuningDemo(map, trailTuningConfig, trailWidth);
+      syncActiveRoute(map, null);
+      syncPulse(map, null, 'transparent');
+      currentOverlayStateRef.current = null;
+      setOverlayVisibility(false);
+      try { map.easeTo({ center: [-96.5, 38.3], zoom: 3.0, bearing: 0, pitch: 0, duration: 650, essential: true }); } catch {}
+      return;
+    }
 
     if (!scene || !active) {
       syncActiveRoute(map, null);
@@ -460,7 +495,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     const now = performance.now();
     if (now - lastActiveRouteUpdateRef.current > 45 || scene.lineProgress >= 0.995) {
-      syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById);
+      syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
       lastActiveRouteUpdateRef.current = now;
     }
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
@@ -484,7 +519,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
     updateAirArcOverlay(map, airArcRef.current, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview, trailTuningOpen, trailTuningConfig, trailWidth]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -596,9 +631,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 function addRouteSourcesAndLayers(map) {
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18 } });
-    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 8.5 } });
-    map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] } });
+    map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 8.5, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
   }
   if (!map.getSource('active-route')) {
     map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
@@ -622,19 +657,19 @@ function addPulseLayer(map) {
   map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 10, 6, 24], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
 }
 
-function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}) {
+function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
   const features = showTrails ? completedLegs.flatMap((l, i) => {
     const trail = trailVisualForLeg(l, travelersById);
-    return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, false, 1, routedGeometries);
+    return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, false, 1, routedGeometries, trailTuning);
   }) : [];
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
 }
 
-function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeometries = {}, travelerData = null) {
+function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeometries = {}, travelerData = null, trailTuning = DEFAULT_TRAIL_TUNING) {
   if (!active) { map.getSource('active-route')?.setData(emptyCollection()); return; }
   const trail = travelerData ? trailVisualForLeg(active, travelerData) : { style: 'solid', colors: [color], baseColor: color };
-  const featureList = routeFeaturesForTrail(active.leg, trail, active.trip.id, active.legIndex, 1, 2, true, progress, routedGeometries);
+  const featureList = routeFeaturesForTrail(active.leg, trail, active.trip.id, active.legIndex, 1, 2, true, progress, routedGeometries, trailTuning);
   map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: featureList });
 
 }
@@ -651,67 +686,94 @@ function trailVisualForLeg(active, travelerData) {
   return { style: 'solid', colors: [color], baseColor: color };
 }
 
-function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
+  const config = { ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) };
   const colors = (trail?.colors || []).filter(Boolean);
   const baseColor = trail?.baseColor || colors[0] || '#00e5ff';
   const style = trail?.style || 'solid';
-  if (style === 'ribbon' && colors.length > 1) return ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
-  if (style === 'stripe' && colors.length > 1) return stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
-  if (style === 'spiral' && colors.length > 1) return spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
-  return [routeFeature(leg, baseColor, tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+  if (style === 'ribbon' && colors.length > 1) return ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
+  if (style === 'stripe' && colors.length > 1) return stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
+  if (style === 'spiral' && colors.length > 1) return spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
+  return [routeFeature(leg, baseColor, tripId, index, opacity, width * config.solidThickness, active, progress, routedGeometries, 0, config)];
 }
 
-function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
   const coords = routeCoordinates(leg, progress, active ? 220 : 160, routedGeometries);
-  if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
-  const stripeWidth = Math.max(width, width * 1.04);
-  const segments = splitRouteIntoUniformSegments(coords, 150);
+  if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
+  const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
+  const segments = splitRouteIntoUniformSegments(coords, Number(config.stripeSegmentMiles) || 260);
   const features = [
-    routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.60)', tripId, `${index}-stripe-underlay`, Math.max(0.16, opacity * 0.18), stripeWidth + 0.5, false, leg.mode, 0)
+    routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.62)', tripId, `${index}-stripe-underlay`, Math.max(0.10, opacity * 0.14 * (Number(config.stripeGlow) || 1)), stripeWidth + Math.max(0, Number(config.stripeSeparator) || 0), false, leg.mode, 0, config)
   ];
   segments.forEach((segment, segmentIndex) => {
-    features.push(routeFeatureFromCoordinates(segment, colors[segmentIndex % colors.length], tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0));
+    features.push(routeFeatureFromCoordinates(segment, colors[segmentIndex % colors.length], tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, config));
     const boundary = boundarySegmentAroundJoin(segment, segments[segmentIndex + 1]);
-    if (boundary) features.push(routeFeatureFromCoordinates(boundary, 'rgba(4,8,16,0.82)', tripId, `${index}-stripe-separator-${segmentIndex}`, Math.max(0.18, opacity * 0.24), stripeWidth + 0.28, false, leg.mode, 0));
+    if (boundary && (Number(config.stripeSeparator) || 0) > 0) {
+      features.push(routeFeatureFromCoordinates(boundary, 'rgba(4,8,16,0.86)', tripId, `${index}-stripe-separator-${segmentIndex}`, Math.max(0.14, opacity * 0.24), stripeWidth + Number(config.stripeSeparator), false, leg.mode, 0, config));
+    }
   });
-  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0)];
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0, config)];
 }
 
-function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
   const total = colors.length;
-  const totalWidth = Math.max(width * 1.34, width + 1.1);
+  const totalWidth = Math.max(width * (Number(config.ribbonThickness) || 1.45), width + 1.0);
   const slotWidth = totalWidth / total;
-  const lineWidth = Math.max(1.65, slotWidth - 0.2);
+  const gap = Math.max(0, Number(config.ribbonGap) || 0);
+  const lineWidth = Math.max(1.3, slotWidth - gap);
   const sharedColor = averageColor(colors, colors[0]);
   return [
-    routeFeature(leg, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.14, opacity * 0.18), totalWidth + 0.85, false, progress, routedGeometries, 0),
+    routeFeature(leg, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.08, opacity * 0.16 * (Number(config.ribbonGlow) || 1)), totalWidth + Math.max(0.5, Number(config.ribbonGlow) || 1), false, progress, routedGeometries, 0, config),
     ...colors.map((color, ribbonIndex) => {
       const offset = (ribbonIndex - (total - 1) / 2) * slotWidth;
-      return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, lineWidth, active, progress, routedGeometries, offset);
+      return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, lineWidth, active, progress, routedGeometries, offset, config);
     })
   ];
 }
 
-function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
   const coords = routeCoordinates(leg, progress, active ? 240 : 170, routedGeometries);
-  if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
-  const totalWidth = Math.max(width * 1.42, width + 1.2);
-  const amplitude = Math.max(1.15, totalWidth * 0.62);
-  const segmentWidth = Math.max(1.9, totalWidth / Math.max(colors.length * 0.8, 1.85));
+  if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
+  const totalWidth = Math.max(width * (Number(config.spiralThickness) || 1.55), width + 1.0);
+  const amplitude = Math.max(0.2, totalWidth * (Number(config.spiralAmplitude) || 1.15) * 0.55);
+  const segmentWidth = Math.max(1.55, totalWidth / Math.max(colors.length * 0.9, 1.9));
   const sharedColor = averageColor(colors, colors[0]);
-  const segments = splitRouteIntoUniformSegments(coords, 115);
-  const phaseOffset = active ? Math.floor((Math.max(0, Math.min(1, progress)) * segments.length) * 1.35) : 0;
+  const segments = splitRouteIntoUniformSegments(coords, Number(config.spiralSegmentMiles) || 120);
+  const phaseOffset = (active && config.spiralAnimate) ? Math.floor((Math.max(0, Math.min(1, progress)) * segments.length) * 1.35) : 0;
   const features = [
-    routeFeatureFromCoordinates(coords, sharedColor, tripId, `${index}-spiral-glow`, Math.max(0.14, opacity * 0.20), totalWidth + 1.0, false, leg.mode, 0)
+    routeFeatureFromCoordinates(coords, sharedColor, tripId, `${index}-spiral-glow`, Math.max(0.08, opacity * 0.18 * (Number(config.spiralGlow) || 1)), totalWidth + Math.max(0.6, Number(config.spiralGlow) || 1), false, leg.mode, 0, config)
   ];
   segments.forEach((segment, segmentIndex) => {
     const phase = segmentIndex + phaseOffset;
     const color = colors[phase % colors.length];
     const angle = (phase / Math.max(colors.length, 2)) * Math.PI * 1.8;
     const offset = Math.sin(angle) * amplitude;
-    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-spiral-${phase}`, opacity, segmentWidth, active, leg.mode, offset));
+    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-spiral-${phase}`, opacity, segmentWidth, active, leg.mode, offset, config));
   });
-  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, totalWidth, active, progress, routedGeometries, 0)];
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, totalWidth, active, progress, routedGeometries, 0, config)];
+}
+
+function syncTrailTuningDemo(map, config = DEFAULT_TRAIL_TUNING, width = 2) {
+  if (!map?.getSource('completed-routes')) return;
+  const fromLon = -124.2;
+  const toLon = -72.2;
+  const rows = [
+    { style: 'solid', lat: 43.5, colors: ['#44f48a'], label: 'Solid' },
+    { style: 'stripe', lat: 39.5, colors: ['#ff8a00', '#ff4fd8', '#ff5548'], label: 'Stripe' },
+    { style: 'ribbon', lat: 35.5, colors: ['#2f80ff', '#ffffff', '#ff3b30'], label: 'Ribbon' },
+    { style: 'spiral', lat: 31.5, colors: ['#00e5ff', '#9b5cff', '#ffd60a'], label: 'Spiral' }
+  ];
+  const features = rows.flatMap((row, index) => {
+    const leg = {
+      mode: 'plane',
+      from: { id: `tune-west-${index}`, name: `${row.label} West`, lon: fromLon, lat: row.lat },
+      to: { id: `tune-east-${index}`, name: `${row.label} East`, lon: toLon, lat: row.lat + 0.35 }
+    };
+    return routeFeaturesForTrail(leg, { style: row.style, colors: row.colors, baseColor: row.colors[0] }, `tune-${row.style}`, index, 1, width, row.style === 'spiral' && !!config.spiralAnimate, 1, {}, config);
+  });
+  map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
+  map.getSource('active-route')?.setData(emptyCollection());
+  map.getSource('arrival-pulse')?.setData(emptyCollection());
 }
 
 function averageColor(colors = [], fallback = '#00e5ff') {
@@ -773,10 +835,11 @@ function boundarySegmentAroundJoin(previousSegment, nextSegment) {
   return [prevA, prevB, nextB];
 }
 
-function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, lineOffset = 0) {
+
+function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, lineOffset = 0, config = DEFAULT_TRAIL_TUNING) {
   const isAir = leg.mode === 'plane' || leg.mode === 'move';
   const mainOpacity = active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity);
-  const mainWidth = active ? (isAir ? Math.max(width, 1.85) : Math.max(width, 2.35)) : Math.max(width, 2.15);
+  const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
   return {
     type: 'Feature',
     properties: {
@@ -787,9 +850,9 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       width: mainWidth,
       opacity: mainOpacity,
       glowWidth: active ? (isAir ? Math.max(mainWidth * 4.2, 7.5) : Math.max(mainWidth * 4.4, 8.2)) : Math.max(mainWidth * 5.2, 8.8),
-      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.min(0.62, Math.max(0.42, opacity * 0.68)),
+      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.max(0.04, opacity * 0.58),
       outerGlowWidth: active ? Math.max(mainWidth * 8.1, 14) : Math.max(mainWidth * 9.0, 16),
-      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
+      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : Math.max(0.025, opacity * 0.18),
       dash: dashForMode(leg.mode),
       lineOffset
     },
@@ -797,8 +860,9 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
   };
 }
 
-function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, width, active = false, mode = 'plane', lineOffset = 0) {
+function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, width, active = false, mode = 'plane', lineOffset = 0, config = DEFAULT_TRAIL_TUNING) {
   const isAir = mode === 'plane' || mode === 'move';
+  const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
   return {
     type: 'Feature',
     properties: {
@@ -806,12 +870,12 @@ function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, widt
       index,
       color,
       mode,
-      width: active ? (isAir ? Math.max(width, 1.85) : Math.max(width, 2.35)) : Math.max(width, 2.15),
+      width: mainWidth,
       opacity: active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity),
-      glowWidth: active ? (isAir ? Math.max(width * 4.2, 7.5) : Math.max(width * 4.4, 8.2)) : Math.max(width * 5.2, 8.8),
-      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.min(0.62, Math.max(0.42, opacity * 0.68)),
-      outerGlowWidth: active ? Math.max(width * 7.8, 14) : Math.max(width * 9.0, 16),
-      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
+      glowWidth: active ? (isAir ? Math.max(mainWidth * 4.2, 7.5) : Math.max(mainWidth * 4.4, 8.2)) : Math.max(mainWidth * 5.2, 8.8),
+      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.max(0.04, opacity * 0.58),
+      outerGlowWidth: active ? Math.max(mainWidth * 7.8, 14) : Math.max(mainWidth * 9.0, 16),
+      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : Math.max(0.025, opacity * 0.18),
       dash: dashForMode(mode),
       lineOffset
     },

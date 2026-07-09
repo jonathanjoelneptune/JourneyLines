@@ -8785,3 +8785,178 @@ button.primary:disabled {
   0% { transform: translateX(-50%) scale(1.16); box-shadow: 0 0 0 1px rgba(6,18,36,.86), 0 0 0 5px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 76%), 0 10px 18px rgba(0,0,0,.3); }
   100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 1px rgba(5,10,18,.78), 0 4px 10px rgba(0,0,0,.24); }
 }
+
+/* GlobeHoppers v3.82: trail tuning utility + corrected active timeline pin lift. */
+.trail-tuning {
+  position: fixed;
+  right: 18px;
+  bottom: 96px;
+  z-index: 140;
+  width: min(390px, calc(100vw - 36px));
+  max-height: min(74vh, 760px);
+  overflow: auto;
+  border-radius: 22px;
+  padding: 14px;
+  border: 1px solid rgba(0, 229, 255, 0.24);
+  background: rgba(5, 13, 25, 0.92);
+  box-shadow: 0 22px 70px rgba(0,0,0,.48);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+.trail-tuning__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.trail-tuning__head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.trail-tuning__head .eyebrow {
+  margin: 0 0 3px;
+}
+.trail-tuning__head > button {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: #ecf7ff;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.trail-tuning__note {
+  margin: 0 0 12px;
+  color: rgba(224, 238, 255, .70);
+  font-size: .82rem;
+  line-height: 1.35;
+}
+.trail-tuning section {
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.trail-tuning h4 {
+  margin: 0 0 8px;
+  font-size: .86rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: rgba(238, 248, 255, .88);
+}
+.trail-tuning-row {
+  display: grid;
+  grid-template-columns: 112px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  color: rgba(235,246,255,.82);
+  font-size: .82rem;
+}
+.trail-tuning-row input[type="range"] {
+  width: 100%;
+  accent-color: #44f48a;
+}
+.trail-tuning-row b {
+  text-align: right;
+  font-size: .78rem;
+  color: rgba(238,248,255,.72);
+  font-variant-numeric: tabular-nums;
+}
+.trail-tuning-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: rgba(235,246,255,.82);
+  font-size: .84rem;
+}
+.trail-tuning__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+}
+.trail-tuning__actions button {
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+/* Disabled multi-person trail styles when a solo hop is selected. */
+.trail-style-option.is-disabled,
+.trail-style-option:disabled {
+  opacity: 0.42 !important;
+  filter: saturate(0.65) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+.trail-style-option.is-disabled strong,
+.trail-style-option:disabled strong {
+  color: rgba(238, 247, 255, 0.62) !important;
+}
+.trail-style-option.is-disabled .trail-style-swatch,
+.trail-style-option:disabled .trail-style-swatch {
+  opacity: 0.62 !important;
+}
+
+/* Final active-pin behavior: active pin stays up for the whole active trip. */
+.controls,
+.progress--scrubbable,
+.timeline-marker-layer {
+  overflow: visible !important;
+}
+.timeline-marker-layer {
+  z-index: 16 !important;
+}
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  width: 20px !important;
+  height: 34px !important;
+  top: calc(50% - 1px) !important;
+  transform: translate(-50%, -63%) !important;
+  transition: transform .28s cubic-bezier(.22,.75,.2,1), opacity .22s ease !important;
+  overflow: visible !important;
+}
+.timeline-marker::before {
+  top: 4px !important;
+  width: 12px !important;
+  height: 12px !important;
+  border: 1.5px solid rgba(246, 254, 255, 0.92) !important;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255,255,255,.64), rgba(255,255,255,.22) 24%, transparent 44%),
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 50%, rgba(0,0,0,.16) 100%),
+    var(--marker-background, var(--marker-color, #00e5ff)) !important;
+  box-shadow: 0 0 0 1px rgba(5, 10, 18, 0.78), 0 4px 10px rgba(0, 0, 0, 0.24) !important;
+}
+.timeline-marker::after {
+  top: 15px !important;
+  width: 2px !important;
+  height: 15px !important;
+  background: linear-gradient(180deg, rgba(240, 248, 255, 0.96), rgba(240, 248, 255, 0.18)) !important;
+  box-shadow: 0 0 0 1px rgba(5, 10, 18, 0.42) !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  transform: translate(-50%, -72%) !important;
+}
+.timeline-marker.is-current,
+.timeline-marker.is-entering,
+.timeline-marker.is-active.is-current {
+  z-index: 22 !important;
+  transform: translate(-50%, -116%) !important;
+}
+.timeline-marker.is-current::before,
+.timeline-marker.is-active.is-current::before {
+  transform: translateX(-50%) scale(1.18) !important;
+  box-shadow: 0 0 0 1px rgba(6, 18, 36, 0.88), 0 0 0 5px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 74%), 0 11px 20px rgba(0,0,0,.32) !important;
+}
+.timeline-marker.is-current::after {
+  transform: translateX(-50%) scaleY(1.1) !important;
+}
+.progress--scrubbable:hover .timeline-marker.is-active:not(:hover):not(:focus-visible) {
+  transform: translate(-50%, -116%) !important;
+}
+.timeline-marker__tooltip.is-current,
+.timeline-marker__tooltip.is-visible {
+  z-index: 24 !important;
+}

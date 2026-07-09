@@ -13,6 +13,22 @@ import homeBases from './data/homeBases.json';
 import baseHoppers from './data/hoppers.json';
 import settings from './data/settings.json';
 
+const DEFAULT_TRAIL_TUNING = {
+  solidThickness: 1.0,
+  stripeThickness: 2.0,
+  stripeSegmentMiles: 260,
+  stripeSeparator: 0.85,
+  stripeGlow: 0.55,
+  ribbonThickness: 1.45,
+  ribbonGap: 0.55,
+  ribbonGlow: 0.9,
+  spiralThickness: 1.55,
+  spiralSegmentMiles: 120,
+  spiralAmplitude: 1.15,
+  spiralGlow: 1.0,
+  spiralAnimate: false
+};
+
 export default function App() {
   const [trips, setTrips] = useState(() => JSON.parse(localStorage.getItem('journeylines.trips') || 'null') || baseTrips);
   const [locations, setLocations] = useState(() => JSON.parse(localStorage.getItem('journeylines.locations') || 'null') || baseLocations);
@@ -40,6 +56,11 @@ export default function App() {
   const addTripNoun = 'Hop';
   const [hopperEditorOpen, setHopperEditorOpen] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
+  const [trailTuningOpen, setTrailTuningOpen] = useState(false);
+  const [trailTuning, setTrailTuning] = useState(() => {
+    try { return { ...DEFAULT_TRAIL_TUNING, ...(JSON.parse(localStorage.getItem('globehoppers.trailTuning') || 'null') || {}) }; }
+    catch { return DEFAULT_TRAIL_TUNING; }
+  });
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const resumeAfterStudioRef = useRef(false);
@@ -51,6 +72,7 @@ export default function App() {
   useEffect(() => localStorage.setItem('journeylines.locations', JSON.stringify(locations)), [locations]);
   useEffect(() => localStorage.setItem('globehoppers.hoppers', JSON.stringify(hopperData)), [hopperData]);
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
+  useEffect(() => localStorage.setItem('globehoppers.trailTuning', JSON.stringify(trailTuning)), [trailTuning]);
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
   useEffect(() => {
     const closeStudio = () => {
@@ -307,7 +329,18 @@ export default function App() {
   function titleClick() {
     clickRef.current += 1;
     setTimeout(() => { clickRef.current = 0; }, 900);
-    if (clickRef.current >= settings.adminClickCount) { setAdmin(a => !a); clickRef.current = 0; }
+    if (clickRef.current >= settings.adminClickCount) {
+      setTrailTuningOpen(v => !v);
+      setAdmin(false);
+      setTripDrawerOpen(false);
+      setShowHero(false);
+      setGlobeOverview(true);
+      setCameraMode('global');
+      setStarted(true);
+      setIntroLaunching(false);
+      setIsPlaying(false);
+      clickRef.current = 0;
+    }
   }
 
   const progress = legs.length ? Math.min(1, (Math.min(activeIndex, legs.length - 1) + Math.min(1, legProgress)) / legs.length) : 1;
@@ -325,7 +358,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={trailTuning} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -339,6 +372,7 @@ export default function App() {
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}  tripMarkers={timelineMarkers} activeMarkerId={current?.trip?.id || null} yearSegments={timelineYearSegments} />
+    {trailTuningOpen && <TrailTuningUtility values={trailTuning} onChange={setTrailTuning} onClose={() => setTrailTuningOpen(false)} onReset={() => setTrailTuning(DEFAULT_TRAIL_TUNING)} />}
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
@@ -348,6 +382,55 @@ export default function App() {
   </main>;
 }
 
+
+
+
+function TrailTuningUtility({ values, onChange, onClose, onReset }) {
+  const update = (key, value) => onChange(v => ({ ...v, [key]: value }));
+  const row = (key, label, min, max, step = 0.05, suffix = 'x') => (
+    <label className="trail-tuning-row">
+      <span>{label}</span>
+      <input type="range" min={min} max={max} step={step} value={values[key]} onChange={e => update(key, Number(e.target.value))} />
+      <b>{Number(values[key]).toFixed(step >= 1 ? 0 : 2)}{suffix}</b>
+    </label>
+  );
+  return <aside className="trail-tuning glass">
+    <div className="trail-tuning__head">
+      <div><p className="eyebrow">Trail Utility</p><h3>Trail tuning</h3></div>
+      <button type="button" onClick={onClose} aria-label="Close trail tuning">×</button>
+    </div>
+    <p className="trail-tuning__note">Demo mode hides the real trip trails and shows Solid, Stripe, Ribbon, and Spiral coast-to-coast for live tuning.</p>
+    <section>
+      <h4>Solid</h4>
+      {row('solidThickness', 'Thickness', 0.6, 2.4, 0.05, 'x')}
+    </section>
+    <section>
+      <h4>Stripe</h4>
+      {row('stripeThickness', 'Thickness', 0.8, 3.4, 0.05, 'x')}
+      {row('stripeSegmentMiles', 'Segment length', 80, 650, 10, ' mi')}
+      {row('stripeSeparator', 'Dark transition', 0, 2.4, 0.05, 'x')}
+      {row('stripeGlow', 'Glow', 0, 2, 0.05, 'x')}
+    </section>
+    <section>
+      <h4>Ribbon</h4>
+      {row('ribbonThickness', 'Thickness', 0.9, 2.8, 0.05, 'x')}
+      {row('ribbonGap', 'Dark separation', 0, 1.4, 0.05, 'x')}
+      {row('ribbonGlow', 'Glow', 0, 2, 0.05, 'x')}
+    </section>
+    <section>
+      <h4>Spiral</h4>
+      {row('spiralThickness', 'Thickness', 0.9, 3.2, 0.05, 'x')}
+      {row('spiralSegmentMiles', 'Twist length', 50, 360, 10, ' mi')}
+      {row('spiralAmplitude', 'Twist depth', 0.3, 2.4, 0.05, 'x')}
+      {row('spiralGlow', 'Glow', 0, 2, 0.05, 'x')}
+      <label className="trail-tuning-check"><input type="checkbox" checked={!!values.spiralAnimate} onChange={e => update('spiralAnimate', e.target.checked)} /> Animate spiral</label>
+    </section>
+    <div className="trail-tuning__actions">
+      <button type="button" className="secondary" onClick={onReset}>Reset</button>
+      <button type="button" className="primary" onClick={onClose}>Done</button>
+    </div>
+  </aside>;
+}
 
 
 function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
