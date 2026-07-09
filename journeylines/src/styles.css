@@ -7301,7 +7301,7 @@ button.custom-rainbow-swatch.is-selected,
   transform: translateX(-50%) !important;
   background:
     radial-gradient(circle at 33% 27%, rgba(255,255,255,.58), transparent 33%),
-    var(--marker-background, var(--marker-color, #00e5ff)) !important;
+    var(--marker-color, #00e5ff) !important;
   border: 1px solid rgba(255,255,255,.66) !important;
   box-shadow:
     0 0 0 1px rgba(2,8,16,.78),
@@ -8294,5 +8294,10 @@ button.primary:disabled {
   padding-bottom: 8px !important;
 }
 
-
-/* GlobeHoppers v3.77: timeline pins use the same multi-hopper circle color logic as Hop Preview. */
+/* GlobeHoppers v3.78: timeline pins use Hop Preview multi-hopper circle colors.
+   This is deliberately appended as a final override to avoid disturbing older marker geometry. */
+.timeline-marker::before {
+  background:
+    radial-gradient(circle at 33% 27%, rgba(255,255,255,.58), transparent 33%),
+    var(--marker-background, var(--marker-color, #00e5ff)) !important;
+}

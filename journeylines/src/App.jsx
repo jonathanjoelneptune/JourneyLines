@@ -6,7 +6,7 @@ import AdminPanel from './components/AdminPanel.jsx';
 import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
 import { legDurationMs } from './utils/routeTiming.js';
-import { normalizeHopperData, resolveTripVisual, travelerListForLegacy } from './utils/hopperUtils.js';
+import { normalizeHopperData, resolveTripVisual, travelerListForLegacy, multiMemberCircleBackground } from './utils/hopperUtils.js';
 import baseTrips from './data/trips.json';
 import baseLocations from './data/locations.json';
 import homeBases from './data/homeBases.json';

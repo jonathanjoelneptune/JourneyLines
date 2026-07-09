@@ -1,1 +1,1 @@
-GlobeHoppers v3.77 — Timeline pins follow Hop Preview multi-hopper circle colors
+GlobeHoppers v3.78 — safe timeline pin multi-hopper color fix

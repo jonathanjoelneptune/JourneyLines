@@ -57,15 +57,15 @@ export function resolveTripVisual(trip = {}, hopperData = {}) {
   };
 }
 
-
-export function multiMemberCircleBackground(colors = [], fallback = "#5d7288") {
-  const list = colors.filter(Boolean);
+export function multiMemberCircleBackground(colors = [], fallback = '#5d7288') {
+  const list = (colors || []).filter(Boolean);
   const base = list[0] || fallback;
   if (list.length <= 1) return base;
+
   const layers = [];
-  // Primary hopper owns the base fill. Additional members appear in this order:
-  // 2nd member -> top-right quadrant, 3rd member -> bottom-right quadrant,
-  // 4th member -> bottom-left quadrant. This preserves the left side as primary.
+  // Match Hop Preview logic:
+  // primary/base owns the left side; additional members are placed clockwise:
+  // guest/member 1 top-right, guest/member 2 bottom-right, guest/member 3 bottom-left.
   if (list[1]) layers.push(`linear-gradient(${list[1]}, ${list[1]}) top right / 50% 50% no-repeat`);
   if (list[2]) layers.push(`linear-gradient(${list[2]}, ${list[2]}) bottom right / 50% 50% no-repeat`);
   if (list[3]) layers.push(`linear-gradient(${list[3]}, ${list[3]}) bottom left / 50% 50% no-repeat`);
