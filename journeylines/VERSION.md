@@ -1,1 +1,1 @@
-GlobeHoppers v3.87 — timeline row borders + route tube polish + preview lift
+GlobeHoppers v3.88 — visible timeline borders, preview spacing, stronger route tube effect

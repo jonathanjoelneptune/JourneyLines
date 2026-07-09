@@ -9515,3 +9515,49 @@ button.primary:disabled {
 .trip-drawer__row .accent-bar {
   display: none !important;
 }
+
+/* GlobeHoppers v3.88: visible segmented timeline row borders and side-panel spacing. */
+.studio-trip-row,
+.trip-drawer__row {
+  position: relative !important;
+  isolation: isolate !important;
+  border: 2px solid transparent !important;
+  background:
+    linear-gradient(180deg, rgba(10, 23, 40, 0.94), rgba(6, 15, 28, 0.94)) padding-box,
+    var(--trip-border, var(--accent, #00e5ff)) border-box !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 18px rgba(0,0,0,.10) !important;
+}
+.studio-trip-row::before,
+.studio-trip-row::after,
+.trip-drawer__row::before,
+.trip-drawer__row::after {
+  display: none !important;
+  content: none !important;
+}
+.studio-trip-row:hover,
+.studio-trip-row.is-active,
+.trip-drawer__row:hover,
+.trip-drawer__row.is-active {
+  background:
+    linear-gradient(180deg, rgba(12, 28, 48, 0.96), rgba(7, 17, 31, 0.96)) padding-box,
+    var(--trip-border, var(--accent, #00e5ff)) border-box !important;
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%),
+    inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+.studio-trip-row > *,
+.trip-drawer__row > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+.studio-modal-sidecol {
+  padding-top: 16px !important;
+  gap: 12px !important;
+}
+.studio-modal-sidecol .route-preview-card {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+.studio-modal-sidecol .trail-style-panel {
+  margin-top: 0 !important;
+}
