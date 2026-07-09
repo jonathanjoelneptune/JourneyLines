@@ -72,9 +72,9 @@
   {
     "id": "2012-001-kentucky",
     "year": 2012,
-    "month": null,
+    "month": 4,
     "day": null,
-    "displayDate": "2012",
+    "displayDate": "April 2012",
     "sortKey": "manual-00001-2012-13-99",
     "label": "Kentucky",
     "travelers": [
@@ -87,7 +87,15 @@
     "toLocationId": "louisville-ky",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "plane",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   },
   {
     "id": "2012-002-key-west",
