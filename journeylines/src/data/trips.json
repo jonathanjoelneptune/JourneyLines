@@ -156,9 +156,9 @@
   {
     "id": "2013-004-bahamas",
     "year": 2013,
-    "month": null,
+    "month": 9,
     "day": null,
-    "displayDate": "2013",
+    "displayDate": "September 2013",
     "sortKey": "manual-00006-2013-13-99",
     "label": "Bahamas",
     "travelers": [
@@ -171,7 +171,15 @@
     "toLocationId": "nassau-bs",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "boat",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   },
   {
     "id": "2013-005-bahamas",
