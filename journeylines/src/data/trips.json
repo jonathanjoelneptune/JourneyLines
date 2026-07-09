@@ -3210,10 +3210,10 @@
     ],
     "guestHoppers": [
       {
-        "id": "guest-mrcz21qn",
+        "id": "guest-mrd6475v",
         "name": "Tomiwa",
-        "colorName": "red",
-        "color": "#ff3b30"
+        "colorName": "blue",
+        "color": "#2f80ff"
       }
     ],
     "mode": "plane",
