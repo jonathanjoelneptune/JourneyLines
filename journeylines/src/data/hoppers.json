@@ -11,6 +11,12 @@
       "name": "Bonnie",
       "colorName": "green",
       "color": "#44f48a"
+    },
+    {
+      "id": "hopper-mrcyz5l4",
+      "name": "Bernard",
+      "colorName": "custom",
+      "color": "#ff00a6"
     }
   ],
   "hopSquads": [
@@ -23,16 +29,6 @@
       ],
       "colorName": "yellow",
       "color": "#ffd60a"
-    },
-    {
-      "id": "squad-mrbpqgve",
-      "name": "Small Council",
-      "hopperIds": [
-        "bonnie",
-        "joey"
-      ],
-      "colorName": "green",
-      "color": "#44f48a"
     }
   ],
   "palette": [
