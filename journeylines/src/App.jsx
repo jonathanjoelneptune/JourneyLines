@@ -19,6 +19,7 @@ const DEFAULT_TRAIL_TUNING = {
   stripeSegmentMiles: 260,
   stripeSeparator: 0.85,
   stripeGlow: 0.55,
+  stripeSpread: 0.0,
   ribbonThickness: 1.45,
   ribbonGap: 0.55,
   ribbonGlow: 0.9,
@@ -408,6 +409,7 @@ function TrailTuningUtility({ values, onChange, onClose, onReset }) {
       <h4>Stripe</h4>
       {row('stripeThickness', 'Thickness', 0.8, 3.4, 0.05, 'x')}
       {row('stripeSegmentMiles', 'Segment length', 80, 650, 10, ' mi')}
+      {row('stripeSpread', 'Spread', 0, 1, 0.05, 'x')}
       {row('stripeSeparator', 'Dark transition', 0, 2.4, 0.05, 'x')}
       {row('stripeGlow', 'Glow', 0, 2, 0.05, 'x')}
     </section>

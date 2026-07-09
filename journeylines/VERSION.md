@@ -1,1 +1,1 @@
-GlobeHoppers v3.82 — trail tuning utility + active pin lift fix
+GlobeHoppers v3.82.1 — trail utility hookups + active pin animation

@@ -20,6 +20,7 @@ const DEFAULT_TRAIL_TUNING = {
   stripeSegmentMiles: 260,
   stripeSeparator: 0.85,
   stripeGlow: 0.55,
+  stripeSpread: 0.0,
   ribbonThickness: 1.45,
   ribbonGap: 0.55,
   ribbonGlow: 0.9,
@@ -128,6 +129,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const forceSceneJumpRef = useRef(false);
   const manualSpinPauseRef = useRef(false);
   const manualSpinResumeTimerRef = useRef(null);
+  const trailTuningFramedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
   const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
@@ -301,7 +303,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    if (isPlaying || introLaunching || (isStarted && !globeOverview)) return;
+    if (trailTuningOpen || isPlaying || introLaunching || (isStarted && !globeOverview)) return;
     let raf;
     let last;
     const spin = (ts) => {
@@ -318,12 +320,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     };
     raf = requestAnimationFrame(spin);
     return () => cancelAnimationFrame(raf);
-  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview]);
+  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, trailTuningOpen]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const idleSpinAvailable = !isPlaying && !introLaunching && (!isStarted || globeOverview);
+    const idleSpinAvailable = !trailTuningOpen && !isPlaying && !introLaunching && (!isStarted || globeOverview);
     if (!idleSpinAvailable) {
       manualSpinPauseRef.current = false;
       clearTimeout(manualSpinResumeTimerRef.current);
@@ -374,7 +376,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       map.off('pitchend', resumeAfterIdle);
       clearTimeout(manualSpinResumeTimerRef.current);
     };
-  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview]);
+  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, trailTuningOpen]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -430,6 +432,26 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
+    if (!trailTuningOpen) {
+      trailTuningFramedRef.current = false;
+      return;
+    }
+    if (trailTuningFramedRef.current) return;
+    trailTuningFramedRef.current = true;
+    try {
+      manualSpinPauseRef.current = true;
+      clearTimeout(manualSpinResumeTimerRef.current);
+      userCameraOverrideRef.current = true;
+      resetAnimatingRef.current = true;
+      map.stop();
+      map.easeTo({ center: [-98.2, 37.7], zoom: 3.35, bearing: 0, pitch: 0, duration: 850, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+      window.setTimeout(() => { resetAnimatingRef.current = false; }, 920);
+    } catch { resetAnimatingRef.current = false; }
+  }, [mapReady, trailTuningOpen]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
     // Visited points and labels change only when the timeline reaches a new
     // destination, not on every animation frame.
     if (trailTuningOpen) {
@@ -452,7 +474,6 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       syncPulse(map, null, 'transparent');
       currentOverlayStateRef.current = null;
       setOverlayVisibility(false);
-      try { map.easeTo({ center: [-96.5, 38.3], zoom: 3.0, bearing: 0, pitch: 0, duration: 650, essential: true }); } catch {}
       return;
     }
 
@@ -702,14 +723,23 @@ function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
   const segments = splitRouteIntoUniformSegments(coords, Number(config.stripeSegmentMiles) || 260);
+  const spread = Math.max(0, Math.min(1, Number(config.stripeSpread) || 0));
+  const laneCount = Math.max(1, colors.length);
+  const maxSpreadWidth = stripeWidth * spread;
+  const lanePitch = laneCount > 1 ? maxSpreadWidth / (laneCount - 1) : 0;
+  const laneWidth = Math.max(0.9, stripeWidth / Math.max(1, laneCount) - (lanePitch > 0 ? Math.min(0.7, lanePitch * 0.45) : 0));
+  const separatorWidth = Math.max(0, Number(config.stripeSeparator) || 0);
   const features = [
-    routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.62)', tripId, `${index}-stripe-underlay`, Math.max(0.10, opacity * 0.14 * (Number(config.stripeGlow) || 1)), stripeWidth + Math.max(0, Number(config.stripeSeparator) || 0), false, leg.mode, 0, config)
+    routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.62)', tripId, `${index}-stripe-underlay`, Math.max(0.10, opacity * 0.16 * (Number(config.stripeGlow) || 1)), stripeWidth + separatorWidth + (spread > 0 ? 0.35 : 0), false, leg.mode, 0, config)
   ];
-  segments.forEach((segment, segmentIndex) => {
-    features.push(routeFeatureFromCoordinates(segment, colors[segmentIndex % colors.length], tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, config));
-    const boundary = boundarySegmentAroundJoin(segment, segments[segmentIndex + 1]);
-    if (boundary && (Number(config.stripeSeparator) || 0) > 0) {
-      features.push(routeFeatureFromCoordinates(boundary, 'rgba(4,8,16,0.86)', tripId, `${index}-stripe-separator-${segmentIndex}`, Math.max(0.14, opacity * 0.24), stripeWidth + Number(config.stripeSeparator), false, leg.mode, 0, config));
+  colors.forEach((color, laneIndex) => {
+    const lineOffset = laneCount > 1 ? (laneIndex - (laneCount - 1) / 2) * lanePitch : 0;
+    for (let segmentIndex = laneIndex; segmentIndex < segments.length; segmentIndex += laneCount) {
+      const segment = segments[segmentIndex];
+      features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${laneIndex}-${segmentIndex}`, opacity, laneWidth, active, leg.mode, lineOffset, config));
+      if (separatorWidth > 0) {
+        features.push(routeFeatureFromCoordinates(segment, 'rgba(4,8,16,0.82)', tripId, `${index}-stripe-separator-${laneIndex}-${segmentIndex}`, Math.max(0.10, opacity * 0.20), laneWidth + separatorWidth, false, leg.mode, lineOffset, config));
+      }
     }
   });
   return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0, config)];
@@ -757,6 +787,7 @@ function syncTrailTuningDemo(map, config = DEFAULT_TRAIL_TUNING, width = 2) {
   if (!map?.getSource('completed-routes')) return;
   const fromLon = -124.2;
   const toLon = -72.2;
+  const demoWidth = Math.max(2.6, width * 1.8);
   const rows = [
     { style: 'solid', lat: 43.5, colors: ['#44f48a'], label: 'Solid' },
     { style: 'stripe', lat: 39.5, colors: ['#ff8a00', '#ff4fd8', '#ff5548'], label: 'Stripe' },
@@ -769,7 +800,7 @@ function syncTrailTuningDemo(map, config = DEFAULT_TRAIL_TUNING, width = 2) {
       from: { id: `tune-west-${index}`, name: `${row.label} West`, lon: fromLon, lat: row.lat },
       to: { id: `tune-east-${index}`, name: `${row.label} East`, lon: toLon, lat: row.lat + 0.35 }
     };
-    return routeFeaturesForTrail(leg, { style: row.style, colors: row.colors, baseColor: row.colors[0] }, `tune-${row.style}`, index, 1, width, row.style === 'spiral' && !!config.spiralAnimate, 1, {}, config);
+    return routeFeaturesForTrail(leg, { style: row.style, colors: row.colors, baseColor: row.colors[0] }, `tune-${row.style}`, index, 1, demoWidth, row.style === 'spiral' && !!config.spiralAnimate, 1, {}, config);
   });
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
   map.getSource('active-route')?.setData(emptyCollection());

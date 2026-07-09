@@ -8960,3 +8960,78 @@ button.primary:disabled {
 .timeline-marker__tooltip.is-visible {
   z-index: 24 !important;
 }
+
+/* v3.82.1 utility + active pin motion polish */
+.timeline-marker-layer,
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker,
+.timeline-marker__tooltip {
+  overflow: visible !important;
+}
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  width: 20px !important;
+  height: 42px !important;
+  top: calc(50% + 1px) !important;
+  transform: translate(-50%, -58%) !important;
+  transition: transform .26s cubic-bezier(.22,.75,.2,1), opacity .2s ease !important;
+}
+.timeline-marker::before,
+.timeline-marker::after {
+  transition: transform .26s cubic-bezier(.22,.75,.2,1), height .26s cubic-bezier(.22,.75,.2,1), top .26s cubic-bezier(.22,.75,.2,1), box-shadow .2s ease !important;
+}
+.timeline-marker::before {
+  top: 5px !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+.timeline-marker::after {
+  top: 16px !important;
+  width: 2px !important;
+  height: 17px !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  transform: translate(-50%, -68%) !important;
+}
+.timeline-marker.is-current,
+.timeline-marker.is-entering,
+.timeline-marker.is-active.is-current,
+.progress--scrubbable:hover .timeline-marker.is-active.is-current:not(:hover):not(:focus-visible) {
+  z-index: 24 !important;
+  transform: translate(-50%, -112%) !important;
+}
+.timeline-marker.is-current::after,
+.timeline-marker.is-entering::after,
+.timeline-marker.is-active.is-current::after {
+  top: 16px !important;
+  height: 40px !important;
+}
+.timeline-marker.is-current::before,
+.timeline-marker.is-entering::before,
+.timeline-marker.is-active.is-current::before {
+  transform: translateX(-50%) scale(1.16) !important;
+}
+.timeline-marker.is-entering {
+  animation: timeline-marker-lift .28s cubic-bezier(.22,.75,.2,1) 1 both;
+}
+.timeline-marker.is-leaving {
+  animation: timeline-marker-settle .24s cubic-bezier(.4,0,.2,1) 1 both;
+}
+@keyframes timeline-marker-lift {
+  from { transform: translate(-50%, -58%); }
+  to { transform: translate(-50%, -112%); }
+}
+@keyframes timeline-marker-settle {
+  from { transform: translate(-50%, -112%); }
+  to { transform: translate(-50%, -58%); }
+}
+.trail-tuning {
+  z-index: 170 !important;
+}
+.trail-tuning__note {
+  margin-bottom: 10px;
+}
+.trail-tuning-row {
+  grid-template-columns: 118px 1fr 64px;
+}
