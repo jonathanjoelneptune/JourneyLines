@@ -160,3 +160,15 @@ export function colorGradient(colors = [], fallback = DEFAULT_HOPPER_COLOR) {
   const step = 100 / list.length;
   return `linear-gradient(90deg, ${list.map((c, i) => `${c} ${Math.round(i * step)}%, ${c} ${Math.round((i + 1) * step)}%`).join(', ')})`;
 }
+
+
+export function segmentedBorderGradient(colors = [], fallback = DEFAULT_HOPPER_COLOR) {
+  const list = uniqueColors(colors);
+  if (list.length <= 1) return list[0] || fallback;
+  if (list.length === 2) return `linear-gradient(90deg, ${list[0]} 0 50%, ${list[1]} 50% 100%)`;
+  return `conic-gradient(from -90deg, ${list.map((color, index) => {
+    const start = (index / list.length) * 360;
+    const end = ((index + 1) / list.length) * 360;
+    return `${color} ${start}deg ${end}deg`;
+  }).join(', ')})`;
+}

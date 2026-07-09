@@ -1,5 +1,6 @@
 import { displayDate } from '../utils/dateUtils.js';
 import { routeMiles } from '../utils/distanceUtils.js';
+import { segmentedBorderGradient } from '../utils/hopperUtils.js';
 
 export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [], onJumpToTrip, onOpenTrips }) {
   if (!trip || !expanded || !isPlaying) return null;
@@ -9,9 +10,10 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
   const activeRow = rows[0];
   const stack = rows.length ? rows : [{ title: trip.label, date: displayDate(trip), mode, traveler: traveler?.name || 'Travel', color: traveler?.color || '#00e5ff' }];
   const accentColor = traveler?.color || '#00e5ff';
-  const accent2 = !traveler?.isSquad && Array.isArray(traveler?.colors) && traveler.colors.length > 1 ? traveler.colors[1] : accentColor;
-  const isMixedTraveler = !traveler?.isSquad && Array.isArray(traveler?.members) && traveler.members.length > 1;
-  return <aside className={`trip-card-stack ${isMixedTraveler ? 'is-mixed' : ''}`} style={{ '--accent': accentColor, '--accent-2': accent2 }}>
+  const borderColors = (traveler?.squadMemberColors || traveler?.circleColors || traveler?.memberColors || traveler?.colors || [accentColor]).filter(Boolean);
+  const accent2 = borderColors.length > 1 ? borderColors[1] : accentColor;
+  const isMixedTraveler = borderColors.length > 1;
+  return <aside className={`trip-card-stack ${isMixedTraveler ? 'is-mixed' : ''}`} style={{ '--accent': accentColor, '--accent-2': accent2, '--trip-border': segmentedBorderGradient(borderColors, accentColor) }}>
     {stack.map((row, index) => {
       const queued = index > 0;
       const CardTag = queued ? 'button' : 'article';
@@ -19,7 +21,7 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
         key={`${row.id || row.title}-${index}`}
         type={queued ? 'button' : undefined}
         className={`trip-card trip-card--stack-${index} ${queued ? 'trip-card--queued-clickable' : ''}`}
-        style={{ '--accent': row.color || traveler?.color || '#00e5ff' }}
+        style={{ '--accent': row.color || traveler?.color || '#00e5ff', '--trip-border': segmentedBorderGradient(borderColors, row.color || traveler?.color || '#00e5ff') }}
         onClick={queued ? () => onJumpToTrip?.(row.firstIndex) : undefined}
         title={queued ? `Jump to ${row.title}` : undefined}
       >

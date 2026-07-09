@@ -1,1 +1,1 @@
-GlobeHoppers v3.84 — parameter save control, route stacking toggle, stripe alignment, and active tooltip fix
+GlobeHoppers v3.85 — zoom-aware trails, segmented traveler card borders, and Ribbon default

@@ -18,6 +18,7 @@ const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
   solidGlow: 0.5,
   borderThickness: 1.35,
+  borderZoomFade: 1.0,
   stripeThickness: 2.5,
   stripeSegmentMiles: 80,
   routeStackingEnabled: false,
@@ -655,17 +656,23 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 }
 
 function addRouteSourcesAndLayers(map) {
+  const zoomWidth = ['interpolate', ['linear'], ['zoom'], 2, 0.46, 4, 0.64, 5.5, 0.82, 7, 1.0];
+  const zoomDetail = ['interpolate', ['linear'], ['zoom'], 2, 0.26, 4, 0.44, 5.5, 0.72, 7, 1.0];
+  const borderZoom = ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], zoomDetail]];
+  const roleOpacity = ['case', ['==', ['get', 'trailRole'], 'border'], borderZoom, ['==', ['get', 'trailRole'], 'separator'], zoomDetail, 1];
+  const opacityExpr = (prop) => ['*', ['coalesce', ['get', prop], 1], roleOpacity];
+  const widthExpr = (prop) => ['*', ['coalesce', ['get', prop], 1], zoomWidth];
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 8.5, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('outerGlowWidth'), 'line-opacity': opacityExpr('outerGlowOpacity'), 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('glowWidth'), 'line-opacity': opacityExpr('glowOpacity'), 'line-blur': 8.5, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('width'), 'line-opacity': opacityExpr('opacity'), 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
   }
   if (!map.getSource('active-route')) {
     map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'active-route-glow-wide', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 10, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route-glow-wide', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('outerGlowWidth'), 'line-opacity': opacityExpr('outerGlowOpacity'), 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('glowWidth'), 'line-opacity': opacityExpr('glowOpacity'), 'line-blur': 10, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('width'), 'line-opacity': opacityExpr('opacity'), 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
   }
   if (!map.getSource('visited-points')) {
     map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
@@ -927,7 +934,9 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       outerGlowWidth: active ? Math.max(glowBase * 8.1 * glowMult, 12 * glowMult) : Math.max(glowBase * 9.0 * glowMult, 14 * glowMult),
       outerGlowOpacity: active ? ((isAir ? 0.20 : 0.24) * glowMult) : Math.max(0.0, opacity * 0.18 * glowMult),
       dash: dashForMode(leg.mode),
-      lineOffset
+      lineOffset,
+      borderZoomFade: Number(config?.borderZoomFade ?? 1),
+      trailRole: trailRoleForFeature(index, color)
     },
     geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 22, routedGeometries) }
   };
@@ -952,10 +961,23 @@ function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, widt
       outerGlowWidth: active ? Math.max(glowBase * 7.8 * glowMult, 12 * glowMult) : Math.max(glowBase * 9.0 * glowMult, 14 * glowMult),
       outerGlowOpacity: active ? ((isAir ? 0.20 : 0.24) * glowMult) : Math.max(0.0, opacity * 0.18 * glowMult),
       dash: dashForMode(mode),
-      lineOffset
+      lineOffset,
+      borderZoomFade: Number(config?.borderZoomFade ?? 1),
+      trailRole: trailRoleForFeature(index, color)
     },
     geometry: { type: 'LineString', coordinates: coords }
   };
+}
+
+
+function trailRoleForFeature(index, color) {
+  const key = String(index || '').toLowerCase();
+  const c = String(color || '').toLowerCase();
+  if (key.includes('border') || c === '#020407' || c === '#000000') return 'border';
+  if (key.includes('separator') || key.includes('boundary')) return 'separator';
+  if (key.includes('glow') || key.includes('underlay')) return 'glow';
+  if (key.includes('bevel') || key.includes('edge')) return 'detail';
+  return 'main';
 }
 
 function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries = {}) {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground } from '../utils/hopperUtils.js';
+import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground, segmentedBorderGradient } from '../utils/hopperUtils.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -488,7 +488,8 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
   const playFromRow = () => { if (!reorderMode) onPlayTrip?.(trip.id); };
   const visual = resolveTripVisual(trip, hopperData || {});
   const colors = (visual.colors || []).filter(Boolean);
-  const isMixed = !visual.isSquad && colors.length > 1;
+  const borderColors = (visual.squadMemberColors || visual.circleColors || visual.memberColors || visual.colors || [visual.color]).filter(Boolean);
+  const isMixed = borderColors.length > 1;
   const accent = tripAccent(trip, hopperData);
   const accent2 = visual.accentColors?.[0] || colors[1] || accent;
   const accent3 = visual.accentColors?.[1] || colors[2] || 'transparent';
@@ -498,7 +499,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
   const isDropTarget = reorderMode && dropId === trip.id && dragId && dragId !== trip.id;
   return <div
     className={`studio-trip-row studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''} ${isDragging ? 'is-dragging' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
-    style={{ '--accent': accent, '--accent-2': accent2, '--accent-3': accent3, '--accent-4': accent4, '--accent-gradient': colorGradient(colors, accent) }}
+    style={{ '--accent': accent, '--accent-2': accent2, '--accent-3': accent3, '--accent-4': accent4, '--accent-gradient': colorGradient(colors, accent), '--trip-border': segmentedBorderGradient(borderColors, accent) }}
     draggable={reorderMode}
     onClick={playFromRow}
     onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
@@ -571,7 +572,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
     if (mode !== 'add') return;
     if (draft._trailStyleTouched) return;
     if (selectedTravelerCount >= 2 && (draft.trailStyle || 'solid') === 'solid') {
-      setDraft(d => ({ ...d, trailStyle: 'stripe', trailColorMode: 'members' }));
+      setDraft(d => ({ ...d, trailStyle: 'ribbon', trailColorMode: 'members' }));
     }
   }, [mode, selectedTravelerCount, draft._trailStyleTouched, draft.trailStyle, setDraft]);
   const defaultFromId = activeHomeBaseId(homeBases, draft);
@@ -841,11 +842,12 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
   const visual = resolveTripVisual(draft, hopperData || {});
   const noHoppers = !!visual.isEmpty;
   const mixedColors = (visual.colors || []).filter(Boolean);
+  const borderColors = (visual.squadMemberColors || visual.circleColors || visual.memberColors || visual.colors || [visual.color]).filter(Boolean);
   const accentColor = visual.accentColors?.[0] || mixedColors[1] || visual.color || '#5d7288';
   const accentColor3 = visual.accentColors?.[1] || mixedColors[2] || 'transparent';
   const accentColor4 = visual.accentColors?.[2] || mixedColors[3] || 'transparent';
   const isMixed = !visual.isSquad && mixedColors.length > 1;
-  return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''} ${isMixed ? 'route-preview-card--mixed' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-accent-2': accentColor, '--trip-accent-3': accentColor3, '--trip-accent-4': accentColor4, '--trip-gradient': colorGradient(mixedColors, visual.color || '#5d7288') }}>
+  return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''} ${isMixed ? 'route-preview-card--mixed' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-accent-2': accentColor, '--trip-accent-3': accentColor3, '--trip-accent-4': accentColor4, '--trip-gradient': colorGradient(mixedColors, visual.color || '#5d7288'), '--trip-border': segmentedBorderGradient(borderColors, visual.color || '#5d7288') }}>
     <p className="eyebrow">Hop preview</p>
     <div className="route-preview-title-row">
       <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
@@ -986,7 +988,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
 
   const count = trips.filter(t => Number(t.year) === Number(draft.year)).length + 1;
   const travelerCount = ((draft.travelers || []).length + (draft.guestHoppers || []).length);
-  const finalTrailStyle = draft.trailStyle || (travelerCount >= 2 ? 'stripe' : 'solid');
+  const finalTrailStyle = draft.trailStyle || (travelerCount >= 2 ? 'ribbon' : 'solid');
   const derivedTrailColorMode = finalTrailStyle === 'solid' && activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) ? 'squad' : 'members';
   const label = draft.label || displayNameFromLocation(nextLocations.find(l => l.id === toLocationId)) || draft.toLocationText || 'Trip';
   const clean = {

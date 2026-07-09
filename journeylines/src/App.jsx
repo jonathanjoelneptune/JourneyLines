@@ -18,6 +18,7 @@ const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
   solidGlow: 0.5,
   borderThickness: 1.35,
+  borderZoomFade: 1.0,
   stripeThickness: 2.5,
   stripeSegmentMiles: 80,
   stripeSeparator: 0.45,
@@ -455,6 +456,7 @@ function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
     <section>
       <h4>All trails</h4>
       {row('borderThickness', 'Black border', 0, 3, 0.05, 'px')}
+      {row('borderZoomFade', 'Border zoom fade', 0, 1, 0.05, 'x')}
     </section>
     <section>
       <h4>Stripe</h4>

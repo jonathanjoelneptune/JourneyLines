@@ -9335,3 +9335,58 @@ button.primary:disabled {
 .timeline-marker__tooltip.is-hovered.is-current {
   bottom: calc(100% + var(--tl-tooltip-offset, 70px)) !important;
 }
+
+/* GlobeHoppers v3.85: segmented traveler borders replace mixed-corner shading. */
+.studio-trip-row,
+.route-preview-card,
+.trip-card {
+  position: relative !important;
+  border-color: transparent !important;
+  isolation: isolate;
+}
+.studio-trip-row::before,
+.route-preview-card::before,
+.trip-card::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  padding: 2px !important;
+  border-radius: inherit !important;
+  background: var(--trip-border, var(--accent, var(--trip-accent, #00e5ff))) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) !important;
+  -webkit-mask-composite: xor !important;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) !important;
+  mask-composite: exclude !important;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent, var(--trip-accent, #00e5ff)), transparent 74%) !important;
+}
+.studio-trip-row > *,
+.route-preview-card > *,
+.trip-card > * {
+  position: relative;
+  z-index: 1;
+}
+.studio-trip-row.is-active::before,
+.trip-card-stack .trip-card--stack-0::before {
+  padding: 2.5px !important;
+  filter: brightness(1.12) saturate(1.08);
+}
+.studio-trip-row.is-mixed::after,
+.studio-trip-row--expanded.is-mixed::after,
+.studio-trip-row--compact.is-mixed::after,
+.studio-trip-row--card.is-mixed::after,
+.route-preview-card--mixed::after,
+.trip-card-stack.is-mixed .trip-card--stack-0::after {
+  content: none !important;
+  display: none !important;
+}
+.route-preview-card--mixed {
+  box-shadow: 0 0 26px color-mix(in srgb, var(--trip-accent, #00e5ff), transparent 78%) !important;
+}
+.route-preview-card--mixed .route-preview-list::after { display: none !important; content: none !important; }
+.route-preview-row.is-mixed {
+  background: rgba(15, 23, 38, .82) !important;
+  box-shadow: none !important;
+}
+.route-preview-row.is-mixed::after { display: none !important; content: none !important; }
