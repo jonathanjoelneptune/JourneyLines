@@ -30,7 +30,7 @@
     "playbackBarHeight": 13,
     "yearOffsetY": -7,
     "tooltipOffsetY": 68,
-    "animationMs": 360,
+    "animationMs": 450,
     "animationOvershoot": 1.12
   }
 }
