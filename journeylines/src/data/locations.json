@@ -1,78 +1,699 @@
 [
-  { "id": "san-diego-ca", "name": "San Diego", "region": "California", "country": "United States", "continent": "North America", "lat": 32.7157, "lon": -117.1611 },
-  { "id": "melbourne-fl", "name": "Melbourne", "region": "Florida", "country": "United States", "continent": "North America", "lat": 28.0836, "lon": -80.6081 },
-  { "id": "los-angeles-ca", "name": "Los Angeles", "region": "California", "country": "United States", "continent": "North America", "lat": 34.0522, "lon": -118.2437 },
-  { "id": "cabo-san-lucas-mx", "name": "Cabo San Lucas", "region": "Baja California Sur", "country": "Mexico", "continent": "North America", "lat": 22.8905, "lon": -109.9167 },
-  { "id": "puerto-plata-do", "name": "Puerto Plata", "region": "Puerto Plata", "country": "Dominican Republic", "continent": "North America", "lat": 19.7808, "lon": -70.6871 },
-  { "id": "boston-ma", "name": "Boston", "region": "Massachusetts", "country": "United States", "continent": "North America", "lat": 42.3601, "lon": -71.0589 },
-  { "id": "detroit-mi", "name": "Detroit", "region": "Michigan", "country": "United States", "continent": "North America", "lat": 42.3314, "lon": -83.0458 },
-  { "id": "lakeland-fl", "name": "Lakeland", "region": "Florida", "country": "United States", "continent": "North America", "lat": 28.0395, "lon": -81.9498 },
-  { "id": "syracuse-ny", "name": "Syracuse", "region": "New York", "country": "United States", "continent": "North America", "lat": 43.0481, "lon": -76.1474 },
-  { "id": "amsterdam-nl", "name": "Amsterdam", "region": "North Holland", "country": "Netherlands", "continent": "Europe", "lat": 52.3676, "lon": 4.9041 },
-  { "id": "london-uk", "name": "London", "region": "England", "country": "United Kingdom", "continent": "Europe", "lat": 51.5072, "lon": -0.1276 },
-  { "id": "san-francisco-ca", "name": "San Francisco", "region": "California", "country": "United States", "continent": "North America", "lat": 37.7749, "lon": -122.4194 },
-  { "id": "charlotte-nc", "name": "Charlotte", "region": "North Carolina", "country": "United States", "continent": "North America", "lat": 35.2271, "lon": -80.8431 },
-  { "id": "chicago-il", "name": "Chicago", "region": "Illinois", "country": "United States", "continent": "North America", "lat": 41.8781, "lon": -87.6298 },
-  { "id": "washington-dc", "name": "Washington DC", "region": "District of Columbia", "country": "United States", "continent": "North America", "lat": 38.9072, "lon": -77.0369 },
-  { "id": "fort-lauderdale-fl", "name": "Fort Lauderdale", "region": "Florida", "country": "United States", "continent": "North America", "lat": 26.1224, "lon": -80.1373 },
-  { "id": "atlanta-ga", "name": "Atlanta", "region": "Georgia", "country": "United States", "continent": "North America", "lat": 33.7490, "lon": -84.3880 },
-  { "id": "grand-forks-nd", "name": "Grand Forks", "region": "North Dakota", "country": "United States", "continent": "North America", "lat": 47.9253, "lon": -97.0329 },
-  { "id": "montreal-ca", "name": "Montreal", "region": "Quebec", "country": "Canada", "continent": "North America", "lat": 45.5019, "lon": -73.5674 },
-  { "id": "las-vegas-nv", "name": "Las Vegas", "region": "Nevada", "country": "United States", "continent": "North America", "lat": 36.1716, "lon": -115.1391 },
-  { "id": "seattle-wa", "name": "Seattle", "region": "Washington", "country": "United States", "continent": "North America", "lat": 47.6061, "lon": -122.3328 },
-  { "id": "scottsdale-az", "name": "Scottsdale", "region": "Arizona", "country": "United States", "continent": "North America", "lat": 33.4942, "lon": -111.9261 },
-  { "id": "houston-tx", "name": "Houston", "region": "Texas", "country": "United States", "continent": "North America", "lat": 29.7604, "lon": -95.3698 },
-  { "id": "miami-fl", "name": "Miami", "region": "Florida", "country": "United States", "continent": "North America", "lat": 25.7617, "lon": -80.1918 },
-  { "id": "tokyo-jp", "name": "Tokyo", "region": "Tokyo", "country": "Japan", "continent": "Asia", "lat": 35.6762, "lon": 139.6503 },
-  { "id": "seoul-kr", "name": "Seoul", "region": "Seoul", "country": "South Korea", "continent": "Asia", "lat": 37.5665, "lon": 126.9780 },
-  { "id": "st-louis-mo", "name": "St. Louis", "region": "Missouri", "country": "United States", "continent": "North America", "lat": 38.6270, "lon": -90.1994 },
-  { "id": "maui-hi", "name": "Maui", "region": "Hawaii", "country": "United States", "continent": "North America", "lat": 20.7984, "lon": -156.3319 },
-  { "id": "san-jose-ca", "name": "San Jose", "region": "California", "country": "United States", "continent": "North America", "lat": 37.3382, "lon": -121.8863 },
-  { "id": "philadelphia-pa", "name": "Philadelphia", "region": "Pennsylvania", "country": "United States", "continent": "North America", "lat": 39.9526, "lon": -75.1652 },
-  { "id": "vancouver-ca", "name": "Vancouver", "region": "British Columbia", "country": "Canada", "continent": "North America", "lat": 49.2827, "lon": -123.1207 },
-  { "id": "toronto-ca", "name": "Toronto", "region": "Ontario", "country": "Canada", "continent": "North America", "lat": 43.6532, "lon": -79.3832 },
-  { "id": "west-palm-beach-fl", "name": "West Palm Beach", "region": "Florida", "country": "United States", "continent": "North America", "lat": 26.7153, "lon": -80.0534 },
-  { "id": "baltimore-md", "name": "Baltimore", "region": "Maryland", "country": "United States", "continent": "North America", "lat": 39.2904, "lon": -76.6122 },
-  { "id": "greenville-sc", "name": "Greenville", "region": "South Carolina", "country": "United States", "continent": "North America", "lat": 34.8526, "lon": -82.3940 },
-  { "id": "indianapolis-in", "name": "Indianapolis", "region": "Indiana", "country": "United States", "continent": "North America", "lat": 39.7684, "lon": -86.1581 },
-  { "id": "cancun-mx", "name": "Cancun", "region": "Quintana Roo", "country": "Mexico", "continent": "North America", "lat": 21.1619, "lon": -86.8515 },
-  { "id": "orlando-fl", "name": "Orlando", "region": "Florida", "country": "United States", "continent": "North America", "lat": 28.5383, "lon": -81.3792 },
-  { "id": "barcelona-es", "name": "Barcelona", "region": "Catalonia", "country": "Spain", "continent": "Europe", "lat": 41.3874, "lon": 2.1686 },
-  { "id": "austin-tx", "name": "Austin", "region": "Texas", "country": "United States", "continent": "North America", "lat": 30.2672, "lon": -97.7431 },
-  { "id": "starbase-tx", "name": "Starbase", "region": "Texas", "country": "United States", "continent": "North America", "lat": 25.9972, "lon": -97.1562 },
-  { "id": "tampa-fl", "name": "Tampa", "region": "Florida", "country": "United States", "continent": "North America", "lat": 27.9506, "lon": -82.4572 },
-  { "id": "geneva-ch", "name": "Geneva", "region": "Geneva", "country": "Switzerland", "continent": "Europe", "lat": 46.2044, "lon": 6.1432 },
-  { "id": "interlaken-ch", "name": "Swiss Alps", "region": "Bernese Oberland", "country": "Switzerland", "continent": "Europe", "lat": 46.6863, "lon": 7.8632 },
-  { "id": "evian-fr", "name": "Evian", "region": "Auvergne-Rhône-Alpes", "country": "France", "continent": "Europe", "lat": 46.4014, "lon": 6.5915 },
-  { "id": "venice-it", "name": "Venice", "region": "Veneto", "country": "Italy", "continent": "Europe", "lat": 45.4408, "lon": 12.3155 },
-  { "id": "florence-it", "name": "Florence", "region": "Tuscany", "country": "Italy", "continent": "Europe", "lat": 43.7696, "lon": 11.2558 },
-  { "id": "rome-it", "name": "Rome", "region": "Lazio", "country": "Italy", "continent": "Europe", "lat": 41.9028, "lon": 12.4964 },
-  { "id": "cape-canaveral-fl", "name": "Cape Canaveral", "region": "Florida", "country": "United States", "continent": "North America", "lat": 28.3922, "lon": -80.6077 },
-  { "id": "buffalo-ny", "name": "Buffalo", "region": "New York", "country": "United States", "continent": "North America", "lat": 42.8864, "lon": -78.8784 },
-  { "id": "anchorage-ak", "name": "Alaska", "region": "Alaska", "country": "United States", "continent": "North America", "lat": 61.2176, "lon": -149.8997 },
-  { "id": "catalina-ca", "name": "Catalina", "region": "California", "country": "United States", "continent": "North America", "lat": 33.3879, "lon": -118.4163 },
-  { "id": "honolulu-hi", "name": "Honolulu", "region": "Hawaii", "country": "United States", "continent": "North America", "lat": 21.3099, "lon": -157.8581 },
-  { "id": "palm-springs-ca", "name": "Palm Springs", "region": "California", "country": "United States", "continent": "North America", "lat": 33.8303, "lon": -116.5453 },
-  { "id": "mammoth-ca", "name": "Mammoth", "region": "California", "country": "United States", "continent": "North America", "lat": 37.6485, "lon": -118.9721 },
-  { "id": "san-juan-pr", "name": "Puerto Rico", "region": "San Juan", "country": "Puerto Rico", "continent": "North America", "lat": 18.4655, "lon": -66.1057 },
-  { "id": "paris-fr", "name": "Paris", "region": "Île-de-France", "country": "France", "continent": "Europe", "lat": 48.8566, "lon": 2.3522 },
-  { "id": "versailles-fr", "name": "Versailles", "region": "Île-de-France", "country": "France", "continent": "Europe", "lat": 48.8049, "lon": 2.1204 },
-  { "id": "edinburgh-uk", "name": "Scotland", "region": "Scotland", "country": "United Kingdom", "continent": "Europe", "lat": 55.9533, "lon": -3.1883 },
-  { "id": "rosarito-mx", "name": "Rosarito", "region": "Baja California", "country": "Mexico", "continent": "North America", "lat": 32.3661, "lon": -117.0618 },
-  { "id": "oakland-ca", "name": "Oakland", "region": "California", "country": "United States", "continent": "North America", "lat": 37.8044, "lon": -122.2712 },
-  { "id": "denver-co", "name": "Denver", "region": "Colorado", "country": "United States", "continent": "North America", "lat": 39.7392, "lon": -104.9903 },
-  { "id": "malibu-ca", "name": "Malibu", "region": "California", "country": "United States", "continent": "North America", "lat": 34.0259, "lon": -118.7798 },
-  { "id": "knoxville-tn", "name": "Knoxville", "region": "Tennessee", "country": "United States", "continent": "North America", "lat": 35.9606, "lon": -83.9207 },
-  { "id": "phoenix-az", "name": "Phoenix", "region": "Arizona", "country": "United States", "continent": "North America", "lat": 33.4484, "lon": -112.0740 },
-  { "id": "nassau-bs", "name": "Bahamas", "region": "New Providence", "country": "Bahamas", "continent": "North America", "lat": 25.0443, "lon": -77.3504 },
-  { "id": "jekyll-island-ga", "name": "Jekyll Island", "region": "Georgia", "country": "United States", "continent": "North America", "lat": 31.0680, "lon": -81.4279 },
-  { "id": "montego-bay-jm", "name": "Jamaica", "region": "Saint James", "country": "Jamaica", "continent": "North America", "lat": 18.4762, "lon": -77.8939 },
-  { "id": "george-town-ky", "name": "Cayman Islands", "region": "Grand Cayman", "country": "Cayman Islands", "continent": "North America", "lat": 19.2866, "lon": -81.3744 },
-  { "id": "oranjestad-aw", "name": "Aruba", "region": "Aruba", "country": "Aruba", "continent": "North America", "lat": 12.5092, "lon": -70.0086 },
-  { "id": "augusta-ga", "name": "Augusta", "region": "Georgia", "country": "United States", "continent": "North America", "lat": 33.4735, "lon": -82.0105 },
-  { "id": "castries-lc", "name": "St. Lucia", "region": "Castries", "country": "Saint Lucia", "continent": "North America", "lat": 14.0101, "lon": -60.9875 },
-  { "id": "destin-fl", "name": "Destin", "region": "Florida", "country": "United States", "continent": "North America", "lat": 30.3935, "lon": -86.4958 },
-  { "id": "new-york-ny", "name": "New York", "region": "New York", "country": "United States", "continent": "North America", "lat": 40.7128, "lon": -74.0060 },
-  { "id": "key-west-fl", "name": "Key West", "region": "Florida", "country": "United States", "continent": "North America", "lat": 24.5551, "lon": -81.7800 },
-  { "id": "louisville-ky", "name": "Kentucky", "region": "Kentucky", "country": "United States", "continent": "North America", "lat": 38.2527, "lon": -85.7585 }
+  {
+    "id": "san-diego-ca",
+    "name": "San Diego",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 32.7157,
+    "lon": -117.1611
+  },
+  {
+    "id": "melbourne-fl",
+    "name": "Melbourne",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 28.0836,
+    "lon": -80.6081
+  },
+  {
+    "id": "los-angeles-ca",
+    "name": "Los Angeles",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 34.0522,
+    "lon": -118.2437
+  },
+  {
+    "id": "cabo-san-lucas-mx",
+    "name": "Cabo San Lucas",
+    "region": "Baja California Sur",
+    "country": "Mexico",
+    "continent": "North America",
+    "lat": 22.8905,
+    "lon": -109.9167
+  },
+  {
+    "id": "puerto-plata-do",
+    "name": "Puerto Plata",
+    "region": "Puerto Plata",
+    "country": "Dominican Republic",
+    "continent": "North America",
+    "lat": 19.7808,
+    "lon": -70.6871
+  },
+  {
+    "id": "boston-ma",
+    "name": "Boston",
+    "region": "Massachusetts",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 42.3601,
+    "lon": -71.0589
+  },
+  {
+    "id": "detroit-mi",
+    "name": "Detroit",
+    "region": "Michigan",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 42.3314,
+    "lon": -83.0458
+  },
+  {
+    "id": "lakeland-fl",
+    "name": "Lakeland",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 28.0395,
+    "lon": -81.9498
+  },
+  {
+    "id": "syracuse-ny",
+    "name": "Syracuse",
+    "region": "New York",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 43.0481,
+    "lon": -76.1474
+  },
+  {
+    "id": "amsterdam-nl",
+    "name": "Amsterdam",
+    "region": "North Holland",
+    "country": "Netherlands",
+    "continent": "Europe",
+    "lat": 52.3676,
+    "lon": 4.9041
+  },
+  {
+    "id": "london-uk",
+    "name": "London",
+    "region": "England",
+    "country": "United Kingdom",
+    "continent": "Europe",
+    "lat": 51.5072,
+    "lon": -0.1276
+  },
+  {
+    "id": "san-francisco-ca",
+    "name": "San Francisco",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 37.7749,
+    "lon": -122.4194
+  },
+  {
+    "id": "charlotte-nc",
+    "name": "Charlotte",
+    "region": "North Carolina",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 35.2271,
+    "lon": -80.8431
+  },
+  {
+    "id": "chicago-il",
+    "name": "Chicago",
+    "region": "Illinois",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 41.8781,
+    "lon": -87.6298
+  },
+  {
+    "id": "washington-dc",
+    "name": "Washington DC",
+    "region": "District of Columbia",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 38.9072,
+    "lon": -77.0369
+  },
+  {
+    "id": "fort-lauderdale-fl",
+    "name": "Fort Lauderdale",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 26.1224,
+    "lon": -80.1373
+  },
+  {
+    "id": "atlanta-ga",
+    "name": "Atlanta",
+    "region": "Georgia",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 33.749,
+    "lon": -84.388
+  },
+  {
+    "id": "grand-forks-nd",
+    "name": "Grand Forks",
+    "region": "North Dakota",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 47.9253,
+    "lon": -97.0329
+  },
+  {
+    "id": "montreal-ca",
+    "name": "Montreal",
+    "region": "Quebec",
+    "country": "Canada",
+    "continent": "North America",
+    "lat": 45.5019,
+    "lon": -73.5674
+  },
+  {
+    "id": "las-vegas-nv",
+    "name": "Las Vegas",
+    "region": "Nevada",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 36.1716,
+    "lon": -115.1391
+  },
+  {
+    "id": "seattle-wa",
+    "name": "Seattle",
+    "region": "Washington",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 47.6061,
+    "lon": -122.3328
+  },
+  {
+    "id": "scottsdale-az",
+    "name": "Scottsdale",
+    "region": "Arizona",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 33.4942,
+    "lon": -111.9261
+  },
+  {
+    "id": "houston-tx",
+    "name": "Houston",
+    "region": "Texas",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 29.7604,
+    "lon": -95.3698
+  },
+  {
+    "id": "miami-fl",
+    "name": "Miami",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 25.7617,
+    "lon": -80.1918
+  },
+  {
+    "id": "tokyo-jp",
+    "name": "Tokyo",
+    "region": "Tokyo",
+    "country": "Japan",
+    "continent": "Asia",
+    "lat": 35.6762,
+    "lon": 139.6503
+  },
+  {
+    "id": "seoul-kr",
+    "name": "Seoul",
+    "region": "Seoul",
+    "country": "South Korea",
+    "continent": "Asia",
+    "lat": 37.5665,
+    "lon": 126.978
+  },
+  {
+    "id": "st-louis-mo",
+    "name": "St. Louis",
+    "region": "Missouri",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 38.627,
+    "lon": -90.1994
+  },
+  {
+    "id": "maui-hi",
+    "name": "Maui",
+    "region": "Hawaii",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 20.7984,
+    "lon": -156.3319
+  },
+  {
+    "id": "san-jose-ca",
+    "name": "San Jose",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 37.3382,
+    "lon": -121.8863
+  },
+  {
+    "id": "philadelphia-pa",
+    "name": "Philadelphia",
+    "region": "Pennsylvania",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 39.9526,
+    "lon": -75.1652
+  },
+  {
+    "id": "vancouver-ca",
+    "name": "Vancouver",
+    "region": "British Columbia",
+    "country": "Canada",
+    "continent": "North America",
+    "lat": 49.2827,
+    "lon": -123.1207
+  },
+  {
+    "id": "toronto-ca",
+    "name": "Toronto",
+    "region": "Ontario",
+    "country": "Canada",
+    "continent": "North America",
+    "lat": 43.6532,
+    "lon": -79.3832
+  },
+  {
+    "id": "west-palm-beach-fl",
+    "name": "West Palm Beach",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 26.7153,
+    "lon": -80.0534
+  },
+  {
+    "id": "baltimore-md",
+    "name": "Baltimore",
+    "region": "Maryland",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 39.2904,
+    "lon": -76.6122
+  },
+  {
+    "id": "greenville-sc",
+    "name": "Greenville",
+    "region": "South Carolina",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 34.8526,
+    "lon": -82.394
+  },
+  {
+    "id": "indianapolis-in",
+    "name": "Indianapolis",
+    "region": "Indiana",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 39.7684,
+    "lon": -86.1581
+  },
+  {
+    "id": "cancun-mx",
+    "name": "Cancun",
+    "region": "Quintana Roo",
+    "country": "Mexico",
+    "continent": "North America",
+    "lat": 21.1619,
+    "lon": -86.8515
+  },
+  {
+    "id": "orlando-fl",
+    "name": "Orlando",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 28.5383,
+    "lon": -81.3792
+  },
+  {
+    "id": "barcelona-es",
+    "name": "Barcelona",
+    "region": "Catalonia",
+    "country": "Spain",
+    "continent": "Europe",
+    "lat": 41.3874,
+    "lon": 2.1686
+  },
+  {
+    "id": "austin-tx",
+    "name": "Austin",
+    "region": "Texas",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 30.2672,
+    "lon": -97.7431
+  },
+  {
+    "id": "starbase-tx",
+    "name": "Starbase",
+    "region": "Texas",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 25.9972,
+    "lon": -97.1562
+  },
+  {
+    "id": "tampa-fl",
+    "name": "Tampa",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 27.9506,
+    "lon": -82.4572
+  },
+  {
+    "id": "geneva-ch",
+    "name": "Geneva",
+    "region": "Geneva",
+    "country": "Switzerland",
+    "continent": "Europe",
+    "lat": 46.2044,
+    "lon": 6.1432
+  },
+  {
+    "id": "interlaken-ch",
+    "name": "Swiss Alps",
+    "region": "Bernese Oberland",
+    "country": "Switzerland",
+    "continent": "Europe",
+    "lat": 46.6863,
+    "lon": 7.8632
+  },
+  {
+    "id": "evian-fr",
+    "name": "Evian",
+    "region": "Auvergne-Rhône-Alpes",
+    "country": "France",
+    "continent": "Europe",
+    "lat": 46.4014,
+    "lon": 6.5915
+  },
+  {
+    "id": "venice-it",
+    "name": "Venice",
+    "region": "Veneto",
+    "country": "Italy",
+    "continent": "Europe",
+    "lat": 45.4408,
+    "lon": 12.3155
+  },
+  {
+    "id": "florence-it",
+    "name": "Florence",
+    "region": "Tuscany",
+    "country": "Italy",
+    "continent": "Europe",
+    "lat": 43.7696,
+    "lon": 11.2558
+  },
+  {
+    "id": "rome-it",
+    "name": "Rome",
+    "region": "Lazio",
+    "country": "Italy",
+    "continent": "Europe",
+    "lat": 41.9028,
+    "lon": 12.4964
+  },
+  {
+    "id": "cape-canaveral-fl",
+    "name": "Cape Canaveral",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 28.3922,
+    "lon": -80.6077
+  },
+  {
+    "id": "buffalo-ny",
+    "name": "Buffalo",
+    "region": "New York",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 42.8864,
+    "lon": -78.8784
+  },
+  {
+    "id": "anchorage-ak",
+    "name": "Alaska",
+    "region": "Alaska",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 61.2176,
+    "lon": -149.8997
+  },
+  {
+    "id": "catalina-ca",
+    "name": "Catalina",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 33.3879,
+    "lon": -118.4163
+  },
+  {
+    "id": "honolulu-hi",
+    "name": "Honolulu",
+    "region": "Hawaii",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 21.3099,
+    "lon": -157.8581
+  },
+  {
+    "id": "palm-springs-ca",
+    "name": "Palm Springs",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 33.8303,
+    "lon": -116.5453
+  },
+  {
+    "id": "mammoth-ca",
+    "name": "Mammoth",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 37.6485,
+    "lon": -118.9721
+  },
+  {
+    "id": "san-juan-pr",
+    "name": "Puerto Rico",
+    "region": "San Juan",
+    "country": "Puerto Rico",
+    "continent": "North America",
+    "lat": 18.4655,
+    "lon": -66.1057
+  },
+  {
+    "id": "paris-fr",
+    "name": "Paris",
+    "region": "Île-de-France",
+    "country": "France",
+    "continent": "Europe",
+    "lat": 48.8566,
+    "lon": 2.3522
+  },
+  {
+    "id": "versailles-fr",
+    "name": "Versailles",
+    "region": "Île-de-France",
+    "country": "France",
+    "continent": "Europe",
+    "lat": 48.8049,
+    "lon": 2.1204
+  },
+  {
+    "id": "edinburgh-uk",
+    "name": "Scotland",
+    "region": "Scotland",
+    "country": "United Kingdom",
+    "continent": "Europe",
+    "lat": 55.9533,
+    "lon": -3.1883
+  },
+  {
+    "id": "rosarito-mx",
+    "name": "Rosarito",
+    "region": "Baja California",
+    "country": "Mexico",
+    "continent": "North America",
+    "lat": 32.3661,
+    "lon": -117.0618
+  },
+  {
+    "id": "oakland-ca",
+    "name": "Oakland",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 37.8044,
+    "lon": -122.2712
+  },
+  {
+    "id": "denver-co",
+    "name": "Denver",
+    "region": "Colorado",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 39.7392,
+    "lon": -104.9903
+  },
+  {
+    "id": "malibu-ca",
+    "name": "Malibu",
+    "region": "California",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 34.0259,
+    "lon": -118.7798
+  },
+  {
+    "id": "knoxville-tn",
+    "name": "Knoxville",
+    "region": "Tennessee",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 35.9606,
+    "lon": -83.9207
+  },
+  {
+    "id": "phoenix-az",
+    "name": "Phoenix",
+    "region": "Arizona",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 33.4484,
+    "lon": -112.074
+  },
+  {
+    "id": "nassau-bs",
+    "name": "Bahamas",
+    "region": "New Providence",
+    "country": "Bahamas",
+    "continent": "North America",
+    "lat": 25.0443,
+    "lon": -77.3504
+  },
+  {
+    "id": "jekyll-island-ga",
+    "name": "Jekyll Island",
+    "region": "Georgia",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 31.068,
+    "lon": -81.4279
+  },
+  {
+    "id": "montego-bay-jm",
+    "name": "Jamaica",
+    "region": "Saint James",
+    "country": "Jamaica",
+    "continent": "North America",
+    "lat": 18.4762,
+    "lon": -77.8939
+  },
+  {
+    "id": "george-town-ky",
+    "name": "Cayman Islands",
+    "region": "Grand Cayman",
+    "country": "Cayman Islands",
+    "continent": "North America",
+    "lat": 19.2866,
+    "lon": -81.3744
+  },
+  {
+    "id": "oranjestad-aw",
+    "name": "Aruba",
+    "region": "Aruba",
+    "country": "Aruba",
+    "continent": "North America",
+    "lat": 12.5092,
+    "lon": -70.0086
+  },
+  {
+    "id": "augusta-ga",
+    "name": "Augusta",
+    "region": "Georgia",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 33.4735,
+    "lon": -82.0105
+  },
+  {
+    "id": "castries-lc",
+    "name": "St. Lucia",
+    "region": "Castries",
+    "country": "Saint Lucia",
+    "continent": "North America",
+    "lat": 14.0101,
+    "lon": -60.9875
+  },
+  {
+    "id": "destin-fl",
+    "name": "Destin",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 30.3935,
+    "lon": -86.4958
+  },
+  {
+    "id": "new-york-ny",
+    "name": "New York",
+    "region": "New York",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 40.7128,
+    "lon": -74.006
+  },
+  {
+    "id": "key-west-fl",
+    "name": "Key West",
+    "region": "Florida",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 24.5551,
+    "lon": -81.78
+  },
+  {
+    "id": "louisville-ky",
+    "name": "Kentucky",
+    "region": "Kentucky",
+    "country": "United States",
+    "continent": "North America",
+    "lat": 38.2527,
+    "lon": -85.7585
+  },
+  {
+    "id": "perth-08",
+    "name": "Perth",
+    "region": "08",
+    "country": "Australia",
+    "countryCode": "AU",
+    "continent": "",
+    "lat": -31.95224,
+    "lon": 115.8614,
+    "geonameId": 2063523,
+    "population": 1896548,
+    "timezone": "Australia/Perth"
+  }
 ]
