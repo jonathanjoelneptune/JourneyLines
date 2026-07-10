@@ -1,6 +1,7 @@
+import generatedRoutes from '../data/generatedRoutes.json';
 import { flattenLegs } from './tripExpansion.js';
 
-export const ROUTE_DETAILS_VERSION = '4.19';
+export const ROUTE_DETAILS_VERSION = '4.20';
 export const ROUTE_DETAILS_CACHE_VERSION = 'v2.16';
 
 export function routeDetailKeyForEntry(entry) {
@@ -81,6 +82,28 @@ export function applyRouteDetailsToEntries(entries = [], details = {}) {
   });
 }
 
+function browserRouteCache() {
+  try {
+    if (typeof localStorage === 'undefined') return {};
+    return JSON.parse(localStorage.getItem('journeylines.routeCache') || '{}') || {};
+  } catch {
+    return {};
+  }
+}
+
+function routeGeometryForPayload(leg, old = {}, cacheVersion = ROUTE_DETAILS_CACHE_VERSION) {
+  if (Array.isArray(old.geometry) && old.geometry.length > 1) return old.geometry;
+  const generated = generatedRoutes?.routes || {};
+  const browser = browserRouteCache();
+  const directKey = routeCacheKeyForLeg(leg, cacheVersion);
+  const reverseKey = reverseRouteCacheKeyForLeg(leg, cacheVersion);
+  if (Array.isArray(generated[directKey]) && generated[directKey].length > 1) return generated[directKey];
+  if (Array.isArray(generated[reverseKey]) && generated[reverseKey].length > 1) return [...generated[reverseKey]].reverse();
+  if (Array.isArray(browser[directKey]) && browser[directKey].length > 1) return browser[directKey];
+  if (Array.isArray(browser[reverseKey]) && browser[reverseKey].length > 1) return [...browser[reverseKey]].reverse();
+  return null;
+}
+
 export function buildRouteDetailsPayload(trips = [], locations = [], homeBases = [], existingDetails = {}) {
   const existing = normalizeRouteDetails(existingDetails);
   const locationsById = Object.fromEntries((locations || []).map(loc => [loc.id, loc]));
@@ -93,7 +116,7 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
     const old = existing.routes?.[key] || {};
     const cacheVersion = existing.cacheVersion || ROUTE_DETAILS_CACHE_VERSION;
     const routeCacheKey = routeCacheKeyForLeg(entry.leg, cacheVersion);
-    const geometry = Array.isArray(old.geometry) && old.geometry.length > 1 ? old.geometry : null;
+    const geometry = routeGeometryForPayload(entry.leg, old, cacheVersion);
     routes[key] = {
       id: key,
       tripId: entry.trip?.id || null,

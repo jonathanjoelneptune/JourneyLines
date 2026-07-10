@@ -85,6 +85,9 @@ const DEFAULT_TRAIL_TUNING = {
 };
 
 
+const COMPLETED_ROUTE_FEATURE_CACHE = new Map();
+const COMPLETED_ROUTE_FEATURE_CACHE_LIMIT = 1200;
+
 const MAP_STYLE = {
   version: 8,
   name: 'GlobeHoppers Terrain Globe',
@@ -833,10 +836,82 @@ function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opac
     const trail = trailVisualForLeg(l, travelersById);
     const isCurrentTrip = Boolean(activeTripId && l?.trip?.id === activeTripId);
     const isMorphTrip = Boolean(morphTripId && l?.trip?.id === morphTripId && !isCurrentTrip);
-    return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, isCurrentTrip, 1, routedGeometries, trailTuning, isMorphTrip ? morphProgress : null);
+    // Current/morphing trips stay dynamic. Everything else can use the
+    // passive completed-route feature cache so Trails-on overview does not
+    // rebuild stripe/ribbon/spiral feature sets over and over.
+    if (isCurrentTrip || isMorphTrip) {
+      return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, isCurrentTrip, 1, routedGeometries, trailTuning, isMorphTrip ? morphProgress : null);
+    }
+    return cachedCompletedRouteFeatures(l, i, trail, Math.max(0.9, opacity), width, routedGeometries, trailTuning);
   }) : (fadeFeatures || []);
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
+}
+
+function cachedCompletedRouteFeatures(entry, index, trail, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
+  const key = completedRouteFeatureCacheKey(entry, index, trail, opacity, width, trailTuning);
+  const cached = COMPLETED_ROUTE_FEATURE_CACHE.get(key);
+  if (cached) return cached;
+  const features = routeFeaturesForTrail(entry.leg, trail, entry.trip.id, index, opacity, width, false, 1, routedGeometries, trailTuning, null);
+  COMPLETED_ROUTE_FEATURE_CACHE.set(key, features);
+  if (COMPLETED_ROUTE_FEATURE_CACHE.size > COMPLETED_ROUTE_FEATURE_CACHE_LIMIT) {
+    const firstKey = COMPLETED_ROUTE_FEATURE_CACHE.keys().next().value;
+    if (firstKey) COMPLETED_ROUTE_FEATURE_CACHE.delete(firstKey);
+  }
+  return features;
+}
+
+function completedRouteFeatureCacheKey(entry, index, trail, opacity, width, trailTuning = DEFAULT_TRAIL_TUNING) {
+  const leg = entry?.leg || {};
+  const tripId = entry?.trip?.id || '';
+  const detailKey = leg.routeDetailsKey || `${tripId}:${entry?.legIndex ?? index}`;
+  const geomKey = leg.routeCacheKey || `${leg?.from?.id || ''}->${leg?.to?.id || ''}:${leg?.mode || ''}`;
+  const stack = Number(leg.routeStackOffset || 0).toFixed(3);
+  const colors = (trail?.colors || []).join(',');
+  return [
+    'passive',
+    detailKey,
+    geomKey,
+    leg.mode || '',
+    trail?.style || 'solid',
+    trail?.baseColor || '',
+    colors,
+    stack,
+    Number(opacity || 0).toFixed(3),
+    Number(width || 0).toFixed(3),
+    routeTuningCacheSignature(trailTuning)
+  ].join('|');
+}
+
+function routeTuningCacheSignature(config = DEFAULT_TRAIL_TUNING) {
+  // Include only trail-rendering keys that affect completed passive route output.
+  const keys = [
+    'routeStackingEnabled',
+    'borderThickness',
+    'borderZoomFade',
+    'solidPassiveThickness',
+    'solidPassiveGlow',
+    'solidPassiveOpacity',
+    'stripePassiveThickness',
+    'stripePassiveSegmentMiles',
+    'stripePassiveSeparator',
+    'stripePassiveGlow',
+    'stripePassiveBevel',
+    'stripePassiveLaneEffect',
+    'stripePassiveOpacity',
+    'ribbonPassiveThickness',
+    'ribbonPassiveSpread',
+    'ribbonPassiveGap',
+    'ribbonPassiveGlow',
+    'ribbonPassiveOpacity',
+    'ribbonPassiveUseStripe',
+    'spiralPassiveThickness',
+    'spiralPassiveSegmentMiles',
+    'spiralPassiveAmplitude',
+    'spiralPassiveGlow',
+    'spiralPassiveOpacity'
+  ];
+  return keys.map(key => `${key}:${config?.[key] ?? ''}`).join(';');
 }
 
 function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeometries = {}, travelerData = null, trailTuning = DEFAULT_TRAIL_TUNING) {
