@@ -2452,19 +2452,17 @@ function vehiclePitchDeg(mode, phase, progress) {
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
-  // v4.25: draw the active trail slightly past the vehicle center so it overlaps
-  // under the body/nose of the aircraft/vehicle. This prevents visible gaps from
-  // frame timing, camera motion, and icon size.
+  // v4.27: with cinematic route timing, only a tiny forward overlap is needed.
+  // Keep the line visually tucked under the vessel without drawing noticeably
+  // ahead of the nose/body.
   const isAir = mode === 'plane' || mode === 'move';
   const isSurface = mode === 'drive' || mode === 'boat' || mode === 'train';
   const overlap =
-    isAir ? (distance > 3000 ? 0.010 : distance > 900 ? 0.014 : 0.020) :
-    isSurface ? (distance > 900 ? 0.006 : distance > 250 ? 0.009 : 0.012) :
-    0.010;
+    isAir ? (distance > 3000 ? 0.0015 : distance > 900 ? 0.0025 : 0.0040) :
+    isSurface ? (distance > 900 ? 0.0015 : distance > 250 ? 0.0025 : 0.0040) :
+    0.002;
 
-  // Do not grow the line ahead of the vehicle during the first couple of frames,
-  // but once visible, keep a guaranteed overlap until arrival.
-  const ramp = smoothstep(Math.max(0, Math.min(1, rawP / 0.045)));
+  const ramp = smoothstep(Math.max(0, Math.min(1, rawP / 0.055)));
   return Math.max(0, Math.min(1, routeProgress + overlap * ramp));
 }
 function bearingBetween(a, b) {

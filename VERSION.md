@@ -1,1 +1,1 @@
-GlobeHoppers v4.26 — cinematic distance-based route timing
+GlobeHoppers v4.27 — repo-authoritative trips and smaller active trail overlap

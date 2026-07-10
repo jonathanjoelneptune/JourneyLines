@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, tripsDataStatus = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -134,6 +134,13 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
         <label className="check"><input type="checkbox" checked={showTrails} onChange={e => setShowTrails(e.target.checked)} /> Trails</label>
         <label className="check"><input type="checkbox" checked={routeStackingEnabled} onChange={e => setRouteStackingEnabled(e.target.checked)} /> Route stacking</label>
         <label className="check"><input type="checkbox" checked={placeBackgroundsEnabled} onChange={e => setPlaceBackgroundsEnabled(e.target.checked)} /> Place backgrounds</label>
+        <div className="timeline-advanced-section">
+          <div className="timeline-advanced-title">Trips data</div>
+          <div className="timeline-route-status">Source: {tripsDataStatus?.source || 'repo JSON'}</div>
+          <div className="timeline-route-detail">{tripsDataStatus?.trips || 0} trips · {tripsDataStatus?.legs || 0} legs · signature {tripsDataStatus?.signatureMatches ? 'matches' : 'changed'}</div>
+          {tripsDataStatus?.firstTimeline && <div className="timeline-route-detail">First timeline: {tripsDataStatus.firstTimeline}</div>}
+          {tripsDataStatus?.firstRepo && <div className="timeline-route-detail">First repo item: {tripsDataStatus.firstRepo}</div>}
+        </div>
         <div className="timeline-advanced-section">
           <div className="timeline-advanced-title">Route details</div>
           <div className="timeline-route-status">{routeDetailsStatus?.label || 'Not loaded'}</div>

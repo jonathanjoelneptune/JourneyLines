@@ -121,6 +121,47 @@ function parameterSignatureFor(source = {}) {
 
 const REPO_PARAMETER_SIGNATURE = parameterSignatureFor(parameters);
 
+function dataSignatureForTrips(source = []) {
+  try {
+    const rows = (source || []).map(t => [
+      t?.id || '',
+      t?.sortKey || '',
+      t?.year ?? '',
+      t?.month ?? '',
+      t?.day ?? '',
+      t?.label || '',
+      t?.toLocationId || '',
+      Array.isArray(t?.route) ? t.route.map(r => `${r?.locationId || ''}:${r?.modeFromPrevious || ''}`).join('>') : ''
+    ].join('~'));
+    return `${source?.length || 0}:${stableStringify(rows)}`;
+  } catch {
+    return `${source?.length || 0}:unknown`;
+  }
+}
+
+const REPO_TRIPS_SIGNATURE = dataSignatureForTrips(baseTrips);
+const REPO_LOCATIONS_SIGNATURE = `${baseLocations?.length || 0}:${stableStringify((baseLocations || []).map(l => [l?.id || '', l?.name || '', l?.lat ?? '', l?.lon ?? '']))}`;
+const REPO_HOPPERS_SIGNATURE = stableStringify({
+  hoppers: baseHoppers?.hoppers || [],
+  hopSquads: baseHoppers?.hopSquads || []
+});
+
+function clearStaleTripCaches() {
+  try {
+    const previous = localStorage.getItem('journeylines.repoTripsSignature');
+    if (previous !== REPO_TRIPS_SIGNATURE) {
+      localStorage.removeItem('journeylines.trips');
+      localStorage.removeItem('journeylines.locations');
+      localStorage.removeItem('globehoppers.hoppers');
+      localStorage.removeItem('journeylines.tripOrder');
+      localStorage.removeItem('globehoppers.tripOrder');
+      localStorage.setItem('journeylines.repoTripsSignature', REPO_TRIPS_SIGNATURE);
+      localStorage.setItem('journeylines.repoLocationsSignature', REPO_LOCATIONS_SIGNATURE);
+      localStorage.setItem('journeylines.repoHoppersSignature', REPO_HOPPERS_SIGNATURE);
+    }
+  } catch {}
+}
+
 function localParametersAreCurrent() {
   try {
     return localStorage.getItem(PARAMETER_STORAGE_SIGNATURE_KEY) === REPO_PARAMETER_SIGNATURE;
@@ -178,9 +219,10 @@ function syncParameterLocalsFromRepoOnce() {
 
 export default function App() {
   syncParameterLocalsFromRepoOnce();
-  const [trips, setTrips] = useState(() => JSON.parse(localStorage.getItem('journeylines.trips') || 'null') || baseTrips);
-  const [locations, setLocations] = useState(() => JSON.parse(localStorage.getItem('journeylines.locations') || 'null') || baseLocations);
-  const [hopperData, setHopperData] = useState(() => JSON.parse(localStorage.getItem('globehoppers.hoppers') || 'null') || baseHoppers);
+  clearStaleTripCaches();
+  const [trips, setTrips] = useState(() => baseTrips);
+  const [locations, setLocations] = useState(() => baseLocations);
+  const [hopperData, setHopperData] = useState(() => baseHoppers);
   const [isPlaying, setIsPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(999999);
@@ -219,9 +261,15 @@ export default function App() {
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
   const FRAME_MS = 33.333; // cap playback state updates around 30fps for smoother wall-display playback
 
-  useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
-  useEffect(() => localStorage.setItem('journeylines.locations', JSON.stringify(locations)), [locations]);
-  useEffect(() => localStorage.setItem('globehoppers.hoppers', JSON.stringify(hopperData)), [hopperData]);
+  // Committed trip/location/hopper data comes from deployed repo JSON.
+  // Do not let older browser localStorage override the repository timeline/order.
+  useEffect(() => {
+    try {
+      localStorage.setItem('journeylines.repoTripsSignature', REPO_TRIPS_SIGNATURE);
+      localStorage.setItem('journeylines.repoLocationsSignature', REPO_LOCATIONS_SIGNATURE);
+      localStorage.setItem('journeylines.repoHoppersSignature', REPO_HOPPERS_SIGNATURE);
+    } catch {}
+  }, []);
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
   useEffect(() => writeSyncedLocal('globehoppers.trailTuning', trailTuning), [trailTuning]);
   useEffect(() => writeSyncedBoolean('globehoppers.showTrails', showTrails), [showTrails]);
@@ -261,6 +309,23 @@ export default function App() {
   const timelineYearSegments = useMemo(() => buildTimelineYearSegments(tripTimeline, legs.length), [tripTimeline, legs.length]);
   const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
   const routeDetailsStatus = useMemo(() => summarizeRouteDetails(routeDetails, legs.length), [legs.length]);
+  const tripsDataStatus = useMemo(() => {
+    const repoFirst = baseTrips?.[0];
+    const activeFirst = trips?.[0];
+    const sortedFirst = sortedTrips?.[0];
+    const signatureMatches = dataSignatureForTrips(trips) === REPO_TRIPS_SIGNATURE;
+    return {
+      source: 'repo JSON',
+      trips: trips?.length || 0,
+      filteredTrips: sortedTrips?.length || 0,
+      legs: legs?.length || 0,
+      signatureMatches,
+      repoSignature: REPO_TRIPS_SIGNATURE.slice(0, 18),
+      firstRepo: repoFirst ? `${repoFirst.displayDate || repoFirst.year || ''} ${repoFirst.label || ''}`.trim() : '',
+      firstLoaded: activeFirst ? `${activeFirst.displayDate || activeFirst.year || ''} ${activeFirst.label || ''}`.trim() : '',
+      firstTimeline: sortedFirst ? `${sortedFirst.displayDate || sortedFirst.year || ''} ${sortedFirst.label || ''}`.trim() : ''
+    };
+  }, [trips, sortedTrips, legs.length]);
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
   const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
@@ -567,7 +632,7 @@ export default function App() {
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} routeDetailsMessage={routeDetailsMessage} routeDetailsBusy={routeDetailsBusy} onRebuildRouteDetails={rebuildRouteDetailsToRepo} />
+    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} tripsDataStatus={tripsDataStatus} routeDetailsMessage={routeDetailsMessage} routeDetailsBusy={routeDetailsBusy} onRebuildRouteDetails={rebuildRouteDetailsToRepo} />
     {trailTuningOpen && <TrailTuningUtility values={trailTuning} onChange={setTrailTuning} onClose={() => setTrailTuningOpen(false)} onReset={() => setTrailTuning(DEFAULT_TRAIL_TUNING)} onSave={saveParametersToRepo} />}
     {timelineTuningOpen && <TimelineTuningUtility values={timelineTuning} onChange={setTimelineTuning} onClose={() => setTimelineTuningOpen(false)} onReset={() => setTimelineTuning(DEFAULT_TIMELINE_TUNING)} onSave={saveParametersToRepo} />}
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
