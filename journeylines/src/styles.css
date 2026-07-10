@@ -11792,3 +11792,20 @@ svg text {
 .timeline-marker-layer .timeline-marker:not(.is-current) {
   z-index: 20;
 }
+
+
+/* GlobeHoppers v4.30: modal-only studio entry and thinner active timeline hitbox. */
+.timeline-marker-layer > button.timeline-marker.is-current,
+.timeline-marker-layer .timeline-marker.is-current {
+  width: 10px !important;
+  min-width: 10px !important;
+  max-width: 10px !important;
+}
+
+/* External Add/Edit Hop opens only the modal; the Timeline panel stays hidden. */
+.studio-shell--modal-only > .studio-panel {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(10px) scale(.985) !important;
+}

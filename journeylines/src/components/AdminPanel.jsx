@@ -33,7 +33,7 @@ const empty = {
   roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
 };
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, modalOnly = false }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -153,6 +153,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       setEditingId(null);
       setDraft(empty);
       window.dispatchEvent(new CustomEvent('globehoppers-resume-after-hop-modal'));
+      if (modalOnly) window.dispatchEvent(new CustomEvent('globehoppers-close-studio'));
     }, 260);
   }
 
@@ -393,7 +394,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     finally { setBusy(false); }
   }
 
-  return <section className={`studio-shell ${closing ? 'is-closing' : ''}`} onWheelCapture={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
+  return <section className={`studio-shell ${closing ? 'is-closing' : ''} ${modalOnly ? 'studio-shell--modal-only' : ''}`} onWheelCapture={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
     <aside className={`studio-panel glass studio-panel--${viewType}`}>
       <div className="studio-header drawer-header-unified">
         <p className="eyebrow">GlobeHoppers Studio</p>

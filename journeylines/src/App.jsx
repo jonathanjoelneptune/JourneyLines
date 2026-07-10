@@ -235,6 +235,7 @@ export default function App() {
   const [admin, setAdmin] = useState(false);
   const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
   const [studioEditTripId, setStudioEditTripId] = useState(null);
+  const [studioModalOnly, setStudioModalOnly] = useState(false);
   const tripDrawerScrollRef = useRef(0);
   const studioDrawerScrollRef = useRef(0);
   const [introLaunching, setIntroLaunching] = useState(false);
@@ -280,6 +281,7 @@ export default function App() {
   useEffect(() => {
     const closeStudio = () => {
       setAdmin(false);
+      setStudioModalOnly(false);
       if (resumeAfterStudioRef.current) {
         resumeAfterStudioRef.current = false;
         tRef.current.last = null;
@@ -416,6 +418,7 @@ export default function App() {
     setCameraMode(prev => prev === 'global' ? 'follow' : (prev || 'follow'));
     setShowHero(false);
     setAdmin(false);
+    setStudioModalOnly(false);
     setTripDrawerOpen(false);
     if (!started || activeIndex >= legs.length - 1) {
       setActiveIndex(0);
@@ -450,6 +453,7 @@ export default function App() {
     setShowHero(false);
     setTripDrawerOpen(false);
     setStudioEditTripId(null);
+    setStudioModalOnly(false);
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
@@ -465,6 +469,7 @@ export default function App() {
     setTripDrawerOpen(false);
     setTimelineTuningOpen(false);
     setTrailTuningOpen(false);
+    setStudioModalOnly(!admin);
     setStudioEditTripId(tripId);
     setAdmin(true);
     setStarted(true);
@@ -478,6 +483,7 @@ export default function App() {
     setShowHero(false);
     setTripDrawerOpen(false);
     setStudioEditTripId(null);
+    setStudioModalOnly(!admin);
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
@@ -657,7 +663,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} modalOnly={studioModalOnly} />}
   </main>;
 }
 

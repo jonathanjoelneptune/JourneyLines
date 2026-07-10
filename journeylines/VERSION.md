@@ -1,1 +1,1 @@
-GlobeHoppers v4.29 — timeline pin right-click edit and active hitbox fix
+GlobeHoppers v4.30 — thinner active pin hitbox and modal-only add/edit entry
