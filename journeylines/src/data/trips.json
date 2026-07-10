@@ -3286,5 +3286,56 @@
     "occasion": "",
     "trailStyle": "stripe",
     "trailColorMode": "members"
+  },
+  {
+    "id": "2026-144-qu-bec",
+    "year": 2026,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-12-99-018",
+    "label": "Québec",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-mrfa9zl4",
+        "name": "Tomiwa",
+        "colorName": "yellow",
+        "color": "#ffd60a"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "quebec-10",
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "locationId": "quebec-10",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "calgary-01",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members"
   }
 ]
