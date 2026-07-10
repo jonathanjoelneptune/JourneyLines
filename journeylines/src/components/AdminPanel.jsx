@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground, segmentedBorderGradient } from '../utils/hopperUtils.js';
 import routeDetails from '../data/routeDetails.json';
-import cityDatabase from '../data/cities15000.json';
 import { buildRouteDetailsPayload } from '../utils/routeDetails.js';
 
 const MODE_OPTIONS = [
@@ -56,6 +55,17 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
+  const [cityDb, setCityDb] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+    fetch(`${base}/data/cities15000.json`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { if (!cancelled && Array.isArray(data)) setCityDb(data); })
+      .catch(() => { if (!cancelled) setCityDb([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   function previewMapLocation(location) {
     if (!location || location.lon == null || location.lat == null) return;
@@ -613,8 +623,8 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
 }
 
 function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError }) {
-  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '');
-  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '');
+  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityDb);
+  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityDb);
   const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
@@ -809,7 +819,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
                 <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
                   <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
-                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '', city: null })} matches={locationSuggestions(locs, leg.locationText || '')} onChoose={loc => onChooseExtraLeg(index, loc)} />
+                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '', city: null })} matches={locationSuggestions(locs, leg.locationText || '', cityDb)} onChoose={loc => onChooseExtraLeg(index, loc)} />
                   <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
                 </div>)}
               </div>
@@ -1380,12 +1390,12 @@ function filterLocations(locs, q) {
   if (!needle) return locs.slice(0, 6);
   return locs.filter(l => normalizeSearchText(`${l.name} ${l.region} ${l.country} ${l.id}`).includes(needle));
 }
-function locationSuggestions(locs, q) {
+function locationSuggestions(locs, q, cityDatabase = []) {
   const needle = normalizeSearchText(q);
   if (!needle || needle.length < 2) return filterLocations(locs, q).map(l => ({ ...l, _source: 'saved', _label: 'Saved' }));
   const saved = filterLocations(locs, q).slice(0, 6).map((l, i) => ({ ...l, _source: 'saved', _label: 'Saved', _score: 500 - i }));
   const cityMatches = [];
-  for (const city of cityDatabase) {
+  for (const city of (Array.isArray(cityDatabase) ? cityDatabase : [])) {
     const score = citySuggestionScore(city, needle);
     if (score > 0) cityMatches.push({ ...citySuggestionToOption(city), _score: score });
     if (cityMatches.length > 240) break;

@@ -1,8 +1,7 @@
-Base: GlobeHoppers v4.30
-Update: v4.31 city suggestions database
+Base: GlobeHoppers v4.31
+Update: v4.31.1 city suggestions runtime fix
 Changes:
-- Added src/data/cities15000.json generated from uploaded GeoNames cities15000.txt.
-- Add/Edit Hop location fields now search saved locations first, then the city database.
-- Destination, override start location, and additional leg destination all support city suggestions.
-- City suggestions are converted into locations.json entries only when the hop is saved.
-- Manual/custom typed location behavior remains available.
+- Moved cities15000.json out of the JS bundle and into public/data for lazy fetch.
+- Add/Edit Hop no longer imports the full city database synchronously.
+- Suggestions fall back to saved locations until the city database finishes loading.
+- Keeps Destination, Override Start, and Additional Leg city suggestions.

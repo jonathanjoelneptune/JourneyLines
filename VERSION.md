@@ -1,1 +1,1 @@
-GlobeHoppers v4.31 — cities15000 suggestion database
+GlobeHoppers v4.31.1 — lazy-loaded city suggestions runtime fix
