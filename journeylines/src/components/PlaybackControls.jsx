@@ -146,15 +146,11 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
           <div className="timeline-advanced-title">Repository save</div>
           <div className={`timeline-route-status timeline-save-status timeline-save-status--${repoSaveStatus?.state || 'idle'}`}>{repoSaveStatus?.label || 'No recent repository save'}</div>
           {repoSaveStatus?.detail && <div className="timeline-route-detail">{repoSaveStatus.detail}</div>}
-          {Array.isArray(repoSaveStatus?.items) && repoSaveStatus.items.length > 0 && <div className="timeline-save-batch-list">
-            {repoSaveStatus.items.slice(0, 6).map((item, index) => <div className="timeline-save-batch-item" key={`${item.tripId || item.label || 'item'}-${index}`}>
-              <span>{formatRepoSaveAction(item)}</span>
-              <strong>{item.label || 'Hop'}</strong>
-              {item.tripId && <code>{item.tripId}</code>}
-            </div>)}
-            {repoSaveStatus.items.length > 6 && <div className="timeline-route-detail">+ {repoSaveStatus.items.length - 6} more changes</div>}
-          </div>}
-          {repoSaveStatus?.completedAt && <div className="timeline-route-detail">{repoSaveStatus.state === 'error' ? 'Failed' : 'Completed'} {formatRelativeSaveTime(repoSaveStatus.completedAt)}</div>}
+          {Array.isArray(repoSaveStatus?.pendingItems) && repoSaveStatus.pendingItems.length > 0 && <RepoSaveGroup title="Pending" items={repoSaveStatus.pendingItems} />}
+          {Array.isArray(repoSaveStatus?.currentItems) && repoSaveStatus.currentItems.length > 0 && repoSaveStatus.state === 'saving' && <RepoSaveGroup title="Saving now" items={repoSaveStatus.currentItems} />}
+          {Array.isArray(repoSaveStatus?.completedItems) && repoSaveStatus.completedItems.length > 0 && <RepoSaveGroup title={`Complete${repoSaveStatus?.completedAt ? ` (${formatRelativeSaveTime(repoSaveStatus.completedAt)})` : ''}`} items={repoSaveStatus.completedItems} />}
+          {!repoSaveStatus?.pendingItems?.length && !repoSaveStatus?.currentItems?.length && !repoSaveStatus?.completedItems?.length && Array.isArray(repoSaveStatus?.items) && repoSaveStatus.items.length > 0 && <RepoSaveGroup title={repoSaveStatus.state === 'saved' ? 'Complete' : 'Pending'} items={repoSaveStatus.items} />}
+          {repoSaveStatus?.completedAt && (!repoSaveStatus?.completedItems || repoSaveStatus.completedItems.length === 0) && <div className="timeline-route-detail">{repoSaveStatus.state === 'error' ? 'Failed' : 'Completed'} {formatRelativeSaveTime(repoSaveStatus.completedAt)}</div>}
           {repoSaveStatus?.startedAt && repoSaveStatus?.state === 'saving' && <div className="timeline-route-detail">Started {formatRelativeSaveTime(repoSaveStatus.startedAt)}</div>}
           {repoSaveStatus?.error && <div className="timeline-route-message timeline-route-message--error">{repoSaveStatus.error}</div>}
         </div>
@@ -174,6 +170,21 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
           </button>
         </div>
       </div>}
+    </div>
+  </div>;
+}
+
+function RepoSaveGroup({ title, items = [] }) {
+  if (!Array.isArray(items) || !items.length) return null;
+  return <div className="timeline-save-group">
+    <div className="timeline-save-group-title">{title}</div>
+    <div className="timeline-save-batch-list">
+      {items.slice(0, 8).map((item, index) => <div className="timeline-save-batch-item" key={`${item.tripId || item.label || 'item'}-${index}`}>
+        <span>{formatRepoSaveAction(item)}</span>
+        <strong>{item.label || 'Hop'}</strong>
+        {item.tripId && <code>{item.tripId}</code>}
+      </div>)}
+      {items.length > 8 && <div className="timeline-route-detail">+ {items.length - 8} more changes</div>}
     </div>
   </div>;
 }

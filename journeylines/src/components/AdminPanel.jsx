@@ -51,6 +51,8 @@ function loadCityDatabase() {
 
 const repoSaveQueue = {
   pending: null,
+  current: null,
+  completed: null,
   timer: null,
   saving: false
 };
@@ -399,17 +401,14 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
     if (queue.timer) clearTimeout(queue.timer);
 
-    const statusPayload = {
+    onRepoSaveStatus(repoSaveStatusPayload(queue, {
       state: 'queued',
       label: 'Repository save queued',
       detail: repoSaveBatchDetail(queue.pending, queue.saving),
-      items: queue.pending.items,
       startedAt: queuedAt,
       completedAt: null,
       error: null
-    };
-
-    onRepoSaveStatus(statusPayload);
+    }));
 
     if (queue.saving) return;
 
@@ -436,75 +435,83 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     if (!job) return;
 
     queue.pending = null;
+    queue.current = job;
     queue.saving = true;
     const startedAt = Date.now();
     const commitMessage = repoSaveCommitMessage(job);
 
-    onRepoSaveStatus({
+    onRepoSaveStatus(repoSaveStatusPayload(queue, {
       state: 'saving',
       label: 'Saving to GitHub…',
       detail: repoSaveBatchDetail(job, false),
-      items: job.items || [],
       startedAt,
       completedAt: null,
       error: null
-    });
+    }));
 
     let lockOwner = null;
     try {
-      lockOwner = await acquireRepoSaveLock((status) => onRepoSaveStatus({ ...status, items: job.items || [] }));
+      lockOwner = await acquireRepoSaveLock((status) => onRepoSaveStatus(repoSaveStatusPayload(queue, status)));
       const { trips: repairedTrips, locations: repairedLocations, repairedIds } = await repairMissingLocationsForTrips(job.trips, job.locations);
       if (repairedIds.length) {
         locationsRef.current = repairedLocations;
         setLocations(repairedLocations);
-        onRepoSaveStatus({
+        onRepoSaveStatus(repoSaveStatusPayload(queue, {
           state: 'saving',
           label: 'Repairing missing locations…',
           detail: `${repoSaveBatchDetail(job, false)} • repaired ${repairedIds.join(', ')}`,
-          items: job.items || [],
           startedAt,
           completedAt: null,
           error: null
-        });
+        }));
       }
 
       await commitData(repairedTrips, repairedLocations, commitMessage);
-      onRepoSaveStatus({
+      queue.completed = { ...job, completedAt: Date.now(), startedAt };
+      onRepoSaveStatus(repoSaveStatusPayload(queue, {
         state: 'saved',
         label: 'Saved to GitHub',
-        detail: repoSaveBatchDetail(job, false),
-        items: job.items || [],
+        detail: repoSaveCompletedDetail(job),
         startedAt,
-        completedAt: Date.now(),
+        completedAt: queue.completed.completedAt,
         error: null
-      });
+      }));
       await wait(REPO_SAVE_COOLDOWN_MS);
     } catch (err) {
       const errorMessage = err?.message || String(err);
-      onRepoSaveStatus({
+      queue.completed = { ...job, completedAt: Date.now(), startedAt, error: errorMessage };
+      onRepoSaveStatus(repoSaveStatusPayload(queue, {
         state: 'error',
         label: 'Repository save failed',
-        detail: repoSaveBatchDetail(job, false),
-        items: job.items || [],
+        detail: repoSaveCompletedDetail(job),
         startedAt,
-        completedAt: Date.now(),
+        completedAt: queue.completed.completedAt,
         error: errorMessage
-      });
+      }));
       window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.\n\n${errorMessage}`);
     } finally {
       if (lockOwner) clearRepoSaveLock(lockOwner);
       queue.saving = false;
+      queue.current = null;
       if (queue.pending) {
-        onRepoSaveStatus({
+        onRepoSaveStatus(repoSaveStatusPayload(queue, {
           state: 'queued',
           label: 'Repository save queued',
           detail: repoSaveBatchDetail(queue.pending, false),
-          items: queue.pending.items || [],
           startedAt: queue.pending.queuedAt || Date.now(),
           completedAt: null,
           error: null
-        });
+        }));
         schedulePendingRepoSave(3000);
+      } else if (queue.completed) {
+        onRepoSaveStatus(repoSaveStatusPayload(queue, {
+          state: queue.completed.error ? 'error' : 'saved',
+          label: queue.completed.error ? 'Repository save failed' : 'Saved to GitHub',
+          detail: repoSaveCompletedDetail(queue.completed),
+          startedAt: queue.completed.startedAt || startedAt,
+          completedAt: queue.completed.completedAt || Date.now(),
+          error: queue.completed.error || null
+        }));
       }
     }
   }
@@ -552,6 +559,27 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const verb = item.action === 'delete' ? 'Delete' : item.action === 'edit' ? 'Edit' : item.action === 'add' ? 'Add' : 'Update';
     const id = item.tripId ? ` [${item.tripId}]` : '';
     return `${verb} ${item.label || 'Hop'}${id}`;
+  }
+
+  function repoSaveStatusPayload(queue = repoSaveQueue, base = {}) {
+    const pendingItems = Array.isArray(queue.pending?.items) ? queue.pending.items : [];
+    const currentItems = Array.isArray(queue.current?.items) ? queue.current.items : [];
+    const completedItems = Array.isArray(queue.completed?.items) ? queue.completed.items : [];
+    return {
+      ...base,
+      items: currentItems.length ? currentItems : pendingItems,
+      pendingItems,
+      currentItems,
+      completedItems,
+      completedAt: base.completedAt ?? queue.completed?.completedAt ?? null
+    };
+  }
+
+  function repoSaveCompletedDetail(job = {}) {
+    const items = Array.isArray(job.items) ? job.items : [];
+    if (!items.length) return 'Repository is up to date';
+    const countText = items.length === 1 ? '1 completed change' : `${items.length} completed changes`;
+    return `${countText}: ${items.map(formatRepoSaveItem).join(' • ')}`;
   }
 
 
@@ -639,12 +667,23 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     for (const trip of nextTrips || []) validateTripLocationReferences(trip, nextLocations);
     const nextRouteDetails = buildRouteDetailsPayload(nextTrips, nextLocations, homeBases, routeDetails);
     const files = [
-      { path: 'journeylines/src/data/trips.json', data: nextTrips },
       { path: 'journeylines/src/data/locations.json', data: nextLocations },
+      { path: 'journeylines/src/data/trips.json', data: nextTrips },
       { path: 'journeylines/src/data/routeDetails.json', data: nextRouteDetails }
     ];
     try { localStorage.setItem('journeylines.routeDetails', JSON.stringify(nextRouteDetails)); } catch {}
-    await commitFilesAtomically(files, message);
+    try {
+      await commitFilesAtomically(files, message);
+    } catch (err) {
+      if (!isRetryableGitConflict(err)) throw err;
+      console.warn('[GlobeHoppers] Atomic Git save failed after retries. Falling back to Contents API sequential save.', err);
+      await commitFilesWithContentsApi(files, `${message} (fallback sync)`);
+    }
+  }
+
+  function isRetryableGitConflict(err) {
+    const text = err?.message || String(err || '');
+    return /fast.?forward|409|422|conflict|reference|retrying/i.test(text);
   }
 
   async function commitFilesAtomically(files, message) {

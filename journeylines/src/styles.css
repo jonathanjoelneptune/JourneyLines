@@ -11974,3 +11974,17 @@ svg text {
 .gh-studio-trip-row--expanded .studio-trip-id-badge {
   display: none !important;
 }
+
+
+/* GlobeHoppers v4.36.3: repository save pending/complete groups. */
+.timeline-save-group {
+  margin-top: 8px;
+}
+.timeline-save-group-title {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(232, 243, 255, .52);
+  margin-bottom: 4px;
+}

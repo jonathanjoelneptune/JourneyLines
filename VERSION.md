@@ -1,1 +1,1 @@
-GlobeHoppers v4.36.2 — save lock conflict hardening and row ID rollback
+GlobeHoppers v4.36.3 — save status groups and conflict fallback

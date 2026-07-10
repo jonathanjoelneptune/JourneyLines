@@ -1,8 +1,9 @@
-Base: GlobeHoppers v4.36.1
-Update: v4.36.2 save lock conflict hardening and row ID rollback
+Base: GlobeHoppers v4.36.2
+Update: v4.36.3 save status groups and conflict fallback
 Changes:
-- Removed trip IDs from expanded GlobeHopper Timeline rows to restore prior row layout.
-- Trip ID remains visible in Add/Edit Hop details.
-- Added a client-side repository save lock using localStorage/sessionStorage so rapid saves do not race each other across Studio lifecycle changes or tabs.
-- Added a short post-save cooldown before releasing the lock so GitHub refs have time to settle.
-- Increased non-fast-forward retry attempts and backoff for GitHub 422/409 reference conflicts.
+- Repository save status now separates Pending, Saving now, and Complete sections.
+- Completed saves no longer show stale pending wording.
+- Pending/complete lists show add/edit/delete action, trip label, and trip ID.
+- Atomic Git save remains the primary save path.
+- If atomic Git save repeatedly fails with a non-fast-forward/reference conflict, the app falls back to the GitHub Contents API sequential save.
+- Fallback save writes locations.json first, trips.json second, and routeDetails.json last to reduce the chance of missing location references.
