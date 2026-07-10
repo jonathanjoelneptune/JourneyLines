@@ -1,1 +1,1 @@
-GlobeHoppers v4.22 — persistent route geometry backfill
+GlobeHoppers v4.23 — smoother route camera zoom and tile prewarm
