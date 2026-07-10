@@ -1,1 +1,1 @@
-GlobeHoppers v4.28.2 — tighter tapered route stacking and vehicle follows lane
+GlobeHoppers v4.29 — timeline pin right-click edit and active hitbox fix

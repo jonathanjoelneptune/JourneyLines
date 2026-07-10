@@ -11768,3 +11768,27 @@ svg text {
   line-height: 1.25;
   color: rgba(232,244,255,.62);
 }
+
+
+/* GlobeHoppers v4.29: keep active raised pin from stealing neighboring pin clicks. */
+.timeline-marker-layer > button.timeline-marker.is-current,
+.timeline-marker-layer .timeline-marker.is-current {
+  height: calc(var(--tl-active-head, 14px) + var(--tl-active-stem, 42px) + 12px) !important;
+  width: calc(var(--tl-active-head, 14px) + 10px) !important;
+  transform: translate(-50%, calc(-52% - var(--tl-active-lift, 34px) - var(--tl-pin-base-y, 1px))) !important;
+  z-index: 32 !important;
+}
+
+/* Keep hover/focus movement on the raised active pin, not down on the base row. */
+.timeline-marker-layer > button.timeline-marker.is-current:hover,
+.timeline-marker-layer > button.timeline-marker.is-current:focus-visible,
+.timeline-marker-layer .timeline-marker.is-current:hover,
+.timeline-marker-layer .timeline-marker.is-current:focus-visible {
+  transform: translate(-50%, calc(-58% - var(--tl-active-lift, 34px) - var(--tl-pin-base-y, 1px))) !important;
+}
+
+/* Neighbor pins should stay selectable beside the active raised pin. */
+.timeline-marker-layer > button.timeline-marker:not(.is-current),
+.timeline-marker-layer .timeline-marker:not(.is-current) {
+  z-index: 20;
+}
