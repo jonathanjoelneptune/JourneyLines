@@ -1,1 +1,1 @@
-GlobeHoppers v4.25 — active trail overlap under vessel
+GlobeHoppers v4.26 — cinematic distance-based route timing
