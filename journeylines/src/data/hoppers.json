@@ -19,18 +19,7 @@
       "color": "#ff3b30"
     }
   ],
-  "hopSquads": [
-    {
-      "id": "squad-mrei4g6o",
-      "name": "New Hop Squad",
-      "hopperIds": [
-        "joey",
-        "bonnie"
-      ],
-      "colorName": "purple",
-      "color": "#9b5cff"
-    }
-  ],
+  "hopSquads": [],
   "palette": [
     {
       "name": "red",
