@@ -814,9 +814,9 @@
   {
     "id": "2018-039-las-vegas",
     "year": 2018,
-    "month": null,
+    "month": 5,
     "day": null,
-    "displayDate": "2018",
+    "displayDate": "May 2018",
     "sortKey": "2018-13-99-004",
     "label": "Las Vegas",
     "travelers": [
@@ -829,7 +829,15 @@
     "toLocationId": "las-vegas-nv",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "plane",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members"
   },
   {
     "id": "2018-040-cabo",
