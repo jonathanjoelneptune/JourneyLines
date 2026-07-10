@@ -69,7 +69,14 @@
     "endMonth": null,
     "endDay": null,
     "displayEndDate": "",
-    "guestHoppers": [],
+    "guestHoppers": [
+      {
+        "id": "guest-mrei2uz4",
+        "name": "Kaitlyn",
+        "colorName": "yellow",
+        "color": "#ffd60a"
+      }
+    ],
     "returnMode": "plane",
     "trailStyle": "ribbon",
     "trailColorMode": "members"
