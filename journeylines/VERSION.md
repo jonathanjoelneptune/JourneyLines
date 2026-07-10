@@ -1,1 +1,1 @@
-GlobeHoppers v4.14 — active and passive trail profiles
+GlobeHoppers v4.15 — active-to-passive trail morph and route stacking return-lane fix

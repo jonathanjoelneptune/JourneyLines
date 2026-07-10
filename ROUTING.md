@@ -1,1 +1,1 @@
-Base: v4.13.1. Adds active/passive trail tuning profiles. Completed trails render passive with Trails on; all legs in current trip render active until the trip completes.
+Base: v4.14. Adds 3-second active-to-passive completed-trip trail morph. Confirms route stacking is per unordered endpoint pair and trip id so return legs share outbound lane.
