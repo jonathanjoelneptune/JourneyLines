@@ -151,9 +151,9 @@
   {
     "id": "2014-007-atlanta",
     "year": 2014,
-    "month": null,
+    "month": 6,
     "day": null,
-    "displayDate": "2014",
+    "displayDate": "June 2014",
     "sortKey": "2014-13-99-001",
     "label": "Atlanta",
     "travelers": [
@@ -166,7 +166,15 @@
     "toLocationId": "atlanta-ga",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "plane",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members"
   },
   {
     "id": "2014-008-new-york",
