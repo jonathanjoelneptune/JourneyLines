@@ -2916,10 +2916,10 @@
   },
   {
     "id": "2026-130-london-and-amsterdam",
-    "year": 2026,
+    "year": 2022,
     "month": 4,
     "day": 8,
-    "displayDate": "April 8, 2026",
+    "displayDate": "April 8, 2022",
     "sortKey": "2026-04-08-001",
     "label": "London and Amsterdam",
     "travelers": [
@@ -2927,15 +2927,15 @@
     ],
     "mode": "mixed",
     "roundTrip": false,
-    "fromLocationId": null,
-    "toLocationId": "amsterdam-nl",
+    "fromLocationId": "san-diego-ca",
+    "toLocationId": "london-uk",
     "route": [
       {
         "locationId": "san-diego-ca",
         "modeFromPrevious": null
       },
       {
-        "locationId": "amsterdam-nl",
+        "locationId": "london-uk",
         "modeFromPrevious": "mixed"
       },
       {
@@ -2948,7 +2948,15 @@
       }
     ],
     "notes": "San Diego to London, train to Amsterdam, then home.",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members"
   },
   {
     "id": "2026-131-syracuse-and-lakeland",
