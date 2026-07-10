@@ -2942,6 +2942,33 @@
     "occasion": ""
   },
   {
+    "id": "2026-144-buffalo",
+    "year": 2026,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-03-99-017",
+    "label": "Buffalo",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "buffalo-ny",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members"
+  },
+  {
     "id": "2026-130-london-and-amsterdam",
     "year": 2026,
     "month": 4,
