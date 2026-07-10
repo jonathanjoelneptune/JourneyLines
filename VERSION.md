@@ -1,1 +1,1 @@
-GlobeHoppers v4.07 — default-off placards/trails, destination labels, zoom readout, label collision, and trail fade
+GlobeHoppers v4.08 — repo parameter sync precedence fix

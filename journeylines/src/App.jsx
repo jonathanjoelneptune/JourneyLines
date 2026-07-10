@@ -50,7 +50,88 @@ const DEFAULT_TIMELINE_TUNING = {
   animationOvershoot: 1.12
 };
 
+
+const PARAMETER_STORAGE_SIGNATURE_KEY = 'globehoppers.parametersSignature';
+
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function parameterSignatureFor(source = {}) {
+  return stableStringify({
+    updatedAt: source?.updatedAt || '',
+    version: source?.version || '',
+    showTrails: source?.showTrails ?? null,
+    placeBackgroundsEnabled: source?.placeBackgroundsEnabled ?? null,
+    routeStackingEnabled: source?.routeStackingEnabled ?? null,
+    trailTuning: source?.trailTuning || {},
+    timelineTuning: source?.timelineTuning || {}
+  });
+}
+
+const REPO_PARAMETER_SIGNATURE = parameterSignatureFor(parameters);
+
+function localParametersAreCurrent() {
+  try {
+    return localStorage.getItem(PARAMETER_STORAGE_SIGNATURE_KEY) === REPO_PARAMETER_SIGNATURE;
+  } catch {
+    return false;
+  }
+}
+
+function readSyncedBoolean(key, repoDefault = false) {
+  try {
+    if (!localParametersAreCurrent()) return Boolean(repoDefault);
+    const saved = localStorage.getItem(key);
+    return saved == null ? Boolean(repoDefault) : saved === 'true';
+  } catch {
+    return Boolean(repoDefault);
+  }
+}
+
+function readSyncedObject(key, repoDefault = {}) {
+  try {
+    if (!localParametersAreCurrent()) return repoDefault || {};
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    return saved && typeof saved === 'object' ? saved : (repoDefault || {});
+  } catch {
+    return repoDefault || {};
+  }
+}
+
+function writeSyncedLocal(key, value, signature = REPO_PARAMETER_SIGNATURE) {
+  try {
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+    localStorage.setItem(PARAMETER_STORAGE_SIGNATURE_KEY, signature);
+  } catch {}
+}
+
+function writeSyncedBoolean(key, value, signature = REPO_PARAMETER_SIGNATURE) {
+  try {
+    localStorage.setItem(key, String(Boolean(value)));
+    localStorage.setItem(PARAMETER_STORAGE_SIGNATURE_KEY, signature);
+  } catch {}
+}
+
+function syncParameterLocalsFromRepoOnce() {
+  try {
+    if (localStorage.getItem(PARAMETER_STORAGE_SIGNATURE_KEY) === REPO_PARAMETER_SIGNATURE) return;
+    localStorage.setItem('globehoppers.showTrails', String(Boolean(parameters?.showTrails)));
+    localStorage.setItem('globehoppers.placeBackgroundsEnabled', String(Boolean(parameters?.placeBackgroundsEnabled)));
+    localStorage.setItem('globehoppers.routeStackingEnabled', String(Boolean(parameters?.routeStackingEnabled)));
+    localStorage.setItem('globehoppers.trailTuning', JSON.stringify({ ...DEFAULT_TRAIL_TUNING, ...(parameters?.trailTuning || {}) }));
+    localStorage.setItem('globehoppers.timelineTuning', JSON.stringify({ ...DEFAULT_TIMELINE_TUNING, ...(parameters?.timelineTuning || {}) }));
+    localStorage.setItem(PARAMETER_STORAGE_SIGNATURE_KEY, REPO_PARAMETER_SIGNATURE);
+  } catch {}
+}
+
+
 export default function App() {
+  syncParameterLocalsFromRepoOnce();
   const [trips, setTrips] = useState(() => JSON.parse(localStorage.getItem('journeylines.trips') || 'null') || baseTrips);
   const [locations, setLocations] = useState(() => JSON.parse(localStorage.getItem('journeylines.locations') || 'null') || baseLocations);
   const [hopperData, setHopperData] = useState(() => JSON.parse(localStorage.getItem('globehoppers.hoppers') || 'null') || baseHoppers);
@@ -60,12 +141,7 @@ export default function App() {
   const [legProgress, setLegProgress] = useState(1);
   const [projection, setProjection] = useState(settings.defaultProjection);
   const [cameraMode, setCameraMode] = useState('follow');
-  const [showTrails, setShowTrails] = useState(() => {
-    try {
-      const saved = localStorage.getItem('globehoppers.showTrails');
-      return saved == null ? Boolean(parameters?.showTrails) : saved === 'true';
-    } catch { return Boolean(parameters?.showTrails); }
-  });
+  const [showTrails, setShowTrails] = useState(() => readSyncedBoolean('globehoppers.showTrails', parameters?.showTrails ?? false));
   const [speed, setSpeed] = useState(settings.playbackSpeed);
   const [filter, setFilter] = useState('all');
   const [admin, setAdmin] = useState(false);
@@ -84,26 +160,10 @@ export default function App() {
   const [resetNonce, setResetNonce] = useState(0);
   const [trailTuningOpen, setTrailTuningOpen] = useState(false);
   const [timelineTuningOpen, setTimelineTuningOpen] = useState(false);
-  const [trailTuning, setTrailTuning] = useState(() => {
-    try { return { ...DEFAULT_TRAIL_TUNING, ...(parameters?.trailTuning || {}), ...(JSON.parse(localStorage.getItem('globehoppers.trailTuning') || 'null') || {}) }; }
-    catch { return { ...DEFAULT_TRAIL_TUNING, ...(parameters?.trailTuning || {}) }; }
-  });
-  const [timelineTuning, setTimelineTuning] = useState(() => {
-    try { return { ...DEFAULT_TIMELINE_TUNING, ...(parameters?.timelineTuning || {}), ...(JSON.parse(localStorage.getItem('globehoppers.timelineTuning') || 'null') || {}) }; }
-    catch { return { ...DEFAULT_TIMELINE_TUNING, ...(parameters?.timelineTuning || {}) }; }
-  });
-  const [routeStackingEnabled, setRouteStackingEnabled] = useState(() => {
-    try {
-      const saved = localStorage.getItem('globehoppers.routeStackingEnabled');
-      return saved == null ? Boolean(parameters?.routeStackingEnabled) : saved === 'true';
-    } catch { return Boolean(parameters?.routeStackingEnabled); }
-  });
-  const [placeBackgroundsEnabled, setPlaceBackgroundsEnabled] = useState(() => {
-    try {
-      const saved = localStorage.getItem('globehoppers.placeBackgroundsEnabled');
-      return saved == null ? Boolean(parameters?.placeBackgroundsEnabled) : saved === 'true';
-    } catch { return Boolean(parameters?.placeBackgroundsEnabled); }
-  });
+  const [trailTuning, setTrailTuning] = useState(() => ({ ...DEFAULT_TRAIL_TUNING, ...(parameters?.trailTuning || {}), ...readSyncedObject('globehoppers.trailTuning', {}) }));
+  const [timelineTuning, setTimelineTuning] = useState(() => ({ ...DEFAULT_TIMELINE_TUNING, ...(parameters?.timelineTuning || {}), ...readSyncedObject('globehoppers.timelineTuning', {}) }));
+  const [routeStackingEnabled, setRouteStackingEnabled] = useState(() => readSyncedBoolean('globehoppers.routeStackingEnabled', parameters?.routeStackingEnabled ?? false));
+  const [placeBackgroundsEnabled, setPlaceBackgroundsEnabled] = useState(() => readSyncedBoolean('globehoppers.placeBackgroundsEnabled', parameters?.placeBackgroundsEnabled ?? false));
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const resumeAfterStudioRef = useRef(false);
@@ -115,11 +175,11 @@ export default function App() {
   useEffect(() => localStorage.setItem('journeylines.locations', JSON.stringify(locations)), [locations]);
   useEffect(() => localStorage.setItem('globehoppers.hoppers', JSON.stringify(hopperData)), [hopperData]);
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
-  useEffect(() => localStorage.setItem('globehoppers.trailTuning', JSON.stringify(trailTuning)), [trailTuning]);
-  useEffect(() => localStorage.setItem('globehoppers.showTrails', String(showTrails)), [showTrails]);
-  useEffect(() => localStorage.setItem('globehoppers.timelineTuning', JSON.stringify(timelineTuning)), [timelineTuning]);
-  useEffect(() => localStorage.setItem('globehoppers.routeStackingEnabled', String(routeStackingEnabled)), [routeStackingEnabled]);
-  useEffect(() => localStorage.setItem('globehoppers.placeBackgroundsEnabled', String(placeBackgroundsEnabled)), [placeBackgroundsEnabled]);
+  useEffect(() => writeSyncedLocal('globehoppers.trailTuning', trailTuning), [trailTuning]);
+  useEffect(() => writeSyncedBoolean('globehoppers.showTrails', showTrails), [showTrails]);
+  useEffect(() => writeSyncedLocal('globehoppers.timelineTuning', timelineTuning), [timelineTuning]);
+  useEffect(() => writeSyncedBoolean('globehoppers.routeStackingEnabled', routeStackingEnabled), [routeStackingEnabled]);
+  useEffect(() => writeSyncedBoolean('globehoppers.placeBackgroundsEnabled', placeBackgroundsEnabled), [placeBackgroundsEnabled]);
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
   useEffect(() => {
     const closeStudio = () => {
@@ -376,14 +436,15 @@ export default function App() {
   async function saveParametersToRepo() {
     const repo = localStorage.getItem('journeylines.githubRepo') || localStorage.getItem('journeylines.repo') || 'jonathanjoelneptune/JourneyLines';
     const token = localStorage.getItem('journeylines.githubToken') || '';
-    const payload = { trailTuning, timelineTuning, routeStackingEnabled, placeBackgroundsEnabled, showTrails };
-    localStorage.setItem('globehoppers.trailTuning', JSON.stringify(trailTuning));
-    localStorage.setItem('globehoppers.timelineTuning', JSON.stringify(timelineTuning));
-    localStorage.setItem('globehoppers.showTrails', String(showTrails));
-    localStorage.setItem('globehoppers.routeStackingEnabled', String(routeStackingEnabled));
-    localStorage.setItem('globehoppers.placeBackgroundsEnabled', String(placeBackgroundsEnabled));
+    const payload = { version: '4.08', updatedAt: new Date().toISOString(), trailTuning, timelineTuning, routeStackingEnabled, placeBackgroundsEnabled, showTrails };
     if (!token) return false;
     await commitSingleJsonFile(repo, token, 'journeylines/src/data/parameters.json', payload, 'Update GlobeHoppers parameters');
+    const savedSignature = parameterSignatureFor(payload);
+    writeSyncedLocal('globehoppers.trailTuning', trailTuning, savedSignature);
+    writeSyncedLocal('globehoppers.timelineTuning', timelineTuning, savedSignature);
+    writeSyncedBoolean('globehoppers.showTrails', showTrails, savedSignature);
+    writeSyncedBoolean('globehoppers.routeStackingEnabled', routeStackingEnabled, savedSignature);
+    writeSyncedBoolean('globehoppers.placeBackgroundsEnabled', placeBackgroundsEnabled, savedSignature);
     return true;
   }
 

@@ -1,7 +1,7 @@
 {
   "name": "journeylines",
   "private": true,
-  "version": "4.07.0",
+  "version": "4.08.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
