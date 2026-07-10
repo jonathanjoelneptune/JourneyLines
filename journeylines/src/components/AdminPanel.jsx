@@ -69,6 +69,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [cityDbLoading, setCityDbLoading] = useState(false);
   const tripsRef = useRef(trips);
   const locationsRef = useRef(locations);
+  const repoSaveQueueRef = useRef({ pending: null, timer: null, saving: false });
   const [dragId, setDragId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const studioListRef = useRef(null);
@@ -77,6 +78,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   useEffect(() => { tripsRef.current = trips; }, [trips]);
   useEffect(() => { locationsRef.current = locations; }, [locations]);
+  useEffect(() => {
+    return () => {
+      if (repoSaveQueueRef.current?.timer) clearTimeout(repoSaveQueueRef.current.timer);
+    };
+  }, []);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
 
@@ -317,27 +323,123 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const a = document.createElement('a'); a.href = url; a.download = 'trips.json'; a.click(); URL.revokeObjectURL(url);
   }
   function saveDataInBackground(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
-    const startedAt = Date.now();
-    onRepoSaveStatus({ state: 'saving', label: 'Saving to GitHub…', detail: message, startedAt, completedAt: null, error: null });
-    repairMissingLocationsForTrips(nextTrips, nextLocations)
-      .then(({ trips: repairedTrips, locations: repairedLocations, repairedIds }) => {
-        if (repairedIds.length) {
-          locationsRef.current = repairedLocations;
-          setLocations(repairedLocations);
-          onRepoSaveStatus({ state: 'saving', label: 'Repairing missing locations…', detail: `${message} • repaired ${repairedIds.join(', ')}`, startedAt, completedAt: null, error: null });
-        }
-        return commitData(repairedTrips, repairedLocations, message);
-      })
-      .then(() => {
-        onRepoSaveStatus({ state: 'saved', label: 'Saved to GitHub', detail: message, startedAt, completedAt: Date.now(), error: null });
-      })
-      .catch(err => {
-        const errorMessage = err?.message || String(err);
-        onRepoSaveStatus({ state: 'error', label: 'Repository save failed', detail: message, startedAt, completedAt: Date.now(), error: errorMessage });
-        window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.
+    const queuedAt = Date.now();
+    const queue = repoSaveQueueRef.current;
+    queue.pending = {
+      trips: nextTrips,
+      locations: nextLocations,
+      message,
+      queuedAt
+    };
 
-${errorMessage}`);
+    if (queue.timer) clearTimeout(queue.timer);
+
+    if (queue.saving) {
+      onRepoSaveStatus({
+        state: 'queued',
+        label: 'Repository save queued',
+        detail: `${message} • waiting for current GitHub save to finish`,
+        startedAt: queuedAt,
+        completedAt: null,
+        error: null
       });
+      return;
+    }
+
+    onRepoSaveStatus({
+      state: 'queued',
+      label: 'Repository save queued',
+      detail: `${message} • saving in about 3 seconds`,
+      startedAt: queuedAt,
+      completedAt: null,
+      error: null
+    });
+
+    queue.timer = setTimeout(() => {
+      queue.timer = null;
+      processRepoSaveQueue();
+    }, 3000);
+  }
+
+  function schedulePendingRepoSave(delayMs = 3000) {
+    const queue = repoSaveQueueRef.current;
+    if (!queue.pending || queue.saving) return;
+    if (queue.timer) clearTimeout(queue.timer);
+    queue.timer = setTimeout(() => {
+      queue.timer = null;
+      processRepoSaveQueue();
+    }, delayMs);
+  }
+
+  async function processRepoSaveQueue() {
+    const queue = repoSaveQueueRef.current;
+    if (queue.saving) return;
+    const job = queue.pending;
+    if (!job) return;
+
+    queue.pending = null;
+    queue.saving = true;
+    const startedAt = Date.now();
+
+    onRepoSaveStatus({
+      state: 'saving',
+      label: 'Saving to GitHub…',
+      detail: job.message,
+      startedAt,
+      completedAt: null,
+      error: null
+    });
+
+    try {
+      const { trips: repairedTrips, locations: repairedLocations, repairedIds } = await repairMissingLocationsForTrips(job.trips, job.locations);
+      if (repairedIds.length) {
+        locationsRef.current = repairedLocations;
+        setLocations(repairedLocations);
+        onRepoSaveStatus({
+          state: 'saving',
+          label: 'Repairing missing locations…',
+          detail: `${job.message} • repaired ${repairedIds.join(', ')}`,
+          startedAt,
+          completedAt: null,
+          error: null
+        });
+      }
+
+      await commitData(repairedTrips, repairedLocations, job.message);
+      onRepoSaveStatus({
+        state: 'saved',
+        label: 'Saved to GitHub',
+        detail: job.message,
+        startedAt,
+        completedAt: Date.now(),
+        error: null
+      });
+    } catch (err) {
+      const errorMessage = err?.message || String(err);
+      onRepoSaveStatus({
+        state: 'error',
+        label: 'Repository save failed',
+        detail: job.message,
+        startedAt,
+        completedAt: Date.now(),
+        error: errorMessage
+      });
+      window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.\n\n${errorMessage}`);
+    } finally {
+      queue.saving = false;
+      if (queue.pending) {
+        const nextMessage = queue.pending.message || 'Update travel history from GlobeHoppers';
+        onRepoSaveStatus({
+          state: 'queued',
+          label: 'Repository save queued',
+          detail: `${nextMessage} • saving in about 3 seconds`,
+          startedAt: queue.pending.queuedAt || Date.now(),
+          completedAt: null,
+          error: null
+        });
+        schedulePendingRepoSave(3000);
+      }
+    }
   }
 
   async function repairMissingLocationsForTrips(nextTrips = trips, nextLocations = locations) {
@@ -480,12 +582,13 @@ ${errorMessage}`);
         if (updateRefRes.ok) return newCommit;
 
         const text = await updateRefRes.text();
-        if (updateRefRes.status !== 409) throw new Error(text);
+        const retryableConflict = updateRefRes.status === 409 || updateRefRes.status === 422 || /fast.?forward|conflict|reference/i.test(text || '');
+        if (!retryableConflict) throw new Error(text);
         lastError = new Error(text || 'GitHub reported a conflict while updating main. Retrying with the latest branch state.');
-        await wait(450 * attempt);
+        await wait(900 * attempt);
       } catch (err) {
         lastError = err;
-        if (attempt < 3) await wait(450 * attempt);
+        if (attempt < 3) await wait(900 * attempt);
       }
     }
     throw new Error(`GitHub commit conflict after retrying. Refresh GlobeHoppers Studio and try again. Details: ${lastError?.message || lastError}`);

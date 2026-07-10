@@ -1,1 +1,1 @@
-GlobeHoppers v4.35.1 — delete confirmation click fix
+GlobeHoppers v4.36 — queued repository save debounce
