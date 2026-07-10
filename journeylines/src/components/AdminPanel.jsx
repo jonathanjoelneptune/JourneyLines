@@ -50,7 +50,7 @@ function loadCityDatabase() {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, modalOnly = false }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, modalOnly = false, onRepoSaveStatus = () => {} }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -238,19 +238,17 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   async function saveTripFromModal() {
     try {
       validateHopDraftForSave(draft);
-      setBusy(true);
       const currentScroll = studioListRef.current?.scrollTop ?? null;
       const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases, normalizedHoppers);
       const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
+      const message = editingId ? `Edit Hop: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`;
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
       setTrips(nextTrips);
       if (nextLocations !== locations) setLocations(nextLocations);
-      await commitData(nextTrips, nextLocations, editingId ? `Edit Hop: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`);
       closeModal();
+      saveDataInBackground(nextTrips, nextLocations, message);
     } catch (err) {
       setFormError(err.message || String(err));
-    } finally {
-      setBusy(false);
     }
   }
   async function deleteTripFromModal() {
@@ -262,17 +260,14 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       confirmLabel: 'Delete hop',
       onConfirm: async () => {
         try {
-          setBusy(true);
           const currentScroll = studioListRef.current?.scrollTop ?? null;
           const nextTrips = trips.filter(t => t.id !== editingId);
           if (currentScroll != null) restoreScrollRef.current = currentScroll;
           setTrips(nextTrips);
-          await commitData(nextTrips, locations, `Delete trip: ${label}`);
           closeModal();
+          saveDataInBackground(nextTrips, locations, `Delete trip: ${label}`);
         } catch (err) {
           setFormError(err.message || String(err));
-        } finally {
-          setBusy(false);
         }
       }
     });
@@ -287,14 +282,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       confirmLabel: 'Delete hop',
       onConfirm: async () => {
         try {
-          setBusy(true);
           const nextTrips = trips.filter(t => t.id !== id);
           setTrips(nextTrips);
-          await commitData(nextTrips, locations, `Delete trip: ${label}`);
+          saveDataInBackground(nextTrips, locations, `Delete trip: ${label}`);
         } catch (err) {
           setFormError(err.message || String(err));
-        } finally {
-          setBusy(false);
         }
       }
     });
@@ -304,6 +296,20 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'trips.json'; a.click(); URL.revokeObjectURL(url);
   }
+  function saveDataInBackground(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
+    const startedAt = Date.now();
+    onRepoSaveStatus({ state: 'saving', label: 'Saving to GitHub…', detail: message, startedAt, completedAt: null, error: null });
+    commitData(nextTrips, nextLocations, message)
+      .then(() => {
+        onRepoSaveStatus({ state: 'saved', label: 'Saved to GitHub', detail: message, startedAt, completedAt: Date.now(), error: null });
+      })
+      .catch(err => {
+        const errorMessage = err?.message || String(err);
+        onRepoSaveStatus({ state: 'error', label: 'Repository save failed', detail: message, startedAt, completedAt: Date.now(), error: errorMessage });
+        window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.\n\n${errorMessage}`);
+      });
+  }
+
   async function commitData(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
     if (!token || !repo) throw new Error('Enter a repo and fine-grained GitHub token in Repository Settings first.');
     const nextRouteDetails = buildRouteDetailsPayload(nextTrips, nextLocations, homeBases, routeDetails);

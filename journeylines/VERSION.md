@@ -1,1 +1,1 @@
-GlobeHoppers v4.31.4 — one-line city suggestions and close-on-select
+GlobeHoppers v4.32 — instant add/edit close with background repository save

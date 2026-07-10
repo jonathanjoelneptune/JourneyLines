@@ -11874,3 +11874,20 @@ svg text {
 .autocomplete-menu--cities .autocomplete-option em {
   grid-row: 1 / 2 !important;
 }
+
+
+/* GlobeHoppers v4.32: repository save status in timeline advanced menu. */
+.timeline-save-status--saving {
+  color: #ffe89a;
+}
+.timeline-save-status--saved {
+  color: #b8ffd8;
+}
+.timeline-save-status--error {
+  color: #ffb0b0;
+}
+.timeline-route-message--error {
+  color: #ffb0b0;
+  border-color: rgba(255, 104, 104, .22);
+  background: rgba(255, 80, 80, .08);
+}

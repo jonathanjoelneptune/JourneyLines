@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, tripsDataStatus = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, tripsDataStatus = null, repoSaveStatus = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -143,6 +143,14 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
           {tripsDataStatus?.firstRepo && <div className="timeline-route-detail">First repo item: {tripsDataStatus.firstRepo}</div>}
         </div>
         <div className="timeline-advanced-section">
+          <div className="timeline-advanced-title">Repository save</div>
+          <div className={`timeline-route-status timeline-save-status timeline-save-status--${repoSaveStatus?.state || 'idle'}`}>{repoSaveStatus?.label || 'No recent repository save'}</div>
+          {repoSaveStatus?.detail && <div className="timeline-route-detail">{repoSaveStatus.detail}</div>}
+          {repoSaveStatus?.completedAt && <div className="timeline-route-detail">{repoSaveStatus.state === 'error' ? 'Failed' : 'Completed'} {formatRelativeSaveTime(repoSaveStatus.completedAt)}</div>}
+          {repoSaveStatus?.startedAt && repoSaveStatus?.state === 'saving' && <div className="timeline-route-detail">Started {formatRelativeSaveTime(repoSaveStatus.startedAt)}</div>}
+          {repoSaveStatus?.error && <div className="timeline-route-message timeline-route-message--error">{repoSaveStatus.error}</div>}
+        </div>
+        <div className="timeline-advanced-section">
           <div className="timeline-advanced-title">Route details</div>
           <div className="timeline-route-status">{routeDetailsStatus?.label || 'Not loaded'}</div>
           {routeDetailsStatus?.detailLabel && <div className="timeline-route-detail">{routeDetailsStatus.detailLabel}</div>}
@@ -160,4 +168,16 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
       </div>}
     </div>
   </div>;
+}
+
+function formatRelativeSaveTime(timestamp) {
+  const value = Number(timestamp) || 0;
+  if (!value) return '';
+  const seconds = Math.max(0, Math.round((Date.now() - value) / 1000));
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  return `${hours}h ago`;
 }
