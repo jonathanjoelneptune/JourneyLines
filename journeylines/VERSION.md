@@ -1,1 +1,1 @@
-GlobeHoppers v4.31.2 — city suggestions rebuilt from stable v4.30
+GlobeHoppers v4.31.3 — city suggestions rebuilt safely from v4.30

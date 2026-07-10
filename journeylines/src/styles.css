@@ -11811,7 +11811,7 @@ svg text {
 }
 
 
-/* GlobeHoppers v4.31.2: safe lazy city suggestion labels. */
+/* GlobeHoppers v4.31.3: non-intrusive lazy city suggestion labels. */
 .autocomplete-menu--cities {
   max-height: min(360px, 46vh);
   overflow: auto;
@@ -11845,7 +11845,8 @@ svg text {
   color: #b8ffd8;
   border-color: rgba(131,255,177,.25);
 }
-.autocomplete-option--city em {
+.autocomplete-option--city em,
+.autocomplete-option--loading em {
   color: #aee9ff;
   border-color: rgba(92,221,255,.25);
 }

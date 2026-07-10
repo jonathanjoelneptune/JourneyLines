@@ -32,6 +32,23 @@ const empty = {
   year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: [], mode: 'plane',
   roundTrip: true, returnMode: '', fromLocationId: null, fromLocationText: '', fromCity: null, toLocationId: '', toLocationText: '', toCity: null, notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
 };
+let cityDbPromise = null;
+let cityDbCache = [];
+function loadCityDatabase() {
+  if (cityDbPromise) return cityDbPromise;
+  cityDbPromise = fetch(`${import.meta.env.BASE_URL || '/'}data/cities15000.json`)
+    .then(response => response.ok ? response.json() : [])
+    .then(data => {
+      cityDbCache = Array.isArray(data) ? data : [];
+      return cityDbCache;
+    })
+    .catch(() => {
+      cityDbCache = [];
+      return [];
+    });
+  return cityDbPromise;
+}
+
 
 export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, modalOnly = false }) {
   const [draft, setDraft] = useState(empty);
@@ -47,8 +64,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [confirmRequest, setConfirmRequest] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('journeylines.githubToken') || '');
   const [repo, setRepo] = useState(() => localStorage.getItem('journeylines.repo') || '');
-  const [cityDb, setCityDb] = useState([]);
-  const [cityDbLoaded, setCityDbLoaded] = useState(false);
+  const [cityDb, setCityDb] = useState(() => cityDbCache);
+  const [cityDbLoaded, setCityDbLoaded] = useState(() => cityDbCache.length > 0);
+  const [cityDbLoading, setCityDbLoading] = useState(false);
   const [dragId, setDragId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const studioListRef = useRef(null);
@@ -97,24 +115,21 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }, [closing]);
 
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${import.meta.env.BASE_URL || '/'}data/cities15000.json`)
-      .then(r => r.ok ? r.json() : [])
+  function requestCitySuggestions() {
+    if (cityDbLoaded || cityDbLoading) return;
+    setCityDbLoading(true);
+    loadCityDatabase()
       .then(data => {
-        if (!cancelled && Array.isArray(data)) {
-          setCityDb(data);
-          setCityDbLoaded(true);
-        }
+        const usable = Array.isArray(data) ? data : [];
+        setCityDb(usable);
+        setCityDbLoaded(usable.length > 0);
       })
       .catch(() => {
-        if (!cancelled) {
-          setCityDb([]);
-          setCityDbLoaded(false);
-        }
-      });
-    return () => { cancelled = true; };
-  }, []);
+        setCityDb([]);
+        setCityDbLoaded(false);
+      })
+      .finally(() => setCityDbLoading(false));
+  }
 
   useEffect(() => {
     function handleOpenNewTrip() {
@@ -482,6 +497,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       homeBases={homeBases}
       cityDb={cityDb}
       cityDbLoaded={cityDbLoaded}
+      cityDbLoading={cityDbLoading}
+      onRequestCitySuggestions={requestCitySuggestions}
     />}
   </section>;
 }
@@ -634,9 +651,9 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError }) {
-  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityDb, cityDbLoaded);
-  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityDb, cityDbLoaded);
+function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, onRequestCitySuggestions = () => {}}) {
+  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityDb, cityDbLoaded, cityDbLoading);
+  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityDb, cityDbLoaded, cityDbLoading);
   const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
@@ -822,16 +839,16 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
                   <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
                   <small>Auto-derived from trip date and active home base</small>
                 </div> : <div className="default-start-card override-start-card">
-                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:'', fromCity:null})} matches={fromMatches} onChoose={onChooseFrom} />
+                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft({...draft, fromLocationText:v, fromLocationId:'', fromCity:null}); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={fromMatches} onChoose={onChooseFrom} />
                 </div>}
                 <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start location</label>
               </div>
-              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:'', toCity:null})} matches={destinationMatches} onChoose={onChooseDestination} />
+              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => { setDraft({...draft, toLocationText:v, toLocationId:'', toCity:null}); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={destinationMatches} onChoose={onChooseDestination} />
               <div className="legs-block">
                 <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
                   <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
-                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '', city: null })} matches={locationSuggestions(locs, leg.locationText || '', cityDb, cityDbLoaded)} onChoose={loc => onChooseExtraLeg(index, loc)} />
+                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => { onSetExtraLeg(index, { locationText: v, locationId: '', city: null }); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={locationSuggestions(locs, leg.locationText || '', cityDb, cityDbLoaded, cityDbLoading)} onChoose={loc => onChooseExtraLeg(index, loc)} />
                   <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
                 </div>)}
               </div>
@@ -1028,11 +1045,11 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     toLocationId = result.id;
   }
   if (!toLocationId && draft.toLocationText) {
-    const found = findLocationByText(locations, draft.toLocationText);
+    const found = findLocationByText(nextLocations, draft.toLocationText);
     if (found) toLocationId = found.id;
     else {
       const loc = createPlaceholderLocation(draft.toLocationText);
-      nextLocations = [...locations, loc];
+      nextLocations = [...nextLocations, loc];
       toLocationId = loc.id;
     }
   }
@@ -1402,12 +1419,17 @@ function filterLocations(locs, q) {
   if (!needle) return locs.slice(0, 6);
   return locs.filter(l => normalizeSearchText(`${l.name} ${l.region} ${l.country} ${l.id}`).includes(needle));
 }
-function locationSuggestions(locs, q, cityDb = [], cityDbLoaded = false) {
+function locationSuggestions(locs, q, cityDb = [], cityDbLoaded = false, cityDbLoading = false) {
   const needle = normalizeSearchText(q);
   const saved = (!needle || needle.length < 2)
     ? filterLocations(locs, q).slice(0, 8).map(l => ({ ...l, _source: 'saved', _label: 'Saved' }))
     : filterLocations(locs, q).slice(0, 5).map((l, i) => ({ ...l, _source: 'saved', _label: 'Saved', _score: 500 - i }));
-  if (!needle || needle.length < 2 || !cityDbLoaded || !Array.isArray(cityDb) || cityDb.length === 0) return saved;
+
+  if (!needle || needle.length < 2 || !cityDbLoaded || !Array.isArray(cityDb) || cityDb.length === 0) {
+    if (cityDbLoading && needle.length >= 2) return [...saved, { id: `city-loading-${slug(q)}`, name: 'Loading city suggestions…', region: '', country: '', _source: 'loading', _label: 'City' }];
+    return saved;
+  }
+
   const cityMatches = [];
   for (const city of cityDb) {
     const score = citySuggestionScore(city, needle);
@@ -1464,6 +1486,7 @@ function citySuggestionToOption(city) {
   };
 }
 function autocompleteMeta(l) {
+  if (l._source === 'loading') return 'City database';
   const cityPop = l._source === 'city' ? Number(cityField(l.city, 'population', 0)) : 0;
   const bits = [l.region && regionShort(l.region), l.country || countryNameFromCode(l.countryCode), cityPop ? `${cityPop.toLocaleString()} people` : ''].filter(Boolean);
   return bits.join(' · ');
