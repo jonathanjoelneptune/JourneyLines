@@ -128,6 +128,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const userCameraOverrideRef = useRef(false);
   const tilePreloadRef = useRef(new Set());
   const lastActiveRouteUpdateRef = useRef(0);
+  const zoomReadoutThrottleRef = useRef(0);
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
   const labelVisibilityStateRef = useRef(new Map());
   const placardRuntimeRef = useRef({ playback: false, overview: false, activeIds: new Set() });
@@ -195,8 +196,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     map.on('load', () => {
       try { map.setProjection({ type: 'globe' }); } catch {}
-      const updateZoomReadout = () => setZoomReadout(Number(map.getZoom?.() || INTRO_GLOBE_ZOOM));
-      updateZoomReadout();
+      const updateZoomReadout = () => {
+        const now = performance.now();
+        if (now - (zoomReadoutThrottleRef.current || 0) < 180) return;
+        zoomReadoutThrottleRef.current = now;
+        setZoomReadout(Number(map.getZoom?.() || INTRO_GLOBE_ZOOM));
+      };
+      setZoomReadout(Number(map.getZoom?.() || INTRO_GLOBE_ZOOM));
       map.on('move', updateZoomReadout);
       map.on('zoom', updateZoomReadout);
       try {
@@ -540,7 +546,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (prevRoute.key && prevRoute.key !== activeRouteKey && !showTrails && isPlaying && prevRoute.features?.length) {
       startCompletedRouteFade(map, fadeTrailRef, prevRoute.features, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
     }
-    if (now - lastActiveRouteUpdateRef.current > 45 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
+    if (now - lastActiveRouteUpdateRef.current > 33 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
       syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
       previousActiveRouteRef.current = {
         key: activeRouteKey,
@@ -667,7 +673,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     updatePulseOverlay(pulseRef.current, destPt, color, sceneState.pulseActive);
   }
 
-  return <div className={`maplibre-shell terrain-mode space-mode ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
+  return <div className={`maplibre-shell terrain-mode space-mode ${isPlaying ? 'playback-active' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
     <div className="zoom-readout" aria-label="Current map zoom">Zoom {Number(zoomReadout || 0).toFixed(2)}<span>Initial {INTRO_GLOBE_ZOOM.toFixed(2)} · Spin {IDLE_SPIN_GLOBE_ZOOM.toFixed(2)}</span></div>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
@@ -1445,7 +1451,9 @@ function updateVisitTicks(container, visitColors = []) {
 function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, visibilityStateRef, runtimeRef) {
   const now = performance.now();
   const runtime = runtimeRef?.current || {};
-  const minInterval = runtime.playback ? 180 : 80;
+  // Playback mode favors smooth globe motion. Labels are allowed to drift with
+  // their locked offsets and only refresh visibility/collisions a few times/sec.
+  const minInterval = runtime.playback ? 520 : 120;
   if (throttleRef?.current?.t && now - throttleRef.current.t < minInterval) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
   refreshPersistentPinPositions(map, labelsRef, visibilityStateRef, runtimeRef);
@@ -1528,6 +1536,7 @@ function resolvePersistentLabelCollisions(map, items = []) {
   if (!map || !items?.length) return;
   const placed = [];
   const ordered = [...items].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
   const baseCandidates = [
     { name: '12', offset: [0, -8], anchor: 'bottom' },
     { name: '6', offset: [0, 32], anchor: 'top' },
@@ -1548,15 +1557,21 @@ function resolvePersistentLabelCollisions(map, items = []) {
     const el = item.el;
     const marker = el.__jlMarker;
     if (!marker) continue;
+
+    // Performance rule: once a label has a collision-resolved anchor/offset,
+    // keep that relative placement. Do not keep hunting/repositioning during
+    // playback or map motion.
+    if (el.__jlLabelPlaced && el.__jlLabelCandidate) {
+      const box = estimatedMarkerBox(el, item.pt, el.__jlLabelCandidate);
+      placed.push(box);
+      continue;
+    }
+
     const candidates = item.activePlacard ? baseCandidates : expandedCandidates;
     let chosen = candidates[0];
     let chosenBox = null;
 
     for (const candidate of candidates) {
-      try {
-        marker.setAnchor?.(candidate.anchor);
-        marker.setOffset?.(candidate.offset);
-      } catch {}
       const box = estimatedMarkerBox(el, item.pt, candidate);
       if (!placed.some(other => rectsOverlap(box, other, 5))) {
         chosen = candidate;
@@ -1571,6 +1586,8 @@ function resolvePersistentLabelCollisions(map, items = []) {
       marker.setOffset?.(chosen.offset);
     } catch {}
     el.dataset.labelPosition = chosen.name;
+    el.__jlLabelCandidate = chosen;
+    el.__jlLabelPlaced = true;
     placed.push(chosenBox || estimatedMarkerBox(el, item.pt, chosen));
   }
 }

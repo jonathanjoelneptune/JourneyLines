@@ -1,1 +1,1 @@
-GlobeHoppers v4.08 — repo parameter sync precedence fix
+GlobeHoppers v4.09 — playback performance mode and locked label placement

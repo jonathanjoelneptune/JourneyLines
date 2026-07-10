@@ -11523,3 +11523,126 @@ svg text {
     transform: none;
   }
 }
+
+
+/* GlobeHoppers v4.09 — 60fps-oriented map label performance pass.
+   Labels resolve placement once, then keep their relative anchor. Playback mode
+   strips expensive blur/shadow/glass so the moving globe gets the GPU budget. */
+
+/* Give the browser permission to isolate marker layout/paint. */
+.jl-map-pin,
+.jl-map-pin-inner,
+.jl-map-pin-text,
+.jl-map-pin-ticks,
+.jl-place-label,
+.jl-place-label-overlay,
+.zoom-readout {
+  contain: layout paint style !important;
+}
+
+/* Remove expensive visual effects from placards generally. */
+.jl-map-pin-inner,
+.jl-place-label,
+.jl-place-label-overlay {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+/* Backgrounds-on mode becomes a clean solid plaque, not transparent glass. */
+.jl-map-pin-inner {
+  background:
+    linear-gradient(180deg, rgba(7, 16, 29, .94), rgba(4, 11, 22, .94)) padding-box,
+    color-mix(in srgb, var(--pin-segments, var(--place-color, #00e5ff)), transparent 42%) border-box !important;
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
+.jl-place-label,
+.jl-place-label-overlay {
+  background: rgba(4, 11, 22, .94) !important;
+  border-color: color-mix(in srgb, var(--place-color, #00e5ff), transparent 42%) !important;
+  box-shadow: none !important;
+}
+
+/* Playback performance mode: use only simple opaque text/dot/ticks. */
+.maplibre-shell.playback-active .jl-map-pin,
+.maplibre-shell.playback-active .jl-map-pin-inner,
+.maplibre-shell.playback-active .jl-map-pin-name,
+.maplibre-shell.playback-active .jl-map-pin-ticks,
+.maplibre-shell.playback-active .jl-visit-tick,
+.maplibre-shell.playback-active .jl-map-pin-dot,
+.maplibre-shell.playback-active .jl-place-label,
+.maplibre-shell.playback-active .jl-place-label-overlay {
+  transition: none !important;
+  animation: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* During playback, inactive markers become the cheap label-only style regardless
+   of the Place backgrounds toggle. Active/current markers stay readable but also
+   avoid blur/shadow. */
+.maplibre-shell.playback-active .jl-map-pin:not(.is-active-placard) .jl-map-pin-inner {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 2px 3px !important;
+}
+
+.maplibre-shell.playback-active .jl-map-pin:not(.is-active-placard) .jl-map-pin-tail,
+.maplibre-shell.playback-active .jl-map-pin:not(.is-active-placard) .jl-map-pin-inner::after {
+  display: none !important;
+}
+
+.maplibre-shell.playback-active .jl-map-pin.is-active-placard .jl-map-pin-inner {
+  background: rgba(4, 11, 22, .96) !important;
+  border: 1px solid color-mix(in srgb, var(--pin-segments, var(--place-color, #00e5ff)), transparent 34%) !important;
+  box-shadow: none !important;
+}
+
+.maplibre-shell.playback-active .jl-map-pin-name {
+  color: #fff !important;
+  opacity: 1 !important;
+  text-shadow:
+    0 1px 2px rgba(0,0,0,.9),
+    0 0 4px rgba(0,0,0,.72) !important;
+}
+
+/* Paused/manual mode can have a little structure, but no blur/glass. */
+.maplibre-shell:not(.playback-active) .jl-map-pin-inner {
+  background:
+    linear-gradient(180deg, rgba(8, 18, 31, .96), rgba(4, 11, 22, .96)) padding-box,
+    color-mix(in srgb, var(--pin-segments, var(--place-color, #00e5ff)), transparent 40%) border-box !important;
+  box-shadow: none !important;
+}
+
+/* Keep label-only mode fully opaque and cheap. */
+.maplibre-shell.placards-no-bg .jl-map-pin-inner,
+.maplibre-shell.placards-no-bg .jl-place-label,
+.maplibre-shell.placards-no-bg .jl-place-label-overlay {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.maplibre-shell.placards-no-bg .jl-map-pin-name,
+.maplibre-shell.placards-no-bg .jl-place-label,
+.maplibre-shell.placards-no-bg .jl-place-label-overlay {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* The zoom readout is temporary/dev-like and should be cheap while moving. */
+.zoom-readout {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  background: rgba(4, 12, 24, .88) !important;
+}
