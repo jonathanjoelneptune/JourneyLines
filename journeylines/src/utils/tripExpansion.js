@@ -115,11 +115,19 @@ function applyRouteStackOffsets(entries = []) {
 
     const spacing = 3.1;
     laneEntries.forEach((lane, laneIndex) => {
-      const offset = (laneIndex - (laneEntries.length - 1) / 2) * spacing;
+      const baseOffset = (laneIndex - (laneEntries.length - 1) / 2) * spacing;
       lane.entries.forEach(entry => {
+        // MapLibre line-offset is relative to the line's drawing direction.
+        // A return leg has reversed coordinates, so the same numeric offset
+        // appears on the opposite side of the route. Flip the sign by canonical
+        // endpoint direction so outbound and return legs for the same trip land
+        // on the exact same visual lane.
+        const directionSign = routeStackDirectionSign(entry?.leg);
         entry.leg = {
           ...entry.leg,
-          routeStackOffset: offset,
+          routeStackOffset: baseOffset * directionSign,
+          routeStackBaseOffset: baseOffset,
+          routeStackDirectionSign: directionSign,
           routeStackCount: laneEntries.length,
           routeStackIndex: laneIndex
         };
@@ -136,6 +144,14 @@ function routeStackKey(leg) {
   if (!from || !to) return '';
   const pair = [String(from), String(to)].sort();
   return `${pair[0]}↔${pair[1]}`;
+}
+
+function routeStackDirectionSign(leg) {
+  const from = leg?.from?.id || leg?.from?.name;
+  const to = leg?.to?.id || leg?.to?.name;
+  if (!from || !to) return 1;
+  const pair = [String(from), String(to)].sort();
+  return String(from) === pair[0] ? 1 : -1;
 }
 
 function timelineDateValue(item, isHomeMove = false) {
