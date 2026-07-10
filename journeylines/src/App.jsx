@@ -60,7 +60,12 @@ export default function App() {
   const [legProgress, setLegProgress] = useState(1);
   const [projection, setProjection] = useState(settings.defaultProjection);
   const [cameraMode, setCameraMode] = useState('follow');
-  const [showTrails, setShowTrails] = useState(settings.showTrails);
+  const [showTrails, setShowTrails] = useState(() => {
+    try {
+      const saved = localStorage.getItem('globehoppers.showTrails');
+      return saved == null ? Boolean(parameters?.showTrails) : saved === 'true';
+    } catch { return Boolean(parameters?.showTrails); }
+  });
   const [speed, setSpeed] = useState(settings.playbackSpeed);
   const [filter, setFilter] = useState('all');
   const [admin, setAdmin] = useState(false);
@@ -96,8 +101,8 @@ export default function App() {
   const [placeBackgroundsEnabled, setPlaceBackgroundsEnabled] = useState(() => {
     try {
       const saved = localStorage.getItem('globehoppers.placeBackgroundsEnabled');
-      return saved == null ? parameters?.placeBackgroundsEnabled !== false : saved === 'true';
-    } catch { return parameters?.placeBackgroundsEnabled !== false; }
+      return saved == null ? Boolean(parameters?.placeBackgroundsEnabled) : saved === 'true';
+    } catch { return Boolean(parameters?.placeBackgroundsEnabled); }
   });
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
@@ -111,6 +116,7 @@ export default function App() {
   useEffect(() => localStorage.setItem('globehoppers.hoppers', JSON.stringify(hopperData)), [hopperData]);
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
   useEffect(() => localStorage.setItem('globehoppers.trailTuning', JSON.stringify(trailTuning)), [trailTuning]);
+  useEffect(() => localStorage.setItem('globehoppers.showTrails', String(showTrails)), [showTrails]);
   useEffect(() => localStorage.setItem('globehoppers.timelineTuning', JSON.stringify(timelineTuning)), [timelineTuning]);
   useEffect(() => localStorage.setItem('globehoppers.routeStackingEnabled', String(routeStackingEnabled)), [routeStackingEnabled]);
   useEffect(() => localStorage.setItem('globehoppers.placeBackgroundsEnabled', String(placeBackgroundsEnabled)), [placeBackgroundsEnabled]);
@@ -370,9 +376,10 @@ export default function App() {
   async function saveParametersToRepo() {
     const repo = localStorage.getItem('journeylines.githubRepo') || localStorage.getItem('journeylines.repo') || 'jonathanjoelneptune/JourneyLines';
     const token = localStorage.getItem('journeylines.githubToken') || '';
-    const payload = { trailTuning, timelineTuning, routeStackingEnabled, placeBackgroundsEnabled };
+    const payload = { trailTuning, timelineTuning, routeStackingEnabled, placeBackgroundsEnabled, showTrails };
     localStorage.setItem('globehoppers.trailTuning', JSON.stringify(trailTuning));
     localStorage.setItem('globehoppers.timelineTuning', JSON.stringify(timelineTuning));
+    localStorage.setItem('globehoppers.showTrails', String(showTrails));
     localStorage.setItem('globehoppers.routeStackingEnabled', String(routeStackingEnabled));
     localStorage.setItem('globehoppers.placeBackgroundsEnabled', String(placeBackgroundsEnabled));
     if (!token) return false;

@@ -11402,3 +11402,124 @@ svg text {
   box-shadow: none !important;
   color: rgba(255,255,255,.93) !important;
 }
+
+
+/* GlobeHoppers v4.07 — label visibility, zoom readout, and default-off polish. */
+
+/* Text should not be semi-transparent. Keep glass surfaces subtle, not the words. */
+.jl-map-pin,
+.maplibre-shell:not(.is-playing) .jl-map-pin:not([data-active-home-base='true']):not([data-home-base='true']) {
+  opacity: 1 !important;
+}
+
+.jl-map-pin-name,
+.jl-place-label,
+.jl-place-label-overlay,
+.jl-place-name,
+.maplibre-shell.placards-no-bg .jl-map-pin-name,
+.maplibre-shell.placards-no-bg .jl-place-label,
+.maplibre-shell.placards-no-bg .jl-place-label-overlay {
+  color: rgba(248, 252, 255, 1) !important;
+  opacity: 1 !important;
+}
+
+/* Override the v4.05/v4.06 scaling fade. */
+.maplibre-shell:not(.is-playing) .jl-map-pin:not([data-active-home-base='true']):not([data-home-base='true']) .jl-map-pin-inner {
+  transform: scale(1) !important;
+}
+
+/* Backgrounds-on mode: more streamlined glass placards, less dark-tab feel. */
+.jl-map-pin-inner {
+  background:
+    linear-gradient(180deg, rgba(12, 23, 38, .50), rgba(5, 14, 26, .38)) padding-box,
+    color-mix(in srgb, var(--pin-segments, var(--place-color, #00e5ff)), transparent 46%) border-box !important;
+  border-width: 1px !important;
+  border-radius: 14px !important;
+  box-shadow:
+    0 6px 14px rgba(0,0,0,.20),
+    inset 0 1px 0 rgba(255,255,255,.12) !important;
+  backdrop-filter: blur(11px) saturate(1.08) !important;
+}
+
+.jl-map-pin-name {
+  font-weight: 690 !important;
+  text-shadow:
+    0 1px 2px rgba(0,0,0,.80),
+    0 0 4px rgba(0,0,0,.50) !important;
+}
+
+/* Backgrounds-off mode: label-only, but fully readable. */
+.maplibre-shell.placards-no-bg .jl-map-pin-inner {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.maplibre-shell.placards-no-bg .jl-map-pin-name {
+  color: rgba(255,255,255,1) !important;
+  font-weight: 700 !important;
+  text-shadow:
+    0 1px 2px rgba(0,0,0,.95),
+    0 0 6px rgba(0,0,0,.82),
+    0 0 12px rgba(0,0,0,.56) !important;
+}
+
+.maplibre-shell.placards-no-bg .jl-map-pin-tail,
+.maplibre-shell.placards-no-bg .jl-map-pin-inner::after {
+  display: none !important;
+}
+
+/* Active/current labels win visually after collision resolution. */
+.jl-map-pin.is-active-placard .jl-map-pin-name,
+.jl-map-pin.is-arriving .jl-map-pin-name,
+.jl-map-pin.is-current .jl-map-pin-name,
+.jl-map-pin.is-selected .jl-map-pin-name {
+  color: #fff !important;
+  font-weight: 760 !important;
+}
+
+/* Always-visible temporary zoom readout for tuning default camera values. */
+.zoom-readout {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2600;
+  display: grid;
+  gap: 2px;
+  min-width: 96px;
+  padding: 8px 10px;
+  border: 1px solid rgba(210, 238, 250, .20);
+  border-radius: 14px;
+  background: rgba(4, 12, 24, .66);
+  color: rgba(255,255,255,.94);
+  font-family: var(--gh-font-ui, 'Plus Jakarta Sans', Inter, system-ui, sans-serif) !important;
+  font-size: 12px;
+  line-height: 1.1;
+  font-weight: 760;
+  letter-spacing: -0.015em;
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(10px) saturate(1.08);
+  pointer-events: none;
+}
+
+.zoom-readout span {
+  display: block;
+  color: rgba(225, 238, 248, .70);
+  font-size: 9px;
+  font-weight: 560;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .zoom-readout {
+    right: 10px;
+    top: auto;
+    bottom: 88px;
+    transform: none;
+  }
+}

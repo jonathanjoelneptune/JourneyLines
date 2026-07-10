@@ -13,6 +13,7 @@ import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseV
 
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 2.55;
+const IDLE_SPIN_GLOBE_ZOOM = 2.55;
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
@@ -137,6 +138,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const manualSpinResumeTimerRef = useRef(null);
   const trailTuningFramedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const [zoomReadout, setZoomReadout] = useState(INTRO_GLOBE_ZOOM);
+  const fadeTrailRef = useRef({ active: false, features: [], started: 0, duration: 650, raf: 0, key: '' });
+  const previousActiveRouteRef = useRef({ key: '', active: null, progress: 0, features: [] });
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
   const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
 
@@ -191,6 +195,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     map.on('load', () => {
       try { map.setProjection({ type: 'globe' }); } catch {}
+      const updateZoomReadout = () => setZoomReadout(Number(map.getZoom?.() || INTRO_GLOBE_ZOOM));
+      updateZoomReadout();
+      map.on('move', updateZoomReadout);
+      map.on('zoom', updateZoomReadout);
       try {
         map.setFog({
           color: '#071421',
@@ -230,7 +238,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       resetAnimatingRef.current = true;
       lastCameraRef.current = null;
       map.stop();
-      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1850, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1850, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
       window.setTimeout(() => { resetAnimatingRef.current = false; }, 1925);
     } catch { resetAnimatingRef.current = false; }
   }, [resetNonce, mapReady]);
@@ -246,7 +254,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       resetAnimatingRef.current = true;
       lastCameraRef.current = null;
       map.stop();
-      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
       window.setTimeout(() => { resetAnimatingRef.current = false; }, 1575);
     } catch { resetAnimatingRef.current = false; }
   }, [globeOverview, mapReady]);
@@ -264,7 +272,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           pulseRef.current.style.opacity = '0';
         }
         map.stop();
-        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
         window.setTimeout(() => { resetAnimatingRef.current = false; }, 1575);
       } catch { resetAnimatingRef.current = false; }
     }
@@ -432,7 +440,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // completes, route cache changes, or display settings change. Avoid doing
     // this in the per-frame playback loop.
     if (trailTuningOpen) syncTrailTuningDemo(map, trailTuningConfig, trailWidth);
-    else syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+    else {
+      if (showTrails) {
+        fadeTrailRef.current.active = false;
+        window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
+      }
+      syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+    }
   }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig]);
 
   useEffect(() => {
@@ -489,7 +503,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       currentOverlayStateRef.current = null;
       setOverlayVisibility(false);
       if (completedMode && !globeOverview) {
-        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 900, essential: true });
+        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 900, essential: true });
       }
       return;
     }
@@ -521,8 +535,19 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
 
     const now = performance.now();
-    if (now - lastActiveRouteUpdateRef.current > 45 || scene.lineProgress >= 0.995) {
+    const activeRouteKey = `${active?.trip?.id || ''}:${active?.legIndex ?? ''}`;
+    const prevRoute = previousActiveRouteRef.current || {};
+    if (prevRoute.key && prevRoute.key !== activeRouteKey && !showTrails && isPlaying && prevRoute.features?.length) {
+      startCompletedRouteFade(map, fadeTrailRef, prevRoute.features, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+    }
+    if (now - lastActiveRouteUpdateRef.current > 45 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
       syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
+      previousActiveRouteRef.current = {
+        key: activeRouteKey,
+        active,
+        progress: scene.lineProgress,
+        features: activeRouteFeaturesForFade(active, scene.lineProgress, routedGeometries, hopperData || travById, trailTuningConfig)
+      };
       lastActiveRouteUpdateRef.current = now;
     }
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
@@ -546,7 +571,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
     updateAirArcOverlay(map, airArcRef.current, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview, trailTuningOpen, trailTuningConfig, trailWidth]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview, trailTuningOpen, trailTuningConfig, trailWidth, trailOpacity, showTrails, isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -643,6 +668,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   }
 
   return <div className={`maplibre-shell terrain-mode space-mode ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
+    <div className="zoom-readout" aria-label="Current map zoom">Zoom {Number(zoomReadout || 0).toFixed(2)}<span>Initial {INTRO_GLOBE_ZOOM.toFixed(2)} · Spin {IDLE_SPIN_GLOBE_ZOOM.toFixed(2)}</span></div>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
     <div className="cinema-vignette" />
@@ -698,11 +724,11 @@ function addPulseLayer(map) {
   map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 10, 6, 24], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
 }
 
-function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
+function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING, fadeFeatures = []) {
   const features = showTrails ? completedLegs.flatMap((l, i) => {
     const trail = trailVisualForLeg(l, travelersById);
     return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, false, 1, routedGeometries, trailTuning);
-  }) : [];
+  }) : (fadeFeatures || []);
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
 }
@@ -713,6 +739,56 @@ function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeo
   const featureList = routeFeaturesForTrail(active.leg, trail, active.trip.id, active.legIndex, 1, 2, true, progress, routedGeometries, trailTuning);
   map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: featureList });
 
+}
+
+function activeRouteFeaturesForFade(active, progress = 1, routedGeometries = {}, travelerData = null, trailTuning = DEFAULT_TRAIL_TUNING) {
+  if (!active) return [];
+  const fallback = colorForLeg(active, travelerData || {});
+  const trail = travelerData ? trailVisualForLeg(active, travelerData) : { style: 'solid', colors: [fallback], baseColor: fallback };
+  const features = routeFeaturesForTrail(active.leg, trail, active.trip.id, `fade-${active.legIndex}`, 1, 2, false, Math.max(0.01, Math.min(1, progress || 1)), routedGeometries, trailTuning);
+  return features.map(f => ({
+    ...f,
+    properties: {
+      ...(f.properties || {}),
+      opacity: Math.min(Number(f.properties?.opacity) || 1, 0.96),
+      glowOpacity: Math.min(Number(f.properties?.glowOpacity) || 0, 0.28),
+      outerGlowOpacity: Math.min(Number(f.properties?.outerGlowOpacity) || 0, 0.10)
+    }
+  }));
+}
+
+function scaledRouteFeatures(features = [], scale = 1) {
+  const s = Math.max(0, Math.min(1, Number(scale) || 0));
+  return (features || []).map(f => ({
+    ...f,
+    properties: {
+      ...(f.properties || {}),
+      opacity: (Number(f.properties?.opacity) || 0) * s,
+      glowOpacity: (Number(f.properties?.glowOpacity) || 0) * s,
+      outerGlowOpacity: (Number(f.properties?.outerGlowOpacity) || 0) * s
+    }
+  }));
+}
+
+function startCompletedRouteFade(map, fadeRef, features = [], completedLegs = [], travelersById = {}, opacity = 0.28, width = 1.55, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
+  if (!map || !fadeRef?.current || !features?.length) return;
+  window.cancelAnimationFrame(fadeRef.current.raf || 0);
+  const started = performance.now();
+  const duration = fadeRef.current.duration || 650;
+  fadeRef.current = { ...fadeRef.current, active: true, features, started };
+  const step = () => {
+    const elapsed = performance.now() - started;
+    const t = Math.max(0, Math.min(1, elapsed / duration));
+    const eased = 1 - t;
+    syncCompletedRoutes(map, completedLegs, travelersById, false, opacity, width, routedGeometries, trailTuning, scaledRouteFeatures(features, eased));
+    if (t < 1 && fadeRef.current.active) {
+      fadeRef.current.raf = window.requestAnimationFrame(step);
+    } else {
+      fadeRef.current.active = false;
+      syncCompletedRoutes(map, completedLegs, travelersById, false, opacity, width, routedGeometries, trailTuning, []);
+    }
+  };
+  fadeRef.current.raf = window.requestAnimationFrame(step);
 }
 
 function syncPulse(map, loc, color) {
@@ -1162,7 +1238,7 @@ function buildVisitedLocations(completedLegs, active, completedMode, scene, trav
   const addSeed = (loc, legWrapper, options = {}) => {
     if (!loc?.id || pointMap.has(loc.id)) return;
     const seedColor = options.homeSeed ? '#050607' : colorForLeg(legWrapper, travelersById);
-    const visits = options.homeSeed ? [] : [{ color: seedColor, tripId: legWrapper?.trip?.id || 'seed', legIndex: -1, mode: legWrapper?.leg?.mode || 'seed' }];
+    const visits = (options.homeSeed || options.previewDestination) ? [] : [{ color: seedColor, tripId: legWrapper?.trip?.id || 'seed', legIndex: -1, mode: legWrapper?.leg?.mode || 'seed' }];
     upsertPoint(loc, { color: seedColor, visits, visitColors: visits.map(v => v.color), isNew: false });
   };
 
@@ -1183,6 +1259,9 @@ function buildVisitedLocations(completedLegs, active, completedMode, scene, trav
   }
   if (active && !completedMode) {
     addSeed(active.leg.from, active, { homeSeed: establishedHomeIds.has(active.leg.from.id) });
+    // Keep the current leg destination visible from the start of the leg.
+    // It does not get a visit tick until arrival.
+    addSeed(active.leg.to, active, { previewDestination: true });
     if (scene?.arrivalLabelVisible) addVisit(active.leg.to, active, true);
   }
 
@@ -1382,6 +1461,7 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   const activeIds = runtime.activeIds || new Set();
   const playback = Boolean(runtime.playback);
   const stateMap = visibilityStateRef?.current;
+  const visibleItems = [];
 
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
@@ -1396,24 +1476,22 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
 
     let visible;
     if (playback && !activePlacard) {
-      // Different culling strategy: use a stable geographic gate from the map
-      // center instead of letting projected rim pixels decide. Front-facing
-      // local/regional placards stay visible; far-side placards are hard hidden.
       const center = map.getCenter?.();
       const lonDelta = center ? Math.abs(shortestLongitudeDelta(center.lng, loc.lon)) : 0;
       const latDelta = center ? Math.abs((center.lat || 0) - (loc.lat || 0)) : 0;
-      const safelyNearHemisphere = angularDistance <= 76 && lonDelta <= 92 && latDelta <= 58;
-      const clearlyFarSide = angularDistance >= 88 || lonDelta >= 112 || latDelta >= 72 || !onScreenLoose;
+      const safelyNearHemisphere = angularDistance <= 80 && lonDelta <= 98 && latDelta <= 64;
+      const clearlyFarSide = angularDistance >= 92 || lonDelta >= 120 || latDelta >= 78 || !onScreenLoose;
       if (clearlyFarSide) {
         visible = false;
-        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 2600);
+        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 1200);
         prior.seenSafeSince = 0;
       } else if (safelyNearHemisphere && onScreenLoose) {
         if (!prior.seenSafeSince) prior.seenSafeSince = now;
-        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 320;
+        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 120;
       } else {
         visible = prior.visible;
       }
+      if (activePlacard) visible = true;
     } else {
       const horizonCutoff = hardPlacardHorizonCutoffDeg(zoom);
       visible = Boolean(onScreenLoose && angularDistance <= horizonCutoff - 1);
@@ -1424,13 +1502,17 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
 
     el.classList.toggle('is-culled', !visible);
     el.classList.toggle('is-flicker-locked', !visible);
+    el.classList.toggle('is-active-placard', Boolean(activePlacard));
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     el.__jlVisible = visible;
     try { el.__jlMarker?.setOpacity?.(visible ? '1' : '0', '0'); } catch {}
+
     if (visible) {
       el.style.display = '';
       el.style.visibility = 'visible';
       el.style.opacity = '1';
+      const priority = (activePlacard ? 100 : 0) + (loc.isActiveHomeBase ? 35 : 0) + (loc.isHomeBase ? 20 : 0) + Math.max(0, 20 - angularDistance / 3);
+      visibleItems.push({ el, loc, pt, activePlacard, priority });
     } else {
       el.style.opacity = '0';
       el.style.visibility = 'hidden';
@@ -1438,6 +1520,81 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     }
     el.style.pointerEvents = 'none';
   }
+
+  resolvePersistentLabelCollisions(map, visibleItems);
+}
+
+function resolvePersistentLabelCollisions(map, items = []) {
+  if (!map || !items?.length) return;
+  const placed = [];
+  const ordered = [...items].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  const baseCandidates = [
+    { name: '12', offset: [0, -8], anchor: 'bottom' },
+    { name: '6', offset: [0, 32], anchor: 'top' },
+    { name: '3', offset: [16, 5], anchor: 'left' },
+    { name: '9', offset: [-16, 5], anchor: 'right' },
+    { name: '2', offset: [18, -8], anchor: 'bottom-left' },
+    { name: '10', offset: [-18, -8], anchor: 'bottom-right' },
+    { name: '4', offset: [18, 28], anchor: 'top-left' },
+    { name: '8', offset: [-18, 28], anchor: 'top-right' }
+  ];
+  const expandedCandidates = [
+    ...baseCandidates,
+    ...baseCandidates.map(c => ({ ...c, name: `${c.name}+`, offset: [c.offset[0] * 1.55, c.offset[1] * 1.55] })),
+    ...baseCandidates.map(c => ({ ...c, name: `${c.name}++`, offset: [c.offset[0] * 2.05, c.offset[1] * 2.05] }))
+  ];
+
+  for (const item of ordered) {
+    const el = item.el;
+    const marker = el.__jlMarker;
+    if (!marker) continue;
+    const candidates = item.activePlacard ? baseCandidates : expandedCandidates;
+    let chosen = candidates[0];
+    let chosenBox = null;
+
+    for (const candidate of candidates) {
+      try {
+        marker.setAnchor?.(candidate.anchor);
+        marker.setOffset?.(candidate.offset);
+      } catch {}
+      const box = estimatedMarkerBox(el, item.pt, candidate);
+      if (!placed.some(other => rectsOverlap(box, other, 5))) {
+        chosen = candidate;
+        chosenBox = box;
+        break;
+      }
+      if (!chosenBox) chosenBox = box;
+    }
+
+    try {
+      marker.setAnchor?.(chosen.anchor);
+      marker.setOffset?.(chosen.offset);
+    } catch {}
+    el.dataset.labelPosition = chosen.name;
+    placed.push(chosenBox || estimatedMarkerBox(el, item.pt, chosen));
+  }
+}
+
+function estimatedMarkerBox(el, point, candidate) {
+  const rect = el.getBoundingClientRect?.();
+  const width = Math.max(36, rect?.width || el.offsetWidth || 96);
+  const height = Math.max(16, rect?.height || el.offsetHeight || 28);
+  const [ox, oy] = candidate.offset || [0, 0];
+  let x = point.x + ox;
+  let y = point.y + oy;
+
+  const anchor = candidate.anchor || 'bottom';
+  if (anchor.includes('right')) x -= width;
+  else if (!anchor.includes('left')) x -= width / 2;
+
+  if (anchor.includes('bottom')) y -= height;
+  else if (!anchor.includes('top')) y -= height / 2;
+
+  return { x, y, width, height };
+}
+
+function rectsOverlap(a, b, pad = 0) {
+  return !(a.x + a.width + pad < b.x || b.x + b.width + pad < a.x || a.y + a.height + pad < b.y || b.y + b.height + pad < a.y);
 }
 
 function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 74) {
