@@ -1,1 +1,1 @@
-GlobeHoppers v4.16 — route stacking return leg lane alignment
+GlobeHoppers v4.17 — zoom 4.20 and faster idle globe spin

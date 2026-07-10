@@ -12,8 +12,9 @@ import generatedRoutes from '../data/generatedRoutes.json';
 import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
-const INTRO_GLOBE_ZOOM = 2.55;
-const IDLE_SPIN_GLOBE_ZOOM = 2.55;
+const INTRO_GLOBE_ZOOM = 4.20;
+const IDLE_SPIN_GLOBE_ZOOM = 4.20;
+const IDLE_SPIN_SPEED = 3.5;
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
@@ -377,7 +378,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       try {
         if (!resetAnimatingRef.current && !manualSpinPauseRef.current) {
           const c = map.getCenter();
-          map.setCenter([c.lng + dt * 0.0014, c.lat]);
+          map.setCenter([c.lng + dt * 0.0014 * IDLE_SPIN_SPEED, c.lat]);
         }
       } catch {}
       raf = requestAnimationFrame(spin);
