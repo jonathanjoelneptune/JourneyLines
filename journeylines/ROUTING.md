@@ -1,10 +1,9 @@
-Base: GlobeHoppers v4.38
-Update: v4.39 card polish, Add Hop green, hero and globe zoom fix
+Base: GlobeHoppers v4.39
+Update: v4.40 inactive hero state and dense card override fix
 Changes:
-- Card mode trip title font now matches the date font size.
-- Dense cards have slightly reduced margins, padding, and gaps.
-- Date/title wrapping has more breathing room inside card borders.
-- Add Hop buttons in the Studio menu and hero card use the same green gradient as the top-bar Add Hop button.
-- Hero card sizing/layout restored so the title fits cleanly.
-- Pre-start/hero globe view now force-resets to the 4.20 overview zoom.
-- Globe overview reset/click zoom remains tied to the 4.20 overview constants.
+- Pre-start/hero state now has no active trip.
+- Pre-start/hero state no longer treats the final trip as completed/active.
+- This removes the cyan pulse around the last destination on page load.
+- Pre-start/hero map now hard-resets to the 4.20 overview zoom instead of easing from the previous active trip.
+- Completed/visible legs are empty before playback starts, so the map cannot zoom toward the last trip.
+- Strengthened dense Card mode CSS specificity so card size/padding updates override older card rules.

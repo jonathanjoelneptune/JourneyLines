@@ -1,1 +1,1 @@
-GlobeHoppers v4.39 — card polish, Add Hop green, hero and globe zoom fix
+GlobeHoppers v4.40 — inactive hero state and dense card override fix

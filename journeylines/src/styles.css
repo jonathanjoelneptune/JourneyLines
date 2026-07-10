@@ -12194,3 +12194,109 @@ svg text {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
+
+
+/* GlobeHoppers v4.40: force dense Card mode to override older card rules. */
+.studio-panel .studio-trip-list.studio-trip-list--card,
+.studio-panel.studio-panel--card .studio-trip-list,
+.studio-trip-list--card {
+  display: block !important;
+  gap: 4px !important;
+  padding-right: 5px !important;
+}
+
+.studio-panel .studio-trip-list--card .timeline-card-grid,
+.studio-panel .studio-trip-list--card .studio-card-grid,
+.studio-trip-list--card .timeline-card-grid,
+.studio-trip-list--card .studio-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(64px, 1fr)) !important;
+  gap: 5px !important;
+}
+
+.studio-panel .studio-trip-list--card .timeline-year-section,
+.studio-trip-list--card .timeline-year-section,
+.studio-panel .studio-trip-list--card .studio-year-section,
+.studio-trip-list--card .studio-year-section {
+  gap: 4px !important;
+  margin: 0 0 7px !important;
+}
+
+.studio-panel .studio-trip-list--card .timeline-year-section h3,
+.studio-trip-list--card .timeline-year-section h3 {
+  min-height: 21px !important;
+  padding: 4px 10px !important;
+  margin: 0 0 3px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  letter-spacing: .04em !important;
+  text-transform: none !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row.studio-trip-row--card,
+.studio-trip-list--card .studio-trip-row.studio-trip-row--card,
+.studio-trip-row--card {
+  box-sizing: border-box !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row--card {
+  min-height: 52px !important;
+  height: 52px !important;
+  max-height: 52px !important;
+  padding: 5px 6px !important;
+  border-radius: 10px !important;
+  gap: 2px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-rows: min-content !important;
+  align-content: start !important;
+  overflow: hidden !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row--card .studio-trip-date,
+.studio-panel .studio-trip-list--card .studio-trip-row--card .studio-trip-main strong {
+  font-size: 10px !important;
+  line-height: 1.04 !important;
+  letter-spacing: -.025em !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row--card .studio-trip-date {
+  -webkit-line-clamp: 2 !important;
+  min-height: 10px !important;
+  color: #45efff !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row--card .studio-trip-main strong {
+  -webkit-line-clamp: 2 !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row--card .studio-trip-main small,
+.studio-panel .studio-trip-list--card .studio-trip-row--card .studio-trip-main .studio-trip-summary {
+  display: none !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row--card .studio-trip-buttons {
+  display: none !important;
+}
+
+.studio-panel .studio-trip-list--card .studio-trip-row--card:hover .studio-trip-buttons {
+  display: flex !important;
+  position: absolute !important;
+  right: 4px !important;
+  bottom: 4px !important;
+  top: auto !important;
+}
+
+@media (max-width: 760px) {
+  .studio-panel .studio-trip-list--card .timeline-card-grid,
+  .studio-panel .studio-trip-list--card .studio-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}

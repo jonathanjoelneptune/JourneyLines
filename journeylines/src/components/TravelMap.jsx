@@ -201,15 +201,22 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
   const legs = useMemo(() => applyRouteDetailsToEntries(flattenLegs(trips, locById, homeBases), routeDetails), [trips, locById, homeBases]);
 
-  const completedMode = activeIndex >= legs.length;
+  const hasActivePlayback = Boolean(isStarted || isPlaying || introLaunching);
+  const completedMode = hasActivePlayback && activeIndex >= legs.length;
   const overviewMode = Boolean(globeOverview);
-  const safeActiveIndex = Math.min(activeIndex, Math.max(0, legs.length - 1));
-  const active = legs[safeActiveIndex];
-  const nextActive = !completedMode ? legs[Math.min(activeIndex + 1, Math.max(0, legs.length - 1))] : null;
+  const safeActiveIndex = hasActivePlayback ? Math.min(activeIndex, Math.max(0, legs.length - 1)) : -1;
+  const active = safeActiveIndex >= 0 ? legs[safeActiveIndex] : null;
+  const nextActive = hasActivePlayback && !completedMode ? legs[Math.min(activeIndex + 1, Math.max(0, legs.length - 1))] : null;
   const scene = active && !completedMode && !overviewMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries, Boolean(trailTuning?.routeStackingEnabled)) : null;
-  const completedLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex)), [overviewMode, completedMode, legs, activeIndex]);
-  const visibleLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1)), [overviewMode, completedMode, legs, activeIndex]);
-  const labelCompletedMode = overviewMode || completedMode;
+  const completedLegs = useMemo(() => {
+    if (!hasActivePlayback) return [];
+    return overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex));
+  }, [hasActivePlayback, overviewMode, completedMode, legs, activeIndex]);
+  const visibleLegs = useMemo(() => {
+    if (!hasActivePlayback) return [];
+    return overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1));
+  }, [hasActivePlayback, overviewMode, completedMode, legs, activeIndex]);
+  const labelCompletedMode = hasActivePlayback && (overviewMode || completedMode);
   useEffect(() => {
     const ids = new Set();
     if (active?.leg?.from?.id) ids.add(active.leg.from.id);
@@ -310,8 +317,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       resetAnimatingRef.current = true;
       lastCameraRef.current = null;
       map.stop();
-      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 650, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
-      window.setTimeout(() => { resetAnimatingRef.current = false; }, 725);
+      map.jumpTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, essential: true });
+      window.setTimeout(() => { resetAnimatingRef.current = false; }, 120);
     } catch { resetAnimatingRef.current = false; }
   }, [isStarted, introLaunching, mapReady]);
 
