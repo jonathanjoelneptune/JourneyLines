@@ -14,7 +14,7 @@ import baseHoppers from './data/hoppers.json';
 import settings from './data/settings.json';
 import parameters from './data/parameters.json';
 import routeDetails from './data/routeDetails.json';
-import { buildRouteDetailsPayload } from './utils/routeDetails.js';
+import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
@@ -260,17 +260,7 @@ export default function App() {
   const timelineMarkers = useMemo(() => buildTimelineMarkers(tripTimeline, legs.length), [tripTimeline, legs.length]);
   const timelineYearSegments = useMemo(() => buildTimelineYearSegments(tripTimeline, legs.length), [tripTimeline, legs.length]);
   const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
-  const routeDetailsStatus = useMemo(() => {
-    const routes = routeDetails?.routes || {};
-    const records = Object.values(routes);
-    const geometryCount = records.filter(record => Array.isArray(record?.geometry) && record.geometry.length > 1).length;
-    return {
-      records: records.length,
-      expected: legs.length,
-      geometries: geometryCount,
-      label: `${records.length}/${legs.length} legs · ${geometryCount} geometries`
-    };
-  }, [legs.length]);
+  const routeDetailsStatus = useMemo(() => summarizeRouteDetails(routeDetails, legs.length), [legs.length]);
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
   const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
@@ -520,9 +510,8 @@ export default function App() {
       const payload = buildRouteDetailsPayload(trips, locations, homeBases, routeDetails);
       await commitSingleJsonFile(repo, token, 'journeylines/src/data/routeDetails.json', payload, 'Rebuild GlobeHoppers route details');
       try { localStorage.setItem('journeylines.routeDetails', JSON.stringify(payload)); } catch {}
-      const records = Object.values(payload.routes || {});
-      const geometryCount = records.filter(record => Array.isArray(record?.geometry) && record.geometry.length > 1).length;
-      setRouteDetailsMessage(`Route details rebuilt: ${records.length} legs, ${geometryCount} geometries. Refresh after deploy/update to load the committed file.`);
+      const summary = summarizeRouteDetails(payload, legs.length);
+      setRouteDetailsMessage(`Route details rebuilt: ${summary.records} legs, ${summary.geometries} geometries (${summary.detailed} detailed, ${summary.simple} simple, ${summary.missing} missing). Refresh after deploy/update to load the committed file.`);
       return true;
     } catch (error) {
       setRouteDetailsMessage(error?.message || String(error));

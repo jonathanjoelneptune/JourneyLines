@@ -1,7 +1,7 @@
 import generatedRoutes from '../data/generatedRoutes.json';
 import { flattenLegs } from './tripExpansion.js';
 
-export const ROUTE_DETAILS_VERSION = '4.20';
+export const ROUTE_DETAILS_VERSION = '4.22';
 export const ROUTE_DETAILS_CACHE_VERSION = 'v2.16';
 
 export function routeDetailKeyForEntry(entry) {
@@ -91,17 +91,82 @@ function browserRouteCache() {
   }
 }
 
+function sanitizeGeometry(geometry) {
+  if (!Array.isArray(geometry)) return null;
+  const clean = geometry
+    .map(point => Array.isArray(point) ? [Number(point[0]), Number(point[1])] : null)
+    .filter(point => point && Number.isFinite(point[0]) && Number.isFinite(point[1]));
+  return clean.length > 1 ? clean : null;
+}
+
+function simpleGeometryForLeg(leg) {
+  const from = leg?.from;
+  const to = leg?.to;
+  const geometry = sanitizeGeometry([[from?.lon, from?.lat], [to?.lon, to?.lat]]);
+  return geometry || null;
+}
+
 function routeGeometryForPayload(leg, old = {}, cacheVersion = ROUTE_DETAILS_CACHE_VERSION) {
-  if (Array.isArray(old.geometry) && old.geometry.length > 1) return old.geometry;
   const generated = generatedRoutes?.routes || {};
   const browser = browserRouteCache();
   const directKey = routeCacheKeyForLeg(leg, cacheVersion);
   const reverseKey = reverseRouteCacheKeyForLeg(leg, cacheVersion);
-  if (Array.isArray(generated[directKey]) && generated[directKey].length > 1) return generated[directKey];
-  if (Array.isArray(generated[reverseKey]) && generated[reverseKey].length > 1) return [...generated[reverseKey]].reverse();
-  if (Array.isArray(browser[directKey]) && browser[directKey].length > 1) return browser[directKey];
-  if (Array.isArray(browser[reverseKey]) && browser[reverseKey].length > 1) return [...browser[reverseKey]].reverse();
-  return null;
+
+  const oldGeometry = sanitizeGeometry(old.geometry);
+  if (oldGeometry) return { geometry: oldGeometry, source: old.geometrySource || 'existingRouteDetails', detail: old.geometryDetail || 'preserved' };
+
+  const generatedDirect = sanitizeGeometry(generated[directKey]);
+  if (generatedDirect) return { geometry: generatedDirect, source: 'generatedRoutes', detail: 'direct' };
+
+  const generatedReverse = sanitizeGeometry(generated[reverseKey]);
+  if (generatedReverse) return { geometry: [...generatedReverse].reverse(), source: 'generatedRoutes', detail: 'reverse' };
+
+  const browserDirect = sanitizeGeometry(browser[directKey]);
+  if (browserDirect) return { geometry: browserDirect, source: 'browserRouteCache', detail: 'direct' };
+
+  const browserReverse = sanitizeGeometry(browser[reverseKey]);
+  if (browserReverse) return { geometry: [...browserReverse].reverse(), source: 'browserRouteCache', detail: 'reverse' };
+
+  const simple = simpleGeometryForLeg(leg);
+  if (simple) return { geometry: simple, source: 'simpleFallback', detail: 'straight-line' };
+
+  return { geometry: null, source: 'missing', detail: 'no-valid-coordinates' };
+}
+
+export function summarizeRouteDetails(details = {}, expectedLegs = 0) {
+  const normalized = normalizeRouteDetails(details);
+  const records = Object.values(normalized.routes || {});
+  const summary = {
+    records: records.length,
+    expected: expectedLegs,
+    geometries: 0,
+    detailed: 0,
+    simple: 0,
+    missing: 0,
+    generated: 0,
+    browser: 0,
+    existing: 0,
+    reverse: 0
+  };
+  for (const record of records) {
+    const hasGeometry = Array.isArray(record?.geometry) && record.geometry.length > 1;
+    if (!hasGeometry) {
+      summary.missing += 1;
+      continue;
+    }
+    summary.geometries += 1;
+    const source = record.geometrySource || '';
+    const detail = record.geometryDetail || '';
+    if (source === 'simpleFallback') summary.simple += 1;
+    else summary.detailed += 1;
+    if (source === 'generatedRoutes') summary.generated += 1;
+    if (source === 'browserRouteCache') summary.browser += 1;
+    if (source === 'existingRouteDetails') summary.existing += 1;
+    if (detail === 'reverse') summary.reverse += 1;
+  }
+  summary.label = `${summary.records}/${summary.expected || summary.records} legs · ${summary.geometries} geometries`;
+  summary.detailLabel = `${summary.detailed} detailed · ${summary.simple} simple · ${summary.missing} missing`;
+  return summary;
 }
 
 export function buildRouteDetailsPayload(trips = [], locations = [], homeBases = [], existingDetails = {}) {
@@ -116,7 +181,8 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
     const old = existing.routes?.[key] || {};
     const cacheVersion = existing.cacheVersion || ROUTE_DETAILS_CACHE_VERSION;
     const routeCacheKey = routeCacheKeyForLeg(entry.leg, cacheVersion);
-    const geometry = routeGeometryForPayload(entry.leg, old, cacheVersion);
+    const geometryInfo = routeGeometryForPayload(entry.leg, old, cacheVersion);
+    const geometry = geometryInfo.geometry;
     routes[key] = {
       id: key,
       tripId: entry.trip?.id || null,
@@ -139,7 +205,16 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
         from: [Number(entry.leg.from.lon), Number(entry.leg.from.lat)],
         to: [Number(entry.leg.to.lon), Number(entry.leg.to.lat)]
       },
-      ...(geometry ? { geometry } : {}),
+      ...(geometry ? {
+        geometry,
+        geometrySource: geometryInfo.source,
+        geometryDetail: geometryInfo.detail,
+        geometryPointCount: geometry.length
+      } : {
+        geometrySource: geometryInfo.source,
+        geometryDetail: geometryInfo.detail,
+        geometryPointCount: 0
+      }),
       updatedAt: new Date().toISOString()
     };
   }

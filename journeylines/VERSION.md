@@ -1,1 +1,1 @@
-GlobeHoppers v4.21 — route details rebuild/status tools and trails/stacking defaults
+GlobeHoppers v4.22 — persistent route geometry backfill

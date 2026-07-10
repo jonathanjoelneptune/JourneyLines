@@ -137,6 +137,8 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
         <div className="timeline-advanced-section">
           <div className="timeline-advanced-title">Route details</div>
           <div className="timeline-route-status">{routeDetailsStatus?.label || 'Not loaded'}</div>
+          {routeDetailsStatus?.detailLabel && <div className="timeline-route-detail">{routeDetailsStatus.detailLabel}</div>}
+          {routeDetailsStatus && <div className="timeline-route-detail">generated {routeDetailsStatus.generated || 0} · browser {routeDetailsStatus.browser || 0} · existing {routeDetailsStatus.existing || 0} · reversed {routeDetailsStatus.reverse || 0}</div>}
           {routeDetailsMessage && <div className="timeline-route-message">{routeDetailsMessage}</div>}
           <button
             type="button"

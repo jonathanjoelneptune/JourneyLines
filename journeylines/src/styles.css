@@ -11760,3 +11760,11 @@ svg text {
   opacity: .55;
   cursor: default;
 }
+
+
+/* GlobeHoppers v4.22 routeDetails geometry breakdown. */
+.timeline-route-detail {
+  font-size: 10px;
+  line-height: 1.25;
+  color: rgba(232,244,255,.62);
+}
