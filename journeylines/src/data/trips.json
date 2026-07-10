@@ -3313,32 +3313,5 @@
     "occasion": "",
     "trailStyle": "stripe",
     "trailColorMode": "members"
-  },
-  {
-    "id": "2026-145-perth",
-    "year": 2026,
-    "month": 9,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "September 2026",
-    "displayEndDate": "",
-    "sortKey": "2026-09-99-019",
-    "label": "Perth",
-    "travelers": [
-      "joey"
-    ],
-    "guestHoppers": [],
-    "mode": "plane",
-    "roundTrip": true,
-    "returnMode": "plane",
-    "fromLocationId": null,
-    "toLocationId": "perth-08",
-    "route": [],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "solid",
-    "trailColorMode": "members"
   }
 ]
