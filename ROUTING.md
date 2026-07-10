@@ -1,1 +1,1 @@
-Base: v4.13. Restores fade when changing trips with Trails off while keeping the hard rule that only the current trip remains after fade completes.
+Base: v4.13.1. Adds active/passive trail tuning profiles. Completed trails render passive with Trails on; all legs in current trip render active until the trip completes.

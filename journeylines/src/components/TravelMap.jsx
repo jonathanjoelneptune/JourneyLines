@@ -18,6 +18,12 @@ const IDLE_SPIN_GLOBE_ZOOM = 2.55;
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
   solidGlow: 0.5,
+  solidActiveThickness: 2.4,
+  solidActiveGlow: 0.5,
+  solidActiveOpacity: 1.0,
+  solidPassiveThickness: 1.15,
+  solidPassiveGlow: 0.05,
+  solidPassiveOpacity: 0.55,
   borderThickness: 1.35,
   borderZoomFade: 1.0,
   stripeThickness: 2.5,
@@ -27,15 +33,52 @@ const DEFAULT_TRAIL_TUNING = {
   stripeGlow: 0.75,
   stripeBevel: 0.45,
   stripeLaneEffect: 0.4,
+  stripeActiveThickness: 2.5,
+  stripeActiveSegmentMiles: 80,
+  stripeActiveSeparator: 0.45,
+  stripeActiveGlow: 0.75,
+  stripeActiveBevel: 0.45,
+  stripeActiveLaneEffect: 0.4,
+  stripeActiveOpacity: 1.0,
+  stripePassiveThickness: 1.25,
+  stripePassiveSegmentMiles: 120,
+  stripePassiveSeparator: 0.28,
+  stripePassiveGlow: 0.04,
+  stripePassiveBevel: 0.18,
+  stripePassiveLaneEffect: 0.18,
+  stripePassiveOpacity: 0.58,
   ribbonThickness: 5.0,
   ribbonGap: 0.75,
   ribbonSpread: 2.5,
   ribbonGlow: 0.0,
+  ribbonActiveThickness: 5.0,
+  ribbonActiveSpread: 2.5,
+  ribbonActiveGap: 0.75,
+  ribbonActiveGlow: 0.0,
+  ribbonActiveOpacity: 1.0,
+  ribbonPassiveThickness: 1.65,
+  ribbonPassiveSpread: 0.65,
+  ribbonPassiveGap: 0.25,
+  ribbonPassiveGlow: 0.0,
+  ribbonPassiveOpacity: 0.58,
+  ribbonPassiveUseStripe: false,
   spiralThickness: 1.55,
   spiralSegmentMiles: 50,
   spiralAmplitude: 0.3,
   spiralGlow: 1.2,
-  spiralAnimate: false
+  spiralAnimate: false,
+  spiralActiveThickness: 1.55,
+  spiralActiveSegmentMiles: 50,
+  spiralActiveAmplitude: 0.3,
+  spiralActiveGlow: 1.2,
+  spiralActiveOpacity: 1.0,
+  spiralActiveAnimate: false,
+  spiralPassiveThickness: 1.0,
+  spiralPassiveSegmentMiles: 120,
+  spiralPassiveAmplitude: 0.18,
+  spiralPassiveGlow: 0.0,
+  spiralPassiveOpacity: 0.55,
+  spiralPassiveAnimate: false
 };
 
 
@@ -216,7 +259,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
       if (trailTuningOpen) syncTrailTuningDemo(map, trailTuningConfig, trailWidth);
-      else syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+      else syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, [], active?.trip?.id || null);
       const visited = trailTuningOpen ? [] : buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       if (!trailTuningOpen) updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, hopperData || travById), null, droppedPinIdsRef);
@@ -460,7 +503,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: [], key: '' };
       }
       if (!fadeTrailRef.current.active) {
-        syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldFeatures);
+        syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldFeatures, active?.trip?.id || null);
       }
     }
   }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig, isPlaying]);
@@ -759,10 +802,11 @@ function addPulseLayer(map) {
   map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 10, 6, 24], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
 }
 
-function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING, fadeFeatures = []) {
+function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING, fadeFeatures = [], activeTripId = null) {
   const features = showTrails ? completedLegs.flatMap((l, i) => {
     const trail = trailVisualForLeg(l, travelersById);
-    return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, false, 1, routedGeometries, trailTuning);
+    const isCurrentTrip = Boolean(activeTripId && l?.trip?.id === activeTripId);
+    return routeFeaturesForTrail(l.leg, trail, l.trip.id, i, Math.max(0.9, opacity), width, isCurrentTrip, 1, routedGeometries, trailTuning);
   }) : (fadeFeatures || []);
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
@@ -874,21 +918,61 @@ function trailBorderThickness(config) {
   return Math.max(0, Number(config?.borderThickness) || 0);
 }
 
+
+function profileTrailConfig(config = DEFAULT_TRAIL_TUNING, active = false, style = 'solid') {
+  const base = { ...DEFAULT_TRAIL_TUNING, ...(config || {}) };
+  const mode = active ? 'Active' : 'Passive';
+  const out = { ...base, _ghTrailProfile: active ? 'active' : 'passive' };
+  const copy = (from, to) => { if (base[from] !== undefined) out[to] = base[from]; };
+  copy(`${style}${mode}Thickness`, `${style}Thickness`);
+  copy(`${style}${mode}Glow`, `${style}Glow`);
+  copy(`${style}${mode}Opacity`, `${style}Opacity`);
+  if (style === 'stripe') {
+    copy(`stripe${mode}SegmentMiles`, 'stripeSegmentMiles');
+    copy(`stripe${mode}Separator`, 'stripeSeparator');
+    copy(`stripe${mode}Bevel`, 'stripeBevel');
+    copy(`stripe${mode}LaneEffect`, 'stripeLaneEffect');
+  }
+  if (style === 'ribbon') {
+    copy(`ribbon${mode}Spread`, 'ribbonSpread');
+    copy(`ribbon${mode}Gap`, 'ribbonGap');
+  }
+  if (style === 'spiral') {
+    copy(`spiral${mode}SegmentMiles`, 'spiralSegmentMiles');
+    copy(`spiral${mode}Amplitude`, 'spiralAmplitude');
+    copy(`spiral${mode}Animate`, 'spiralAnimate');
+  }
+  const opacityKey = `${style}${mode}Opacity`;
+  out._ghProfileOpacity = base[opacityKey] === undefined ? (active ? 1 : 0.58) : Number(base[opacityKey]);
+  return out;
+}
+
+function passiveTrailVisualForTrail(trail = {}, config = DEFAULT_TRAIL_TUNING) {
+  if ((trail?.style || 'solid') === 'ribbon' && config?.ribbonPassiveUseStripe) {
+    return { ...trail, style: 'stripe' };
+  }
+  return trail;
+}
+
 function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
-  const config = { ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) };
+  const requestedStyle = trail?.style || 'solid';
+  const visualTrail = active ? trail : passiveTrailVisualForTrail(trail, trailTuning);
+  const style = visualTrail?.style || requestedStyle || 'solid';
+  const config = profileTrailConfig(trailTuning, active, style);
+  const profileOpacity = Math.max(0, Math.min(1.5, Number(config._ghProfileOpacity) || (active ? 1 : 0.58)));
+  const renderOpacity = opacity * profileOpacity;
   const stackOffset = config.routeStackingEnabled ? (Number(leg?.routeStackOffset) || 0) : 0;
   const withStack = (features) => applyRouteStackOffset(features, stackOffset);
-  const colors = (trail?.colors || []).filter(Boolean);
-  const baseColor = trail?.baseColor || colors[0] || '#00e5ff';
-  const style = trail?.style || 'solid';
-  if (style === 'ribbon' && colors.length > 1) return withStack(ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config));
-  if (style === 'stripe' && colors.length > 1) return withStack(stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config));
-  if (style === 'spiral' && colors.length > 1) return withStack(spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config));
+  const colors = (visualTrail?.colors || trail?.colors || []).filter(Boolean);
+  const baseColor = visualTrail?.baseColor || trail?.baseColor || colors[0] || '#00e5ff';
+  if (style === 'ribbon' && colors.length > 1) return withStack(ribbonRouteFeatures(leg, colors, tripId, index, renderOpacity, width, active, progress, routedGeometries, config));
+  if (style === 'stripe' && colors.length > 1) return withStack(stripeRouteFeatures(leg, colors, tripId, index, renderOpacity, width, active, progress, routedGeometries, config));
+  if (style === 'spiral' && colors.length > 1) return withStack(spiralRouteFeatures(leg, colors, tripId, index, renderOpacity, width, active, progress, routedGeometries, config));
   const solidWidth = width * Math.max(0.2, Number(config.solidThickness) || 1);
   const border = trailBorderThickness(config);
   const out = [];
-  if (border > 0) out.push(routeFeature(leg, '#020407', tripId, `${index}-solid-border`, opacity, solidWidth + border * 2, active, progress, routedGeometries, 0, withTrailGlow(config, 0, width)));
-  out.push(routeFeature(leg, baseColor, tripId, index, opacity, solidWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.solidGlow, width)));
+  if (border > 0) out.push(routeFeature(leg, '#020407', tripId, `${index}-solid-border`, renderOpacity, solidWidth + border * 2, false, progress, routedGeometries, 0, withTrailGlow(config, 0, width)));
+  out.push(routeFeature(leg, baseColor, tripId, index, renderOpacity, solidWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.solidGlow, width)));
   return withStack(out);
 }
 
@@ -983,18 +1067,27 @@ function syncTrailTuningDemo(map, config = DEFAULT_TRAIL_TUNING, width = 2) {
   const toLon = -72.2;
   const demoWidth = Math.max(2.6, width * 1.8);
   const rows = [
-    { style: 'solid', lat: 43.5, colors: ['#44f48a'], label: 'Solid' },
-    { style: 'stripe', lat: 39.5, colors: ['#ff8a00', '#ff4fd8', '#ff5548'], label: 'Stripe' },
-    { style: 'ribbon', lat: 35.5, colors: ['#2f80ff', '#ffffff', '#ff3b30'], label: 'Ribbon' },
-    { style: 'spiral', lat: 31.5, colors: ['#00e5ff', '#9b5cff', '#ffd60a'], label: 'Spiral' }
+    { style: 'solid', lat: 44.8, colors: ['#44f48a'], label: 'Solid' },
+    { style: 'stripe', lat: 39.8, colors: ['#ff8a00', '#ff4fd8', '#ff5548'], label: 'Stripe' },
+    { style: 'ribbon', lat: 34.8, colors: ['#2f80ff', '#ffffff', '#ff3b30'], label: 'Ribbon' },
+    { style: 'spiral', lat: 29.8, colors: ['#00e5ff', '#9b5cff', '#ffd60a'], label: 'Spiral' }
   ];
   const features = rows.flatMap((row, index) => {
-    const leg = {
+    const activeLeg = {
       mode: 'plane',
-      from: { id: `tune-west-${index}`, name: `${row.label} West`, lon: fromLon, lat: row.lat },
-      to: { id: `tune-east-${index}`, name: `${row.label} East`, lon: toLon, lat: row.lat + 0.35 }
+      from: { id: `tune-west-${index}-active`, name: `${row.label} Active West`, lon: fromLon, lat: row.lat },
+      to: { id: `tune-east-${index}-active`, name: `${row.label} Active East`, lon: toLon, lat: row.lat + 0.22 }
     };
-    return routeFeaturesForTrail(leg, { style: row.style, colors: row.colors, baseColor: row.colors[0] }, `tune-${row.style}`, index, 1, demoWidth, row.style === 'spiral' && !!config.spiralAnimate, 1, {}, config);
+    const passiveLeg = {
+      mode: 'plane',
+      from: { id: `tune-west-${index}-passive`, name: `${row.label} Passive West`, lon: fromLon, lat: row.lat - 1.0 },
+      to: { id: `tune-east-${index}-passive`, name: `${row.label} Passive East`, lon: toLon, lat: row.lat - 0.78 }
+    };
+    const trail = { style: row.style, colors: row.colors, baseColor: row.colors[0] };
+    return [
+      ...routeFeaturesForTrail(activeLeg, trail, `tune-${row.style}-active`, `${index}-active`, 1, demoWidth, true, 1, {}, config),
+      ...routeFeaturesForTrail(passiveLeg, trail, `tune-${row.style}-passive`, `${index}-passive`, 1, demoWidth, false, 1, {}, config)
+    ];
   });
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
   map.getSource('active-route')?.setData(emptyCollection());

@@ -11685,3 +11685,31 @@ svg text {
     0 0 6px rgba(0,0,0,.82),
     0 0 12px rgba(0,0,0,.56) !important;
 }
+
+/* GlobeHoppers v4.14 — active/passive trail tuning tabs. */
+.trail-tuning-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0 12px;
+  padding: 4px;
+  border: 1px solid rgba(0, 229, 255, .22);
+  border-radius: 999px;
+  background: rgba(3, 12, 24, .58);
+}
+.trail-tuning-tabs button {
+  border: 0 !important;
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: rgba(230, 242, 255, .72);
+  background: transparent;
+  font-weight: 760 !important;
+}
+.trail-tuning-tabs button.active {
+  color: #06111f;
+  background: linear-gradient(135deg, #baf7ee, #f3efac);
+  box-shadow: 0 0 14px rgba(118, 245, 219, .18), inset 0 1px 0 rgba(255,255,255,.32) !important;
+}
+.trail-tuning section h4 {
+  text-transform: capitalize;
+}

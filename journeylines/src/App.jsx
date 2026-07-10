@@ -17,23 +17,67 @@ import parameters from './data/parameters.json';
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
   solidGlow: 0.5,
+  solidActiveThickness: 2.4,
+  solidActiveGlow: 0.5,
+  solidActiveOpacity: 1.0,
+  solidPassiveThickness: 1.15,
+  solidPassiveGlow: 0.05,
+  solidPassiveOpacity: 0.55,
   borderThickness: 1.35,
   borderZoomFade: 1.0,
   stripeThickness: 2.5,
   stripeSegmentMiles: 80,
+  routeStackingEnabled: false,
   stripeSeparator: 0.45,
   stripeGlow: 0.75,
   stripeBevel: 0.45,
   stripeLaneEffect: 0.4,
+  stripeActiveThickness: 2.5,
+  stripeActiveSegmentMiles: 80,
+  stripeActiveSeparator: 0.45,
+  stripeActiveGlow: 0.75,
+  stripeActiveBevel: 0.45,
+  stripeActiveLaneEffect: 0.4,
+  stripeActiveOpacity: 1.0,
+  stripePassiveThickness: 1.25,
+  stripePassiveSegmentMiles: 120,
+  stripePassiveSeparator: 0.28,
+  stripePassiveGlow: 0.04,
+  stripePassiveBevel: 0.18,
+  stripePassiveLaneEffect: 0.18,
+  stripePassiveOpacity: 0.58,
   ribbonThickness: 5.0,
   ribbonGap: 0.75,
   ribbonSpread: 2.5,
   ribbonGlow: 0.0,
+  ribbonActiveThickness: 5.0,
+  ribbonActiveSpread: 2.5,
+  ribbonActiveGap: 0.75,
+  ribbonActiveGlow: 0.0,
+  ribbonActiveOpacity: 1.0,
+  ribbonPassiveThickness: 1.65,
+  ribbonPassiveSpread: 0.65,
+  ribbonPassiveGap: 0.25,
+  ribbonPassiveGlow: 0.0,
+  ribbonPassiveOpacity: 0.58,
+  ribbonPassiveUseStripe: false,
   spiralThickness: 1.55,
   spiralSegmentMiles: 50,
   spiralAmplitude: 0.3,
   spiralGlow: 1.2,
-  spiralAnimate: false
+  spiralAnimate: false,
+  spiralActiveThickness: 1.55,
+  spiralActiveSegmentMiles: 50,
+  spiralActiveAmplitude: 0.3,
+  spiralActiveGlow: 1.2,
+  spiralActiveOpacity: 1.0,
+  spiralActiveAnimate: false,
+  spiralPassiveThickness: 1.0,
+  spiralPassiveSegmentMiles: 120,
+  spiralPassiveAmplitude: 0.18,
+  spiralPassiveGlow: 0.0,
+  spiralPassiveOpacity: 0.55,
+  spiralPassiveAnimate: false
 };
 
 const DEFAULT_TIMELINE_TUNING = {
@@ -510,24 +554,35 @@ export default function App() {
 
 
 function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
+  const [tab, setTab] = useState('active');
   const update = (key, value) => onChange(v => ({ ...v, [key]: value }));
   const row = (key, label, min, max, step = 0.05, suffix = 'x') => (
     <label className="trail-tuning-row">
       <span>{label}</span>
-      <input type="range" min={min} max={max} step={step} value={values[key]} onChange={e => update(key, Number(e.target.value))} />
-      <b>{Number(values[key]).toFixed(step >= 1 ? 0 : 2)}{suffix}</b>
+      <input type="range" min={min} max={max} step={step} value={values[key] ?? 0} onChange={e => update(key, Number(e.target.value))} />
+      <b>{Number(values[key] ?? 0).toFixed(step >= 1 ? 0 : 2)}{suffix}</b>
     </label>
   );
+  const check = (key, label) => (
+    <label className="trail-tuning-check"><input type="checkbox" checked={!!values[key]} onChange={e => update(key, e.target.checked)} /> {label}</label>
+  );
+  const prefix = tab === 'active' ? 'Active' : 'Passive';
+  const isActive = tab === 'active';
   return <aside className="trail-tuning glass">
     <div className="trail-tuning__head">
       <div><p className="eyebrow">Trail Utility</p><h3>Trail tuning</h3></div>
       <button type="button" onClick={onClose} aria-label="Close trail tuning">×</button>
     </div>
-    <p className="trail-tuning__note">Demo mode hides the real trip trails and shows Solid, Stripe, Ribbon, and Spiral coast-to-coast for live tuning.</p>
+    <p className="trail-tuning__note">Demo mode shows each trail twice: active on top, passive below. Active trails fade out while passive trails fade in when a trip completes.</p>
+    <div className="trail-tuning-tabs" role="tablist" aria-label="Trail tuning mode">
+      <button type="button" className={isActive ? 'active' : ''} onClick={() => setTab('active')}>Active</button>
+      <button type="button" className={!isActive ? 'active' : ''} onClick={() => setTab('passive')}>Passive</button>
+    </div>
     <section>
-      <h4>Solid</h4>
-      {row('solidThickness', 'Thickness', 0.6, 5.0, 0.05, 'x')}
-      {row('solidGlow', 'Glow', 0, 2, 0.05, 'x')}
+      <h4>Solid {tab}</h4>
+      {row(`solid${prefix}Thickness`, 'Thickness', 0.6, 5.0, 0.05, 'x')}
+      {row(`solid${prefix}Glow`, 'Glow', 0, 2, 0.05, 'x')}
+      {row(`solid${prefix}Opacity`, 'Opacity', 0.05, 1.25, 0.05, 'x')}
     </section>
     <section>
       <h4>All trails</h4>
@@ -535,28 +590,32 @@ function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
       {row('borderZoomFade', 'Border zoom fade', 0, 1, 0.05, 'x')}
     </section>
     <section>
-      <h4>Stripe</h4>
-      {row('stripeThickness', 'Thickness', 0.8, 5.0, 0.05, 'x')}
-      {row('stripeSegmentMiles', 'Segment length', 5, 650, 5, ' mi')}
-      {row('stripeSeparator', 'Dark transition', 0, 2.4, 0.05, 'x')}
-      {row('stripeGlow', 'Glow', 0, 2, 0.05, 'x')}
-      {row('stripeBevel', 'Bevel/highlight', 0, 1.5, 0.05, 'x')}
-      {row('stripeLaneEffect', 'Lane contrast', 0, 2, 0.05, 'x')}
+      <h4>Stripe {tab}</h4>
+      {row(`stripe${prefix}Thickness`, 'Thickness', 0.8, 5.0, 0.05, 'x')}
+      {row(`stripe${prefix}SegmentMiles`, 'Segment length', 5, 650, 5, ' mi')}
+      {row(`stripe${prefix}Separator`, 'Dark transition', 0, 2.4, 0.05, 'x')}
+      {row(`stripe${prefix}Glow`, 'Glow', 0, 2, 0.05, 'x')}
+      {row(`stripe${prefix}Bevel`, 'Bevel/highlight', 0, 1.5, 0.05, 'x')}
+      {row(`stripe${prefix}LaneEffect`, 'Lane contrast', 0, 2, 0.05, 'x')}
+      {row(`stripe${prefix}Opacity`, 'Opacity', 0.05, 1.25, 0.05, 'x')}
     </section>
     <section>
-      <h4>Ribbon</h4>
-      {row('ribbonThickness', 'Thickness', 0.9, 5.0, 0.05, 'x')}
-      {row('ribbonSpread', 'Spread', 0, 3.0, 0.05, 'x')}
-      {row('ribbonGap', 'Dark separation', 0, 1.4, 0.05, 'x')}
-      {row('ribbonGlow', 'Glow', 0, 2, 0.05, 'x')}
+      <h4>Ribbon {tab}</h4>
+      {row(`ribbon${prefix}Thickness`, 'Thickness', 0.9, 5.0, 0.05, 'x')}
+      {row(`ribbon${prefix}Spread`, 'Spread', 0, 3.0, 0.05, 'x')}
+      {row(`ribbon${prefix}Gap`, 'Dark separation', 0, 1.4, 0.05, 'x')}
+      {row(`ribbon${prefix}Glow`, 'Glow', 0, 2, 0.05, 'x')}
+      {row(`ribbon${prefix}Opacity`, 'Opacity', 0.05, 1.25, 0.05, 'x')}
+      {!isActive && check('ribbonPassiveUseStripe', 'Use passive Stripe for passive Ribbon')}
     </section>
     <section>
-      <h4>Spiral</h4>
-      {row('spiralThickness', 'Thickness', 0.9, 3.2, 0.05, 'x')}
-      {row('spiralSegmentMiles', 'Twist length', 50, 360, 10, ' mi')}
-      {row('spiralAmplitude', 'Twist depth', 0.3, 2.4, 0.05, 'x')}
-      {row('spiralGlow', 'Glow', 0, 2, 0.05, 'x')}
-      <label className="trail-tuning-check"><input type="checkbox" checked={!!values.spiralAnimate} onChange={e => update('spiralAnimate', e.target.checked)} /> Animate spiral</label>
+      <h4>Spiral {tab}</h4>
+      {row(`spiral${prefix}Thickness`, 'Thickness', 0.9, 3.2, 0.05, 'x')}
+      {row(`spiral${prefix}SegmentMiles`, 'Twist length', 50, 360, 10, ' mi')}
+      {row(`spiral${prefix}Amplitude`, 'Twist depth', 0.05, 2.4, 0.05, 'x')}
+      {row(`spiral${prefix}Glow`, 'Glow', 0, 2, 0.05, 'x')}
+      {row(`spiral${prefix}Opacity`, 'Opacity', 0.05, 1.25, 0.05, 'x')}
+      {check(`spiral${prefix}Animate`, `Animate ${tab} spiral`)}
     </section>
     <div className="trail-tuning__actions">
       <button type="button" className="secondary" onClick={onReset}>Reset</button>
@@ -565,7 +624,6 @@ function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
     </div>
   </aside>;
 }
-
 
 
 function TimelineTuningUtility({ values, onChange, onClose, onReset, onSave }) {

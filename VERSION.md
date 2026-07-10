@@ -1,1 +1,1 @@
-GlobeHoppers v4.13.1 — restore cross-trip fade with Trails off
+GlobeHoppers v4.14 — active and passive trail profiles
