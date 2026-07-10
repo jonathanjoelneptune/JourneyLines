@@ -1148,34 +1148,23 @@ function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active
   const profileOpacity = Math.max(0, Math.min(1.5, Number(config._ghProfileOpacity) || (active ? 1 : 0.58)));
   const renderOpacity = opacity * profileOpacity;
   const stackOffset = config.routeStackingEnabled ? (Number(leg?.routeStackOffset) || 0) : 0;
-  const withStack = (features) => applyRouteStackOffset(features, stackOffset);
   const colors = (visualTrail?.colors || trail?.colors || []).filter(Boolean);
   const baseColor = visualTrail?.baseColor || trail?.baseColor || colors[0] || '#00e5ff';
   const renderAsActive = active && !isMorph;
-  if (style === 'ribbon' && colors.length > 1) return withStack(ribbonRouteFeatures(leg, colors, tripId, index, renderOpacity, width, renderAsActive, progress, routedGeometries, config));
-  if (style === 'stripe' && colors.length > 1) return withStack(stripeRouteFeatures(leg, colors, tripId, index, renderOpacity, width, renderAsActive, progress, routedGeometries, config));
-  if (style === 'spiral' && colors.length > 1) return withStack(spiralRouteFeatures(leg, colors, tripId, index, renderOpacity, width, renderAsActive, progress, routedGeometries, config));
+  if (style === 'ribbon' && colors.length > 1) return ribbonRouteFeatures(leg, colors, tripId, index, renderOpacity, width, renderAsActive, progress, routedGeometries, config, stackOffset);
+  if (style === 'stripe' && colors.length > 1) return stripeRouteFeatures(leg, colors, tripId, index, renderOpacity, width, renderAsActive, progress, routedGeometries, config, stackOffset);
+  if (style === 'spiral' && colors.length > 1) return spiralRouteFeatures(leg, colors, tripId, index, renderOpacity, width, renderAsActive, progress, routedGeometries, config, stackOffset);
   const solidWidth = width * Math.max(0.2, Number(config.solidThickness) || 1);
   const border = trailBorderThickness(config);
+  const solidCoords = stackedRouteCoordinates(leg, progress, renderAsActive ? 96 : 22, routedGeometries, stackOffset);
   const out = [];
-  if (border > 0) out.push(routeFeature(leg, '#020407', tripId, `${index}-solid-border`, renderOpacity, solidWidth + border * 2, false, progress, routedGeometries, 0, withTrailGlow(config, 0, width)));
-  out.push(routeFeature(leg, baseColor, tripId, index, renderOpacity, solidWidth, renderAsActive, progress, routedGeometries, 0, withTrailGlow(config, config.solidGlow, width)));
-  return withStack(out);
+  if (border > 0) out.push(routeFeatureFromCoordinates(solidCoords, '#020407', tripId, `${index}-solid-border`, renderOpacity, solidWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
+  out.push(routeFeatureFromCoordinates(solidCoords, baseColor, tripId, index, renderOpacity, solidWidth, renderAsActive, leg.mode, 0, withTrailGlow(config, config.solidGlow, width)));
+  return out;
 }
 
-function applyRouteStackOffset(features = [], offset = 0) {
-  if (!offset) return features;
-  return features.map(feature => ({
-    ...feature,
-    properties: {
-      ...(feature.properties || {}),
-      lineOffset: (Number(feature.properties?.lineOffset) || 0) + offset
-    }
-  }));
-}
-
-function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
-  const coords = routeCoordinates(leg, progress, active ? 260 : 190, routedGeometries);
+function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING, stackOffset = 0) {
+  const coords = stackedRouteCoordinates(leg, progress, active ? 260 : 190, routedGeometries, stackOffset);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
   const separatorWidth = Math.max(0, Number(config.stripeSeparator) || 0);
@@ -1206,7 +1195,7 @@ function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.stripeGlow, width))];
 }
 
-function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
+function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING, stackOffset = 0) {
   const total = colors.length;
   const totalWidth = Math.max(width * (Number(config.ribbonThickness) || 1.45), width + 1.0);
   const spread = Math.max(0, Number(config.ribbonSpread) || 0);
@@ -1216,17 +1205,18 @@ function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   const sharedColor = averageColor(colors, colors[0]);
   const border = trailBorderThickness(config);
   const out = [];
-  if (border > 0) out.push(routeFeature(leg, '#020407', tripId, `${index}-ribbon-border`, opacity, totalWidth + border * 2, false, progress, routedGeometries, 0, withTrailGlow(config, 0, width)));
-  out.push(routeFeature(leg, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.08, opacity * 0.16 * (Number(config.ribbonGlow) || 1)), totalWidth + Math.max(0.5, Number(config.ribbonGlow) || 1), false, progress, routedGeometries, 0, withTrailGlow(config, config.ribbonGlow, width)));
+  const coords = stackedRouteCoordinates(leg, progress, active ? 96 : 28, routedGeometries, stackOffset);
+  if (border > 0) out.push(routeFeatureFromCoordinates(coords, '#020407', tripId, `${index}-ribbon-border`, opacity, totalWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
+  out.push(routeFeatureFromCoordinates(coords, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.08, opacity * 0.16 * (Number(config.ribbonGlow) || 1)), totalWidth + Math.max(0.5, Number(config.ribbonGlow) || 1), false, leg.mode, 0, withTrailGlow(config, config.ribbonGlow, width)));
   out.push(...colors.map((color, ribbonIndex) => {
     const offset = (ribbonIndex - (total - 1) / 2) * slotWidth;
-    return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, lineWidth, active, progress, routedGeometries, offset, withTrailGlow(config, config.ribbonGlow, width));
+    return routeFeatureFromCoordinates(coords, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, lineWidth, active, leg.mode, offset, withTrailGlow(config, config.ribbonGlow, width));
   }));
   return out;
 }
 
-function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
-  const coords = routeCoordinates(leg, progress, active ? 240 : 170, routedGeometries);
+function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING, stackOffset = 0) {
+  const coords = stackedRouteCoordinates(leg, progress, active ? 240 : 170, routedGeometries, stackOffset);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const totalWidth = Math.max(width * (Number(config.spiralThickness) || 1.55), width + 1.0);
   const amplitude = Math.max(0.2, totalWidth * (Number(config.spiralAmplitude) || 1.15) * 0.55);
@@ -1340,6 +1330,87 @@ function boundarySegmentAroundJoin(previousSegment, nextSegment) {
   return [prevA, prevB, nextB];
 }
 
+
+function stackedRouteCoordinates(leg, progress = 1, n = 64, routedGeometries = {}, stackOffset = 0) {
+  const coords = routeCoordinates(leg, progress, n, routedGeometries);
+  if (!stackOffset || coords.length < 2) return coords;
+  return taperStackedCoordinates(coords, stackOffset, Number(leg?.miles) || polylineMiles(coords));
+}
+
+function taperStackedCoordinates(coords = [], stackOffset = 0, totalMilesHint = 0) {
+  if (!Array.isArray(coords) || coords.length < 2 || !stackOffset) return coords;
+  const totalMiles = Math.max(0.1, Number(totalMilesHint) || polylineMiles(coords));
+  const taperMiles = Math.min(totalMiles * 0.46, clamp(totalMiles * 0.14, 8, 65));
+  const offsetKm = routeStackOffsetKilometers(stackOffset, totalMiles);
+  if (Math.abs(offsetKm) < 0.0001 || taperMiles <= 0) return coords;
+  const refLat = coords.reduce((sum, c) => sum + Number(c?.[1] || 0), 0) / Math.max(1, coords.length);
+  const refLon = coords[0]?.[0] || 0;
+  const origin = projectLocalPoint([refLon, refLat], refLat, refLon);
+  const projected = coords.map(c => projectLocalPoint(c, refLat, refLon));
+  const cumulative = [0];
+  for (let i = 1; i < coords.length; i++) {
+    cumulative[i] = cumulative[i - 1] + milesBetween({ lon: coords[i - 1][0], lat: coords[i - 1][1] }, { lon: coords[i][0], lat: coords[i][1] });
+  }
+  return projected.map((pt, index) => {
+    const prev = projected[Math.max(0, index - 1)];
+    const next = projected[Math.min(projected.length - 1, index + 1)];
+    const dx = next.x - prev.x;
+    const dy = next.y - prev.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const distFromStart = cumulative[index] || 0;
+    const distFromEnd = Math.max(0, totalMiles - distFromStart);
+    const startFactor = smoothstep(0, taperMiles, distFromStart);
+    const endFactor = smoothstep(0, taperMiles, distFromEnd);
+    const strength = Math.min(startFactor, endFactor);
+    return unprojectLocalPoint({ x: pt.x + nx * offsetKm * strength, y: pt.y + ny * offsetKm * strength }, refLat, refLon);
+  });
+}
+
+function projectLocalPoint(coord, refLat = 0, refLon = 0) {
+  const lon = Number(coord?.[0] || 0);
+  const lat = Number(coord?.[1] || 0);
+  const kmPerDegLat = 110.574;
+  const kmPerDegLon = 111.320 * Math.cos((refLat || 0) * Math.PI / 180);
+  return {
+    x: (lon - refLon) * kmPerDegLon,
+    y: (lat - refLat) * kmPerDegLat
+  };
+}
+
+function unprojectLocalPoint(point, refLat = 0, refLon = 0) {
+  const kmPerDegLat = 110.574;
+  const kmPerDegLon = Math.max(0.0001, 111.320 * Math.cos((refLat || 0) * Math.PI / 180));
+  return [
+    refLon + (Number(point?.x || 0) / kmPerDegLon),
+    refLat + (Number(point?.y || 0) / kmPerDegLat)
+  ];
+}
+
+function polylineMiles(coords = []) {
+  let total = 0;
+  for (let i = 1; i < (coords || []).length; i++) {
+    total += milesBetween({ lon: coords[i - 1][0], lat: coords[i - 1][1] }, { lon: coords[i][0], lat: coords[i][1] });
+  }
+  return total;
+}
+
+function routeStackOffsetKilometers(stackOffset = 0, totalMiles = 0) {
+  const base = Math.abs(Number(stackOffset) || 0);
+  if (!base) return 0;
+  const routeScale = clamp(Math.sqrt(Math.max(1, totalMiles)) / 7.5, 0.9, 2.0);
+  return Math.sign(stackOffset) * base * 1.35 * routeScale;
+}
+
+function smoothstep(edge0, edge1, x) {
+  const t = clamp((x - edge0) / Math.max(0.00001, edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, Number(value) || 0));
+}
 
 function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, lineOffset = 0, config = DEFAULT_TRAIL_TUNING) {
   const mode = leg.mode;

@@ -1,1 +1,1 @@
-GlobeHoppers v4.27 — repo-authoritative trips and smaller active trail overlap
+GlobeHoppers v4.28 — tapered route-stacking endpoints
