@@ -1361,8 +1361,8 @@ function taperStackedCoordinates(coords = [], stackOffset = 0, totalMilesHint = 
     const ny = dx / len;
     const distFromStart = cumulative[index] || 0;
     const distFromEnd = Math.max(0, totalMiles - distFromStart);
-    const startFactor = smoothstep(0, taperMiles, distFromStart);
-    const endFactor = smoothstep(0, taperMiles, distFromEnd);
+    const startFactor = smoothstepRange(0, taperMiles, distFromStart);
+    const endFactor = smoothstepRange(0, taperMiles, distFromEnd);
     const strength = Math.min(startFactor, endFactor);
     return unprojectLocalPoint({ x: pt.x + nx * offsetKm * strength, y: pt.y + ny * offsetKm * strength }, refLat, refLon);
   });
@@ -1403,7 +1403,7 @@ function routeStackOffsetKilometers(stackOffset = 0, totalMiles = 0) {
   return Math.sign(stackOffset) * base * 1.35 * routeScale;
 }
 
-function smoothstep(edge0, edge1, x) {
+function smoothstepRange(edge0, edge1, x) {
   const t = clamp((x - edge0) / Math.max(0.00001, edge1 - edge0), 0, 1);
   return t * t * (3 - 2 * t);
 }
