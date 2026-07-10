@@ -451,9 +451,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         fadeTrailRef.current.active = false;
         window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
       }
-      syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+      const heldFeatures = (!showTrails && isPlaying) ? (fadeTrailRef.current.features || []) : [];
+      syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldFeatures);
     }
-  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig]);
+  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig, isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -508,6 +509,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       syncPulse(map, null, 'transparent');
       currentOverlayStateRef.current = null;
       setOverlayVisibility(false);
+      if (!isPlaying && !showTrails) {
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: [], key: '' };
+        syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, []);
+      }
       if (completedMode && !globeOverview) {
         map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 900, essential: true });
       }
@@ -544,7 +549,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const activeRouteKey = `${active?.trip?.id || ''}:${active?.legIndex ?? ''}`;
     const prevRoute = previousActiveRouteRef.current || {};
     if (prevRoute.key && prevRoute.key !== activeRouteKey && !showTrails && isPlaying && prevRoute.features?.length) {
-      startCompletedRouteFade(map, fadeTrailRef, prevRoute.features, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+      // Trails-off playback should still keep the route we just completed visible
+      // while the next/return leg plays. Do not fade it out; hold the previous
+      // leg as a lightweight completed-route overlay until the next leg replaces it.
+      window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
+      fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: prevRoute.features, key: prevRoute.key };
+      syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, prevRoute.features);
     }
     if (now - lastActiveRouteUpdateRef.current > 33 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
       syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);

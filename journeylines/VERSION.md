@@ -1,1 +1,1 @@
-GlobeHoppers v4.09 — playback performance mode and locked label placement
+GlobeHoppers v4.10 — label-only active placards and held return-route overlay
