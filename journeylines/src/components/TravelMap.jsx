@@ -206,7 +206,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const safeActiveIndex = Math.min(activeIndex, Math.max(0, legs.length - 1));
   const active = legs[safeActiveIndex];
   const nextActive = !completedMode ? legs[Math.min(activeIndex + 1, Math.max(0, legs.length - 1))] : null;
-  const scene = active && !completedMode && !overviewMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries) : null;
+  const scene = active && !completedMode && !overviewMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries, Boolean(trailTuning?.routeStackingEnabled)) : null;
   const completedLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex)), [overviewMode, completedMode, legs, activeIndex]);
   const visibleLegs = useMemo(() => overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1)), [overviewMode, completedMode, legs, activeIndex]);
   const labelCompletedMode = overviewMode || completedMode;
@@ -1340,7 +1340,7 @@ function stackedRouteCoordinates(leg, progress = 1, n = 64, routedGeometries = {
 function taperStackedCoordinates(coords = [], stackOffset = 0, totalMilesHint = 0) {
   if (!Array.isArray(coords) || coords.length < 2 || !stackOffset) return coords;
   const totalMiles = Math.max(0.1, Number(totalMilesHint) || polylineMiles(coords));
-  const taperMiles = Math.min(totalMiles * 0.46, clamp(totalMiles * 0.14, 8, 65));
+  const taperMiles = Math.min(totalMiles * 0.40, clamp(totalMiles * 0.12, 5, 42));
   const offsetKm = routeStackOffsetKilometers(stackOffset, totalMiles);
   if (Math.abs(offsetKm) < 0.0001 || taperMiles <= 0) return coords;
   const refLat = coords.reduce((sum, c) => sum + Number(c?.[1] || 0), 0) / Math.max(1, coords.length);
@@ -1399,8 +1399,8 @@ function polylineMiles(coords = []) {
 function routeStackOffsetKilometers(stackOffset = 0, totalMiles = 0) {
   const base = Math.abs(Number(stackOffset) || 0);
   if (!base) return 0;
-  const routeScale = clamp(Math.sqrt(Math.max(1, totalMiles)) / 7.5, 0.9, 2.0);
-  return Math.sign(stackOffset) * base * 1.35 * routeScale;
+  const routeScale = clamp(Math.sqrt(Math.max(1, totalMiles)) / 9.0, 0.75, 1.35);
+  return Math.sign(stackOffset) * base * 0.20 * routeScale;
 }
 
 function smoothstepRange(edge0, edge1, x) {
@@ -1483,7 +1483,7 @@ function trailRoleForFeature(index, color) {
   return 'main';
 }
 
-function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries = {}) {
+function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries = {}, routeStackingEnabled = false) {
   const raw = Math.max(0, rawProgress);
   const visibleP = Math.max(0, Math.min(1, raw));
   const departureWarmup = 0.085;
@@ -1494,9 +1494,9 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const distance = milesBetween(leg.from, leg.to);
   const routeProgress = takeoffCruiseLandingEase(p);
   const lineProgress = lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
-  const vehicle = pointAtRouteProgress(leg, routeProgress, routedGeometries);
-  const future = pointAtRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode)), routedGeometries);
-  const routeMid = pointAtRouteProgress(leg, 0.5, routedGeometries);
+  const vehicle = pointAtVisualRouteProgress(leg, routeProgress, routedGeometries, routeStackingEnabled);
+  const future = pointAtVisualRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode)), routedGeometries, routeStackingEnabled);
+  const routeMid = pointAtVisualRouteProgress(leg, 0.5, routedGeometries, routeStackingEnabled);
   const phase = raw > 1 ? 'settle' : visibleP < departureWarmup ? 'predeparture' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
   const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
   const leadBias = cameraLeadBias(leg.mode, distance, phase, p);
@@ -1524,7 +1524,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   if (cameraMode === 'route') center = blendGeo(routeMid, cinematicFocus, 0.52);
   if (cameraMode === 'continent') center = blendGeo(routeMid, cinematicFocus, 0.4);
 
-  const heading = headingAlongRoute(leg, routeProgress, routedGeometries);
+  const heading = headingAlongVisualRoute(leg, routeProgress, routedGeometries, routeStackingEnabled);
   const bearing = 0; // North-up. No route-heading camera rotation.
   const zoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT, leg.mode);
   const pitch = cameraPitch(cameraMode, phase, distance, settleT);
@@ -2176,6 +2176,23 @@ function pointAtRouteProgress(leg, t, routedGeometries = {}) {
   const coords = routed?.length > 1 ? routed : waypointPathForLeg(leg);
   const [lon, lat] = pointOnPolyline(coords, t);
   return { lon, lat };
+}
+
+function pointAtVisualRouteProgress(leg, t, routedGeometries = {}, routeStackingEnabled = false) {
+  const stackOffset = routeStackingEnabled ? Number(leg?.routeStackOffset || 0) : 0;
+  if (!stackOffset) return pointAtRouteProgress(leg, t, routedGeometries);
+  const coords = stackedRouteCoordinates(leg, 1, leg?.mode === 'plane' || leg?.mode === 'move' ? 140 : 180, routedGeometries, stackOffset);
+  const [lon, lat] = pointOnPolyline(coords, t);
+  return { lon, lat };
+}
+
+function headingAlongVisualRoute(leg, t, routedGeometries = {}, routeStackingEnabled = false) {
+  const stackOffset = routeStackingEnabled ? Number(leg?.routeStackOffset || 0) : 0;
+  if (!stackOffset) return headingAlongRoute(leg, t, routedGeometries);
+  const coords = stackedRouteCoordinates(leg, 1, leg?.mode === 'plane' || leg?.mode === 'move' ? 140 : 180, routedGeometries, stackOffset);
+  const a = pointOnPolyline(coords, Math.max(0, t - 0.008));
+  const b = pointOnPolyline(coords, Math.min(1, t + 0.008));
+  return bearingBetween({ lon: a[0], lat: a[1] }, { lon: b[0], lat: b[1] });
 }
 
 function headingAlongRoute(leg, t, routedGeometries = {}) {

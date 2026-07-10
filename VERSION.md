@@ -1,1 +1,1 @@
-GlobeHoppers v4.28.1 — tapered route-stacking endpoints build fix
+GlobeHoppers v4.28.2 — tighter tapered route stacking and vehicle follows lane
