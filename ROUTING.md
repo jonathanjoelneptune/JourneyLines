@@ -1,9 +1,9 @@
-Base: GlobeHoppers v4.36.2
-Update: v4.36.3 save status groups and conflict fallback
+Base: GlobeHoppers v4.36.3
+Update: v4.37 chronological timeline only
 Changes:
-- Repository save status now separates Pending, Saving now, and Complete sections.
-- Completed saves no longer show stale pending wording.
-- Pending/complete lists show add/edit/delete action, trip label, and trip ID.
-- Atomic Git save remains the primary save path.
-- If atomic Git save repeatedly fails with a non-fast-forward/reference conflict, the app falls back to the GitHub Contents API sequential save.
-- Fallback save writes locations.json first, trips.json second, and routeDetails.json last to reduce the chance of missing location references.
+- Removed manual Reorder controls from GlobeHopper Timeline.
+- Menu, timeline, and playback ordering now use chronological trip date sorting only.
+- Existing manual sortKey values are ignored for display/playback sorting.
+- Add/edit/delete saves normalize the stored trips array back into chronological order.
+- Editing a trip date moves it to its correct chronological position, and play-saved-hop resolves it by trip ID after the rebuilt timeline.
+- New saved sortKey values are date-derived instead of manual-order derived.

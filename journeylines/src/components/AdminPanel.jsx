@@ -125,8 +125,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [modalClosing, setModalClosing] = useState(false);
   const [closing, setClosing] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [reorderMode, setReorderMode] = useState(false);
-  const [orderDraft, setOrderDraft] = useState(() => sortTripsForEditor(trips));
+  const reorderMode = false;
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [formError, setFormError] = useState('');
@@ -319,7 +318,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       const currentLocations = locationsRef.current || locations;
       const currentScroll = studioListRef.current?.scrollTop ?? null;
       const { trip, nextLocations } = normalizeTrip(draft, currentTrips, currentLocations, homeBases, normalizedHoppers);
-      const nextTrips = editingId ? currentTrips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...currentTrips, trip]);
+      const updatedTrips = editingId ? currentTrips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : [...currentTrips, trip];
+      const nextTrips = insertChronologically(updatedTrips);
       const actionLabel = editingId ? 'Edit Hop' : 'Add Hop';
       const message = `${actionLabel}: ${trip.label || trip.toLocationName || trip.id} (${trip.id})`;
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
@@ -347,7 +347,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           const currentTrips = tripsRef.current || trips;
           const currentLocations = locationsRef.current || locations;
           const currentScroll = studioListRef.current?.scrollTop ?? null;
-          const nextTrips = currentTrips.filter(t => t.id !== editingId);
+          const nextTrips = insertChronologically(currentTrips.filter(t => t.id !== editingId));
           if (currentScroll != null) restoreScrollRef.current = currentScroll;
           tripsRef.current = nextTrips;
           setTrips(nextTrips);
@@ -371,7 +371,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         try {
           const currentTrips = tripsRef.current || trips;
           const currentLocations = locationsRef.current || locations;
-          const nextTrips = currentTrips.filter(t => t.id !== id);
+          const nextTrips = insertChronologically(currentTrips.filter(t => t.id !== id));
           tripsRef.current = nextTrips;
           setTrips(nextTrips);
           saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label} (${id})`, { action: 'delete', tripId: id, label });
@@ -774,32 +774,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     throw lastError || new Error(`Could not commit ${path}.`);
   }
 
-  function enterReorder() { setOrderDraft(sortTripsForEditor(trips)); setReorderMode(true); }
-  function moveTrip(fromId, toId) {
-    if (!fromId || !toId || fromId === toId) return;
-    const next = [...orderDraft];
-    const from = next.findIndex(t => t.id === fromId);
-    const to = next.findIndex(t => t.id === toId);
-    if (from < 0 || to < 0) return;
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    setOrderDraft(next);
-  }
+  function moveTrip() {}
   function requestCloseStudio() {
     if (closing) return;
     setClosing(true);
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-close-studio')), 420);
-  }
-
-  async function saveReorder() {
-    try {
-      setBusy(true);
-      const next = applyBucketOrder(orderDraft);
-      setTrips(next);
-      await commitData(next, locations, 'Reorder travel history');
-      setReorderMode(false);
-    } catch (err) { alert(err.message || String(err)); }
-    finally { setBusy(false); }
   }
 
   return <section className={`studio-shell ${closing ? 'is-closing' : ''} ${modalOnly ? 'studio-shell--modal-only' : ''}`} onWheelCapture={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
@@ -813,17 +792,15 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
       <div className="studio-actions-main">
         <button className="primary" onClick={openAdd}>Add {addTripNoun}</button>
-        {!reorderMode && <button onClick={enterReorder}>Reorder</button>}
-        {reorderMode && <><button className="primary" onClick={saveReorder} disabled={busy}>Save order</button><button onClick={() => setReorderMode(false)}>Cancel reorder</button></>}
       </div>
 
-      <div ref={studioListRef} className={`studio-trip-list ${reorderMode ? 'is-reordering' : ''} studio-trip-list--${viewType}`} onWheel={(e) => e.stopPropagation()} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
-        {viewType === 'card' ? groupTripsByYear(reorderMode ? orderDraft : sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
+      <div ref={studioListRef} className={`studio-trip-list studio-trip-list--${viewType}`} onWheel={(e) => e.stopPropagation()} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
+        {viewType === 'card' ? groupTripsByYear(sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid studio-card-grid">
-            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
           </div>
-        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+        </section>) : sortedTrips.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
       </div>
 
       <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
@@ -1502,7 +1479,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     endDay: draft.endDay ? Number(draft.endDay) : null,
     displayDate: formatDisplayDate(draft),
     displayEndDate: formatEndDisplayDate(draft),
-    sortKey: draft.id && draft.sortKey ? draft.sortKey : buildNewTripSortKey(draft, trips, count),
+    sortKey: buildSortKey(draft, count),
     label,
     travelers: draft.travelers || [],
     guestHoppers: draft.guestHoppers || [],
@@ -1767,26 +1744,28 @@ function calendarDays(year, month) {
 }
 
 function buildNewTripSortKey(draft, trips, count) {
-  const manualNums = (trips || [])
-    .map(t => String(t.sortKey || '').match(/^manual-(\d+)/)?.[1])
-    .filter(Boolean)
-    .map(Number);
-  if (manualNums.length) {
-    const next = Math.max(...manualNums) + 1;
-    return `manual-${String(next).padStart(5,'0')}-${bucketKey(draft)}`;
-  }
   return buildSortKey(draft, count);
 }
-function insertChronologically(trips) { return sortTripsForEditor(trips).map((t, i) => ({ ...t, sortKey: t.sortKey || buildSortKey(t, i + 1) })); }
-function applyBucketOrder(rows) {
-  return rows.map((t, i) => ({
-    ...t,
-    sortKey: `manual-${String(i + 1).padStart(5,'0')}-${bucketKey(t)}`
-  }));
+function insertChronologically(trips) {
+  return sortTripsForEditor(trips).map((t, i) => ({ ...t, sortKey: buildSortKey(t, i + 1) }));
 }
-function bucketKey(t) { return `${t.year}-${String(t.month || 13).padStart(2,'0')}-${String(t.day || 99).padStart(2,'0')}`; }
+function bucketKey(t) {
+  const year = String(Number(t.year) || 9999).padStart(4,'0');
+  const month = String(Number(t.month) || 13).padStart(2,'0');
+  const day = String(Number(t.day) || 99).padStart(2,'0');
+  const endYear = String(Number(t.endYear || t.year) || 9999).padStart(4,'0');
+  const endMonth = String(Number(t.endMonth || t.month) || 13).padStart(2,'0');
+  const endDay = String(Number(t.endDay || t.day) || 99).padStart(2,'0');
+  return `${year}-${month}-${day}-${endYear}-${endMonth}-${endDay}`;
+}
 function buildSortKey(t, n) { return `${bucketKey(t)}-${String(n).padStart(3,'0')}`; }
-function sortTripsForEditor(rows) { return [...rows].sort((a,b) => String(a.sortKey || buildSortKey(a, 999)).localeCompare(String(b.sortKey || buildSortKey(b, 999)))); }
+function sortTripsForEditor(rows) {
+  return [...(rows || [])].sort((a,b) => {
+    const aKey = `${bucketKey(a)}-${String(a.label || a.toLocationName || a.toLocationId || '')}-${String(a.id || '')}`;
+    const bKey = `${bucketKey(b)}-${String(b.label || b.toLocationName || b.toLocationId || '')}-${String(b.id || '')}`;
+    return aKey.localeCompare(bKey);
+  });
+}
 function activeHomeBaseId(homeBases, trip) { const key = `${trip.year}-${String(trip.month || 1).padStart(2,'0')}`; return (homeBases || []).find(h => h.start <= key && (!h.end || h.end >= key))?.locationId || 'melbourne-fl'; }
 function formatDisplayDate(t) { if (t.month && t.day) return new Date(t.year, t.month - 1, t.day).toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' }); if (t.month) return new Date(t.year, t.month - 1, 1).toLocaleDateString(undefined, { month:'long', year:'numeric' }); return String(t.year); }
 function formatTripDate(t) { return t.displayDate || formatDisplayDate(t); }

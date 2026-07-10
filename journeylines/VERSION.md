@@ -1,1 +1,1 @@
-GlobeHoppers v4.36.3 — save status groups and conflict fallback
+GlobeHoppers v4.37 — chronological timeline only
