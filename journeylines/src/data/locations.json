@@ -708,5 +708,18 @@
     "geonameId": 5454711,
     "population": 545852,
     "timezone": "America/Denver"
+  },
+  {
+    "id": "glasgow-sct",
+    "name": "Glasgow",
+    "region": "SCT",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "continent": "",
+    "lat": 55.86515,
+    "lon": -4.25763,
+    "geonameId": 2648579,
+    "population": 610268,
+    "timezone": "Europe/London"
   }
 ]

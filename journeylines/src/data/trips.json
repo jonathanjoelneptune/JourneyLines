@@ -3280,6 +3280,33 @@
     "trailColorMode": "members"
   },
   {
+    "id": "7s32xd",
+    "year": 2026,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-10-99-2026-10-99-144",
+    "label": "Vancouver",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "boat",
+    "roundTrip": true,
+    "returnMode": "boat",
+    "fromLocationId": null,
+    "toLocationId": "glasgow-sct",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members"
+  },
+  {
     "id": "5yvjxp",
     "year": 2026,
     "month": 11,
@@ -3289,7 +3316,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-144",
+    "sortKey": "2026-11-99-2026-11-99-145",
     "label": "Athens",
     "travelers": [
       "bonnie"
@@ -3316,7 +3343,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-145",
+    "sortKey": "2026-11-99-2026-11-99-146",
     "label": "Cabo San Lucas",
     "travelers": [
       "joey"
@@ -3343,7 +3370,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-146",
+    "sortKey": "2026-12-99-2026-12-99-147",
     "label": "Bahamas",
     "travelers": [
       "joey"
@@ -3370,7 +3397,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-147",
+    "sortKey": "2026-12-99-2026-12-99-148",
     "label": "Cabo San Lucas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -3397,7 +3424,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-148",
+    "sortKey": "2026-12-99-2026-12-99-149",
     "label": "Phoenix",
     "travelers": [
       "joey"
