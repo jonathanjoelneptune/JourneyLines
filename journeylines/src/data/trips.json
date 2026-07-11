@@ -3295,7 +3295,7 @@
       "joey"
     ],
     "guestHoppers": [],
-    "mode": "boat",
+    "mode": "train",
     "roundTrip": true,
     "returnMode": "boat",
     "fromLocationId": null,
