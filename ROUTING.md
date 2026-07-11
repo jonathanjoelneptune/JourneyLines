@@ -1,10 +1,11 @@
-Base: GlobeHoppers v5.0.4
-Update: v5.0.5 camera follow and long-route vessel corrections
+Base: GlobeHoppers v5.0.5
+Update: v5.1 routing network foundation
 Changes:
-- Camera look-ahead and lead bias reduced so long trips keep the vessel on screen.
-- Long boat/train trips zoom out slightly more during cruise to preserve vessel visibility.
-- Trip-start camera transition slowed from 2.4s to 4.2s for gentler setup motion.
-- Per-frame camera smoothing softened to reduce jerkiness.
-- Added Baja peninsula surface routing for San Diego ↔ Cabo train/car style routes.
-- Added more granular Pacific/Panama/Atlantic/Gibraltar/Mediterranean waypoints for west North America ↔ Mediterranean boat routes.
-- Long gateway boat routes now use a low-overshoot piecewise smooth route instead of Catmull-Rom corner cutting through land.
+- Added a first-pass water-node routing graph for boats.
+- Boat routes now use A* over water gateway nodes before falling back to curve generation.
+- Boat graph edges are rejected when they cross Natural Earth land polygons.
+- Added many gateway/passages for Pacific coast, Panama, Caribbean channels, Atlantic, Gibraltar, Mediterranean, Suez, Red Sea, Indian Ocean, Europe channels, and broad global corridors.
+- Long ocean routes now route through a valid water network rather than one-off hard-coded curves.
+- Surface car/train routes now validate that generated paths mostly stay on land.
+- Car/train Natural Earth-guided paths are rejected if they leave land too much, then replaced with a conservative land-biased fallback.
+- Existing manual route overrides still take priority.

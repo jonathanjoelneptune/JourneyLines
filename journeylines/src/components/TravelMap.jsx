@@ -2406,12 +2406,35 @@ function guidedSurfaceRoute(leg, network = [], type = 'drive') {
       const smoothed = type === 'train'
         ? bezierRouteThrough(shaped, 42)
         : roadSquiggleRoute(bezierRouteThrough(shaped, 46), leg, 0.46);
-      return cleanupRouteCoordinates(smoothed);
+      const cleaned = cleanupRouteCoordinates(smoothed);
+      if (surfaceRouteMostlyOnLand(cleaned, naturalEarthRouting?.landRings || [])) return cleaned;
     }
   }
 
-  return direct;
+  return surfaceRouteMostlyOnLand(direct, naturalEarthRouting?.landRings || []) ? direct : forceSurfaceRouteTowardLand(direct, leg, type);
 }
+function surfaceRouteMostlyOnLand(route = [], rings = []) {
+  if (!Array.isArray(route) || route.length < 2 || !rings?.length) return true;
+  let checked = 0;
+  let offLand = 0;
+  for (let i = 1; i < route.length - 1; i += Math.max(1, Math.floor(route.length / 26))) {
+    checked++;
+    if (!pointInAnyLandRing(route[i], rings)) offLand++;
+  }
+  return checked === 0 || offLand / checked <= 0.18;
+}
+
+function forceSurfaceRouteTowardLand(route = [], leg, type = 'train') {
+  // First foundation pass: if a generated surface route drifts into water,
+  // collapse it back toward a low-bend direct path. Dedicated corridors such as
+  // Baja are handled earlier with explicit land waypoints.
+  const a = [Number(leg.from.lon), Number(leg.from.lat)];
+  const b = [Number(leg.to.lon), Number(leg.to.lat)];
+  const mid = midpointCoord(a, b);
+  const path = bezierRouteThrough([a, mid, b], type === 'train' ? 42 : 48);
+  return type === 'drive' ? roadSquiggleRoute(path, leg, 0.18) : cleanupRouteCoordinates(path);
+}
+
 function networkCandidates(network = [], a, b, pad = 3, limit = 20) {
   const box = routeBbox(a, b, pad);
   const mid = midpointCoord(a, b);
@@ -2440,15 +2463,18 @@ function waterAvoidingBoatRoute(leg) {
   const land = naturalEarthRouting?.landRings || [];
   const distance = milesBetween(leg.from, leg.to);
 
+  const graphRoute = waterGraphRoute(a, b, land, distance);
+  if (graphRoute?.length > 2) return cleanupRouteCoordinates(safeGatewayRoute(graphRoute, distance > 2500 ? 220 : 120));
+
   const gateway = oceanGatewayBoatRoute(a, b);
-  if (gateway?.length > 2) return cleanupRouteCoordinates(safeGatewayRoute(gateway, 160));
+  if (gateway?.length > 2) return cleanupRouteCoordinates(safeGatewayRoute(gateway, 180));
 
   const candidates = boatRouteCandidates(a, b, distance);
   let best = null;
   let bestScore = Infinity;
 
   for (const route of candidates) {
-    const smooth = bezierRouteThrough(route, 96);
+    const smooth = safeGatewayRoute(route, 96);
     const hits = routeSegmentsHitLand(smooth, land);
     const length = routePathLength2(smooth);
     const detour = length / Math.max(0.0001, coordDistance2(a, b));
@@ -2457,7 +2483,7 @@ function waterAvoidingBoatRoute(leg) {
   }
 
   if (routeSegmentsHitLand(best || [a,b], land) > 0) {
-    const farOptions = offshoreBoatCandidates(a, b, distance).map(r => bezierRouteThrough(r, 112));
+    const farOptions = offshoreBoatCandidates(a, b, distance).map(r => safeGatewayRoute(r, 128));
     for (const route of farOptions) {
       const hits = routeSegmentsHitLand(route, land);
       const score = hits * 10000000 + routePathLength2(route);
@@ -2467,6 +2493,145 @@ function waterAvoidingBoatRoute(leg) {
 
   return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
 }
+
+const WATER_GRAPH_NODES = [
+  // North American Pacific / Baja / Central America
+  [-117.9, 32.4], [-116.8, 30.8], [-114.8, 27.4], [-112.8, 24.2], [-110.0, 22.7],
+  [-106.0, 19.0], [-101.5, 16.1], [-96.0, 13.9], [-90.0, 12.0], [-84.0, 9.5],
+  [-80.2, 8.8], [-79.55, 9.45], [-77.6, 10.7],
+  // Caribbean / Gulf / Atlantic passages
+  [-83.0, 22.0], [-79.5, 23.8], [-76.0, 20.2], [-74.2, 19.5], [-71.0, 18.0],
+  [-68.0, 18.5], [-65.2, 19.0], [-61.8, 17.2], [-60.5, 14.0], [-65.0, 12.0],
+  [-75.5, 13.0], [-80.0, 18.0], [-86.2, 21.8],
+  // North Atlantic corridor
+  [-55.0, 25.0], [-45.0, 31.0], [-35.0, 34.5], [-25.0, 36.0], [-16.0, 36.0],
+  [-9.5, 36.0], [-5.8, 35.9],
+  // Mediterranean routing
+  [0.0, 36.8], [5.5, 38.0], [10.5, 38.1], [14.5, 37.4], [18.2, 36.2],
+  [21.5, 36.3], [23.5, 37.3], [26.0, 36.4], [30.0, 34.8], [32.5, 31.6],
+  // Suez / Red Sea / Indian Ocean
+  [32.4, 29.7], [34.6, 27.5], [38.0, 20.0], [43.0, 13.0], [50.0, 12.5],
+  [58.0, 16.0], [66.0, 18.0], [73.0, 12.0], [80.0, 8.0], [90.0, 5.0],
+  // Pacific / Oceania / Asia broad corridors
+  [-140.0, 25.0], [-160.0, 20.0], [170.0, 15.0], [150.0, 10.0], [130.0, 12.0],
+  [120.0, 8.0], [110.0, 2.0], [104.0, 1.0], [100.0, 6.0], [95.0, 12.0],
+  // South America / South Atlantic / Cape
+  [-74.0, -10.0], [-78.0, -20.0], [-75.0, -35.0], [-68.0, -52.0],
+  [-50.0, -45.0], [-30.0, -35.0], [-10.0, -30.0], [15.0, -34.5], [30.0, -30.0],
+  // North Europe / channels
+  [-7.0, 49.5], [0.0, 50.5], [4.0, 52.0], [8.0, 55.0], [12.0, 56.0],
+  [20.0, 58.0], [28.0, 59.5]
+];
+
+function waterGraphRoute(a, b, land = [], distance = 0) {
+  const allNodes = [a, b, ...WATER_GRAPH_NODES];
+  const startIndex = 0;
+  const goalIndex = 1;
+  const routeBox = routeBbox(a, b, distance > 2200 ? 38 : distance > 800 ? 16 : 7);
+  const usable = allNodes
+    .map((p, i) => ({ p, i }))
+    .filter(n => n.i < 2 || bboxContainsExpanded(routeBox, n.p, distance > 2200 ? 12 : 4) || isMajorWaterGateway(n.p));
+  const nodes = usable.map(n => n.p);
+  const start = usable.findIndex(n => n.i === startIndex);
+  const goal = usable.findIndex(n => n.i === goalIndex);
+  if (start < 0 || goal < 0) return null;
+
+  const edgeLimit = distance > 3200 ? 18.5 : distance > 1500 ? 10.5 : distance > 600 ? 5.2 : 2.8;
+  const neighbors = new Map();
+  for (let i = 0; i < nodes.length; i++) neighbors.set(i, []);
+  for (let i = 0; i < nodes.length; i++) {
+    const possible = [];
+    for (let j = 0; j < nodes.length; j++) {
+      if (i === j) continue;
+      const d = Math.sqrt(coordDistance2(nodes[i], nodes[j]));
+      const limit = (i === start || j === goal || i === goal || j === start) ? edgeLimit * 0.72 : edgeLimit;
+      if (d > limit && !gatewayLongEdgeAllowed(nodes[i], nodes[j], d, distance)) continue;
+      if (waterEdgeHitsLand(nodes[i], nodes[j], land, i === start || j === goal || i === goal || j === start)) continue;
+      possible.push({ to: j, w: d });
+    }
+    possible.sort((x, y) => x.w - y.w);
+    neighbors.set(i, possible.slice(0, distance > 1800 ? 9 : 6));
+  }
+
+  const path = astarNodePath(start, goal, nodes, neighbors);
+  if (!path?.length) return null;
+  return path.map(i => nodes[i]);
+}
+
+function astarNodePath(start, goal, nodes, neighbors) {
+  const open = new Set([start]);
+  const came = new Map();
+  const g = new Map([[start, 0]]);
+  const f = new Map([[start, coordDistance2(nodes[start], nodes[goal])]]);
+  let guard = 0;
+  while (open.size && guard++ < 5000) {
+    let current = null;
+    let best = Infinity;
+    for (const idx of open) {
+      const score = f.get(idx) ?? Infinity;
+      if (score < best) { best = score; current = idx; }
+    }
+    if (current === goal) {
+      const path = [current];
+      while (came.has(current)) {
+        current = came.get(current);
+        path.unshift(current);
+      }
+      return path;
+    }
+    open.delete(current);
+    for (const edge of neighbors.get(current) || []) {
+      const tentative = (g.get(current) ?? Infinity) + edge.w;
+      if (tentative < (g.get(edge.to) ?? Infinity)) {
+        came.set(edge.to, current);
+        g.set(edge.to, tentative);
+        f.set(edge.to, tentative + Math.sqrt(coordDistance2(nodes[edge.to], nodes[goal])) * 0.92);
+        open.add(edge.to);
+      }
+    }
+  }
+  return null;
+}
+
+function waterEdgeHitsLand(a, b, land, endpointConnector = false) {
+  const samples = endpointConnector ? 12 : 18;
+  for (let i = 1; i < samples; i++) {
+    const t = i / samples;
+    if (endpointConnector && (t < 0.18 || t > 0.82)) continue;
+    const p = [lerpAngle(a[0], b[0], t), lerp(a[1], b[1], t)];
+    if (pointInAnyLandRing(p, land)) return true;
+  }
+  return lineHitsLandBoxes(a, b, land);
+}
+
+function pointInAnyLandRing(point, rings = []) {
+  const box = [point[0], point[1], point[0], point[1]];
+  return (rings || []).some(r => bboxIntersects(box, r.b) && pointInRing(point, r.p || []));
+}
+
+function bboxContainsExpanded(box, point, pad = 0) {
+  return point[0] >= box[0] - pad && point[0] <= box[2] + pad && point[1] >= box[1] - pad && point[1] <= box[3] + pad;
+}
+
+function isMajorWaterGateway(p) {
+  return (
+    isNearCoord(p, [-80.1, 8.8], 4.5) ||
+    isNearCoord(p, [-5.8, 35.9], 4.5) ||
+    isNearCoord(p, [32.4, 29.7], 4.5) ||
+    isNearCoord(p, [-79.5, 23.8], 5.5) ||
+    isNearCoord(p, [-68.0, 18.5], 5.5)
+  );
+}
+
+function gatewayLongEdgeAllowed(a, b, d, totalDistance) {
+  if (totalDistance < 1500) return false;
+  if (d > 24) return false;
+  const oceanic = Math.abs(a[1]) < 60 && Math.abs(b[1]) < 60;
+  if (!oceanic) return false;
+  return true;
+}
+
+
 function bajaPeninsulaSurfaceRoute(leg, type = 'train') {
   const a = [Number(leg.from.lon), Number(leg.from.lat)];
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
