@@ -1,9 +1,10 @@
-Base: GlobeHoppers v5.0.3
-Update: v5.0.4 suggestion close and vessel routing corrections
+Base: GlobeHoppers v5.0.4
+Update: v5.0.5 camera follow and long-route vessel corrections
 Changes:
-- Override start location autocomplete now hides the suggestion popup after a selected start location is applied.
-- Train routes are now more aggressively shortest-route biased.
-- Train Natural Earth guidance is rejected if it strays too far from the direct route corridor.
-- Train fallback route is closer to a direct rail-like route, preventing San Diego ↔ Cabo from detouring to mainland Mexico.
-- Added long-distance ocean gateway routing for west North America ↔ Mediterranean boat trips such as San Diego ↔ Athens.
-- Complex ocean boat routes now use Panama and Gibraltar-style gateways instead of drawing across continents.
+- Camera look-ahead and lead bias reduced so long trips keep the vessel on screen.
+- Long boat/train trips zoom out slightly more during cruise to preserve vessel visibility.
+- Trip-start camera transition slowed from 2.4s to 4.2s for gentler setup motion.
+- Per-frame camera smoothing softened to reduce jerkiness.
+- Added Baja peninsula surface routing for San Diego ↔ Cabo train/car style routes.
+- Added more granular Pacific/Panama/Atlantic/Gibraltar/Mediterranean waypoints for west North America ↔ Mediterranean boat routes.
+- Long gateway boat routes now use a low-overshoot piecewise smooth route instead of Catmull-Rom corner cutting through land.

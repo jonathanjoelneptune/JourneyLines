@@ -628,13 +628,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         setOverlayVisibility(false);
         lastCameraRef.current = null;
         map.stop();
-        map.easeTo({ ...scene.camera, duration: 2400, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+        map.easeTo({ ...scene.camera, duration: 4200, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
         window.clearTimeout(introLaunchRef.current.timer);
         introLaunchRef.current.timer = window.setTimeout(() => {
           lastCameraRef.current = scene.camera;
           introLaunchRef.current.active = false;
           onIntroLaunchComplete?.();
-        }, 2450);
+        }, 4250);
       }
       return;
     } else if (introLaunchRef.current.active) {
@@ -685,7 +685,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // v2.26: glide faster toward the route lead point. The old smoothing was so
     // conservative that the camera could fall behind the vessel and then catch
     // up in visible steps. These values still ease, but keep the camera ahead.
-    const smoothing = scene.phase === 'settle' ? 0.018 : scene.phase === 'predeparture' ? 0.014 : scene.phase === 'takeoff' ? 0.030 : scene.phase === 'arrival' ? 0.033 : 0.028;
+    const smoothing = scene.phase === 'settle' ? 0.014 : scene.phase === 'predeparture' ? 0.010 : scene.phase === 'takeoff' ? 0.020 : scene.phase === 'arrival' ? 0.022 : 0.020;
     let camera;
     if (forceSceneJumpRef.current) {
       camera = scene.camera;
@@ -2375,6 +2375,8 @@ function guidedSurfaceRoute(leg, network = [], type = 'drive') {
   const a = [Number(leg.from.lon), Number(leg.from.lat)];
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
   const distance = milesBetween(leg.from, leg.to);
+  const baja = bajaPeninsulaSurfaceRoute(leg, type);
+  if (baja) return baja;
   const direct = stylizedSurfaceRoute(leg, type);
 
   // Trains should be believable before they are "network exact". Natural Earth
@@ -2439,7 +2441,7 @@ function waterAvoidingBoatRoute(leg) {
   const distance = milesBetween(leg.from, leg.to);
 
   const gateway = oceanGatewayBoatRoute(a, b);
-  if (gateway?.length > 2) return cleanupRouteCoordinates(bezierRouteThrough(gateway, 140));
+  if (gateway?.length > 2) return cleanupRouteCoordinates(safeGatewayRoute(gateway, 160));
 
   const candidates = boatRouteCandidates(a, b, distance);
   let best = null;
@@ -2465,40 +2467,64 @@ function waterAvoidingBoatRoute(leg) {
 
   return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
 }
+function bajaPeninsulaSurfaceRoute(leg, type = 'train') {
+  const a = [Number(leg.from.lon), Number(leg.from.lat)];
+  const b = [Number(leg.to.lon), Number(leg.to.lat)];
+  const involvesCabo = isNearCoord(a, [-109.91, 22.89], 2.2) || isNearCoord(b, [-109.91, 22.89], 2.2);
+  const involvesSoCal = isNearCoord(a, [-117.16, 32.72], 3.0) || isNearCoord(b, [-117.16, 32.72], 3.0);
+  if (!involvesCabo || !involvesSoCal) return null;
+
+  const southbound = a[1] > b[1];
+  const corridor = [
+    [-117.16, 32.72],
+    [-116.45, 31.58],
+    [-115.20, 29.75],
+    [-113.95, 27.80],
+    [-112.60, 25.95],
+    [-111.15, 24.45],
+    [-109.91, 22.89]
+  ];
+  const points = southbound ? [a, ...corridor.slice(1, -1), b] : [a, ...corridor.slice(1, -1).reverse(), b];
+  const smoothed = bezierRouteThrough(points, type === 'train' ? 72 : 82);
+  return type === 'drive' ? roadSquiggleRoute(smoothed, leg, 0.20) : cleanupRouteCoordinates(smoothed);
+}
+function isNearCoord(a, b, degrees = 1) {
+  return Math.sqrt(coordDistance2(a, b)) <= degrees;
+}
+
 function oceanGatewayBoatRoute(a, b) {
   const westNorthAmerica = a[0] < -105 && a[1] > 20 && a[1] < 50;
   const destMediterranean = b[0] > -7 && b[0] < 38 && b[1] > 30 && b[1] < 46;
   const reverseWestNorthAmerica = b[0] < -105 && b[1] > 20 && b[1] < 50;
   const sourceMediterranean = a[0] > -7 && a[0] < 38 && a[1] > 30 && a[1] < 46;
 
+  // v5.0.5: Long ocean routes need explicit safe ocean corridors instead of a
+  // single broad curve. These waypoints approximate Pacific coast -> Panama
+  // Canal -> Caribbean/Atlantic -> Gibraltar -> Mediterranean, avoiding the
+  // previous beeline through Europe/Africa.
   if (westNorthAmerica && destMediterranean) {
     return [
       a,
-      [-112.7, 24.0],  // Pacific side of Baja
-      [-101.0, 15.0],
-      [-79.9, 8.9],    // Panama gateway
-      [-73.0, 18.0],
-      [-45.0, 29.5],
-      [-6.0, 35.9],    // Gibraltar gateway
-      [14.0, 37.0],
+      [-114.6, 25.2], [-109.0, 20.8], [-102.0, 16.4], [-94.5, 13.2], [-86.5, 10.5],
+      [-80.1, 8.9], [-79.6, 9.4],  // Panama canal / Caribbean exit
+      [-73.5, 17.5], [-61.5, 24.0], [-42.0, 31.5], [-18.0, 35.8],
+      [-5.8, 35.9], [4.0, 37.0], [12.0, 36.8], [18.5, 36.0], [23.2, 37.3],
       b
     ];
   }
   if (sourceMediterranean && reverseWestNorthAmerica) {
     return [
       a,
-      [14.0, 37.0],
-      [-6.0, 35.9],
-      [-45.0, 29.5],
-      [-73.0, 18.0],
-      [-79.9, 8.9],
-      [-101.0, 15.0],
-      [-112.7, 24.0],
+      [23.2, 37.3], [18.5, 36.0], [12.0, 36.8], [4.0, 37.0], [-5.8, 35.9],
+      [-18.0, 35.8], [-42.0, 31.5], [-61.5, 24.0], [-73.5, 17.5],
+      [-79.6, 9.4], [-80.1, 8.9],
+      [-86.5, 10.5], [-94.5, 13.2], [-102.0, 16.4], [-109.0, 20.8], [-114.6, 25.2],
       b
     ];
   }
   return null;
 }
+
 
 function boatRouteCandidates(a, b, distance = 0) {
   const mid = midpointCoord(a, b);
@@ -2582,6 +2608,23 @@ function boatCurveRoute(leg, strength = 0.45) {
 
 function softenPolyline(points = [], tension = 0.25, samples = 40) {
   return bezierRouteThrough(points, samples);
+}
+
+function safeGatewayRoute(points = [], samples = 120) {
+  // Use a piecewise smoothed route with low overshoot for canal/ocean gateway
+  // paths; Catmull-Rom over widely spaced waypoints can cut corners through land.
+  if (!Array.isArray(points) || points.length < 2) return points || [];
+  const out = [];
+  const perSeg = Math.max(3, Math.floor(samples / Math.max(1, points.length - 1)));
+  for (let i = 1; i < points.length; i++) {
+    for (let j = 0; j < perSeg; j++) {
+      const t = j / perSeg;
+      const eased = t * t * (3 - 2 * t);
+      out.push([lerpAngle(points[i - 1][0], points[i][0], eased), lerp(points[i - 1][1], points[i][1], eased)]);
+    }
+  }
+  out.push(points[points.length - 1]);
+  return cleanupRouteCoordinates(out);
 }
 
 function bezierRouteThrough(points = [], samples = 48) {
@@ -2860,19 +2903,21 @@ function lookAhead(distance, p, mode = 'plane') {
   const isBoat = mode === 'boat';
   const isTrain = mode === 'train';
   let base;
-  if (isDrive) base = distance > 700 ? 0.22 : distance > 250 ? 0.18 : 0.14;
-  else if (isBoat || isTrain) base = distance > 700 ? 0.16 : 0.12;
-  else base = distance > 4500 ? 0.070 : distance > 1500 ? 0.105 : 0.14;
+  // v5.0.5: long trips must keep the vessel visible. Reduce look-ahead heavily,
+  // especially for boats/trains, so the camera never runs ahead of the vehicle.
+  if (isDrive) base = distance > 700 ? 0.080 : distance > 250 ? 0.070 : 0.055;
+  else if (isBoat || isTrain) base = distance > 1800 ? 0.040 : distance > 700 ? 0.055 : 0.065;
+  else base = distance > 4500 ? 0.040 : distance > 1500 ? 0.060 : 0.080;
   const endpoint = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
-  return base * (1 - 0.40 * endpoint);
+  return base * (1 - 0.55 * endpoint);
 }
 
 function cameraLeadBias(mode, distance, phase, p) {
-  if (phase === 'predeparture') return 0.04;
-  if (phase === 'settle') return 0.12;
-  if (mode === 'drive') return phase === 'cruise' ? 0.90 : 0.72;
-  if (mode === 'boat' || mode === 'train') return phase === 'cruise' ? 0.84 : 0.64;
-  return phase === 'cruise' ? 0.78 : 0.50;
+  if (phase === 'predeparture') return 0.02;
+  if (phase === 'settle') return 0.06;
+  if (mode === 'drive') return phase === 'cruise' ? 0.34 : 0.22;
+  if (mode === 'boat' || mode === 'train') return phase === 'cruise' ? (distance > 1800 ? 0.18 : 0.26) : 0.16;
+  return phase === 'cruise' ? 0.30 : 0.18;
 }
 function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode = 'plane') {
   const isDrive = legMode === 'drive';
@@ -2901,8 +2946,8 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
     cruise = distance > 700 ? 6.55 : distance > 250 ? 6.95 : 7.25;
     close = distance > 700 ? 7.55 : distance > 250 ? 7.88 : 8.12;
   } else if (isBoat || isTrain) {
-    cruise = distance > 1500 ? 4.10 : distance > 500 ? 5.38 : 6.28;
-    close = distance > 1500 ? 5.35 : distance > 500 ? 6.52 : 7.32;
+    cruise = distance > 3500 ? 3.05 : distance > 1500 ? 3.55 : distance > 500 ? 5.10 : 6.10;
+    close = distance > 3500 ? 4.10 : distance > 1500 ? 4.80 : distance > 500 ? 6.25 : 7.05;
   } else {
     cruise = distance > 4500 ? 3.18 : distance > 1500 ? 4.05 : distance > 500 ? 5.30 : 6.40;
     close = distance > 4500 ? 4.95 : distance > 1500 ? 5.82 : distance > 500 ? 6.70 : 7.50;
