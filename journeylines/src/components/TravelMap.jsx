@@ -2472,13 +2472,13 @@ function waterAvoidingBoatRoute(leg) {
   const endWater = boatWaterApproachPoint(b, a, land, 'end');
 
   const forcedCorridor = forcedLongWaterCorridor(startWater, endWater);
-  if (forcedCorridor?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(forcedCorridor, 260), b]);
+  if (forcedCorridor?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(forcedCorridor, 260), land);
 
   const graphRoute = waterGraphRoute(startWater, endWater, land, distance);
-  if (graphRoute?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(validateWaterRoute(graphRoute, land) || graphRoute, distance > 2500 ? 220 : 120), b]);
+  if (graphRoute?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(validateWaterRoute(graphRoute, land) || graphRoute, distance > 2500 ? 220 : 120), land);
 
   const gateway = oceanGatewayBoatRoute(startWater, endWater);
-  if (gateway?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(gateway, 180), b]);
+  if (gateway?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(gateway, 180), land);
 
   const candidates = boatRouteCandidates(a, b, distance);
   let best = null;
@@ -2505,6 +2505,52 @@ function waterAvoidingBoatRoute(leg) {
   return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
 }
 
+function finalizeBoatRouteWithWaterApproaches(startCity, endCity, waterRoute = [], land = []) {
+  const startWater = boatWaterApproachPoint(startCity, endCity, land, 'start');
+  const endWater = boatWaterApproachPoint(endCity, startCity, land, 'end');
+  let route = cleanupRouteCoordinates([startCity, startWater, ...(waterRoute || []), endWater, endCity]);
+  route = removeNearDuplicateBoatApproachPoints(route);
+  // If the final connector still clips land, insert additional local water
+  // candidates around the destination and choose the cleanest two-leg approach.
+  const finalIdx = route.length - 1;
+  if (finalIdx >= 2 && waterEdgeHitsLand(route[finalIdx - 2], route[finalIdx - 1], land, true)) {
+    const correction = bestWaterSideConnector(route[finalIdx - 2], endCity, land);
+    if (correction) {
+      route.splice(finalIdx - 1, 0, correction);
+    }
+  }
+  return cleanupRouteCoordinates(route);
+}
+
+function removeNearDuplicateBoatApproachPoints(route = []) {
+  const out = [];
+  for (const p of route || []) {
+    if (!out.length || coordDistance2(out[out.length - 1], p) > 0.0009) out.push(p);
+  }
+  return out;
+}
+
+function bestWaterSideConnector(fromWater, city, land = []) {
+  const p = [Number(city[0]), Number(city[1])];
+  const dirs = [];
+  for (let i = 0; i < 16; i++) {
+    const a = (Math.PI * 2 * i) / 16;
+    dirs.push([Math.cos(a), Math.sin(a)]);
+  }
+  let best = null;
+  let bestScore = Infinity;
+  for (const d of dirs) {
+    for (const dist of [0.22, 0.38, 0.62, 0.90, 1.25]) {
+      const c = [p[0] + d[0] * dist, p[1] + d[1] * dist];
+      if (pointInAnyLandRing(c, land)) continue;
+      const hits = (waterEdgeHitsLand(fromWater, c, land, false) ? 1 : 0) + (waterEdgeHitsLand(c, p, land, true) ? 1 : 0);
+      const score = hits * 100000 + coordDistance2(c, p) + coordDistance2(fromWater, c) * 0.02;
+      if (score < bestScore) { best = c; bestScore = score; }
+    }
+  }
+  return best;
+}
+
 function forcedLongWaterCorridor(a, b) {
   const westNorthAmerica = a[0] < -105 && a[1] > 20 && a[1] < 50;
   const destMediterranean = b[0] > -7 && b[0] < 38 && b[1] > 30 && b[1] < 46;
@@ -2525,7 +2571,7 @@ function forcedLongWaterCorridor(a, b) {
       [-52.0, 25.0], [-42.0, 31.2], [-30.0, 34.6], [-18.0, 35.7], [-9.0, 35.8], [-5.75, 35.9],
       // Mediterranean: stay mid-water/north of Africa, then approach Athens from the Aegean water side.
       [-1.0, 36.6], [4.5, 37.4], [10.0, 37.7], [15.0, 37.0], [19.5, 36.5], [22.2, 37.2],
-      [23.35, 37.72], [23.55, 37.86],
+      [23.35, 37.72], [23.55, 37.86], [23.83, 37.68],
       b
     ];
   }
@@ -2581,7 +2627,7 @@ function boatWaterApproachPoint(city, other, land = [], kind = 'end') {
     }
   }
   // Known port/coast corrections.
-  if (isNearCoord(p, [23.73, 37.98], 1.2)) candidates.unshift([23.55, 37.86], [23.36, 37.74], [23.88, 37.72]); // Athens/Piraeus water side
+  if (isNearCoord(p, [23.73, 37.98], 1.2)) candidates.unshift([23.88, 37.70], [23.78, 37.62], [23.55, 37.86], [23.36, 37.74]); // Athens/Piraeus water side
   if (isNearCoord(p, [-117.16, 32.72], 1.1)) candidates.unshift([-117.35, 32.62], [-117.55, 32.44]);
   if (isNearCoord(p, [-109.91, 22.89], 1.1)) candidates.unshift([-110.05, 22.82], [-110.22, 22.72]);
 

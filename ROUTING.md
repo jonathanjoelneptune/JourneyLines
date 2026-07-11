@@ -1,10 +1,8 @@
-Base: GlobeHoppers v5.1.2
-Update: v5.1.3 forced long-water corridor repackage
+Base: GlobeHoppers v5.1.3
+Update: v5.1.4 systematic boat final water-side approaches
 Changes:
-- Added a forced west North America ↔ Mediterranean water corridor before the generic graph route.
-- The forced corridor gives Baja, Panama, Hispaniola/Caribbean islands, North Africa, and Athens a wider water berth.
-- Panama now uses explicit wide approach -> west canal approach -> short canal leg -> Caribbean exit nodes.
-- Caribbean corridor now passes south of Hispaniola instead of allowing graph/smoothing shortcuts across it.
-- Mediterranean corridor stays mid-water/north of North Africa and approaches Athens from the Aegean/Piraeus water side.
-- Generic graph routes are now validated against land and island no-cross boxes before being accepted.
-- Repackaged so this correction is definitely included in the ZIP.
+- Added a systematic boat final-approach post-processor.
+- Boat routes now build around water-side start/end approach points rather than letting the long ocean segment connect directly to a city.
+- If the final connector clips land, the route inserts an additional local water-side connector chosen from nearby water candidates.
+- Athens/Piraeus water-side candidates were moved farther onto the water side.
+- This is intended to fix coastal destination approaches globally, not only Athens.
