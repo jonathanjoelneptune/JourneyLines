@@ -1,10 +1,10 @@
-Base: GlobeHoppers v5.1.1
-Update: v5.1.2 water-side approaches and global island avoidance
+Base: GlobeHoppers v5.1.2
+Update: v5.1.3 forced long-water corridor repackage
 Changes:
-- Added global island no-cross boxes derived from Natural Earth land polygons.
-- Boat graph edges now avoid small/medium islands globally, not only Cuba/Hispaniola/Puerto Rico.
-- Added explicit no-cross coverage for Bahamas, Lesser Antilles, Aegean islands, and other high-risk island fields.
-- Added boat water-side start/end approach points so destinations on land are approached from nearby water.
-- Added Athens/Piraeus water-side approach correction so boat routes do not cut inland to Athens.
-- Added more deliberate Mediterranean/Suez approach/departure water nodes.
-- Panama canal rules tightened so long routes use short approach/departure legs rather than steep diagonal cuts.
+- Added a forced west North America ↔ Mediterranean water corridor before the generic graph route.
+- The forced corridor gives Baja, Panama, Hispaniola/Caribbean islands, North Africa, and Athens a wider water berth.
+- Panama now uses explicit wide approach -> west canal approach -> short canal leg -> Caribbean exit nodes.
+- Caribbean corridor now passes south of Hispaniola instead of allowing graph/smoothing shortcuts across it.
+- Mediterranean corridor stays mid-water/north of North Africa and approaches Athens from the Aegean/Piraeus water side.
+- Generic graph routes are now validated against land and island no-cross boxes before being accepted.
+- Repackaged so this correction is definitely included in the ZIP.

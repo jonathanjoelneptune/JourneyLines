@@ -2471,8 +2471,11 @@ function waterAvoidingBoatRoute(leg) {
   const startWater = boatWaterApproachPoint(a, b, land, 'start');
   const endWater = boatWaterApproachPoint(b, a, land, 'end');
 
+  const forcedCorridor = forcedLongWaterCorridor(startWater, endWater);
+  if (forcedCorridor?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(forcedCorridor, 260), b]);
+
   const graphRoute = waterGraphRoute(startWater, endWater, land, distance);
-  if (graphRoute?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(graphRoute, distance > 2500 ? 220 : 120), b]);
+  if (graphRoute?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(validateWaterRoute(graphRoute, land) || graphRoute, distance > 2500 ? 220 : 120), b]);
 
   const gateway = oceanGatewayBoatRoute(startWater, endWater);
   if (gateway?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(gateway, 180), b]);
@@ -2500,6 +2503,62 @@ function waterAvoidingBoatRoute(leg) {
   }
 
   return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
+}
+
+function forcedLongWaterCorridor(a, b) {
+  const westNorthAmerica = a[0] < -105 && a[1] > 20 && a[1] < 50;
+  const destMediterranean = b[0] > -7 && b[0] < 38 && b[1] > 30 && b[1] < 46;
+  const reverseWestNorthAmerica = b[0] < -105 && b[1] > 20 && b[1] < 50;
+  const sourceMediterranean = a[0] > -7 && a[0] < 38 && a[1] > 30 && a[1] < 46;
+
+  if (westNorthAmerica && destMediterranean) {
+    return [
+      a,
+      // Pacific side of Baja, giving land a wide berth.
+      [-117.7, 31.3], [-116.4, 28.8], [-114.4, 25.2], [-111.3, 22.0],
+      [-106.8, 18.2], [-101.2, 15.4], [-95.2, 12.9], [-89.0, 10.7],
+      // Panama approach: wide berth -> west canal approach -> short canal leg -> Caribbean exit.
+      [-83.6, 8.7], [-81.7, 8.1], [-80.25, 8.75], [-79.62, 9.42], [-78.4, 10.2],
+      // Caribbean: route south of Hispaniola and north of South America, never across islands.
+      [-76.0, 12.4], [-72.5, 13.6], [-68.8, 14.8], [-64.8, 16.3], [-60.2, 18.8],
+      // Atlantic and Gibraltar.
+      [-52.0, 25.0], [-42.0, 31.2], [-30.0, 34.6], [-18.0, 35.7], [-9.0, 35.8], [-5.75, 35.9],
+      // Mediterranean: stay mid-water/north of Africa, then approach Athens from the Aegean water side.
+      [-1.0, 36.6], [4.5, 37.4], [10.0, 37.7], [15.0, 37.0], [19.5, 36.5], [22.2, 37.2],
+      [23.35, 37.72], [23.55, 37.86],
+      b
+    ];
+  }
+
+  if (sourceMediterranean && reverseWestNorthAmerica) {
+    return [
+      a,
+      [23.55, 37.86], [23.35, 37.72], [22.2, 37.2], [19.5, 36.5], [15.0, 37.0],
+      [10.0, 37.7], [4.5, 37.4], [-1.0, 36.6], [-5.75, 35.9], [-9.0, 35.8],
+      [-18.0, 35.7], [-30.0, 34.6], [-42.0, 31.2], [-52.0, 25.0],
+      [-60.2, 18.8], [-64.8, 16.3], [-68.8, 14.8], [-72.5, 13.6], [-76.0, 12.4],
+      [-78.4, 10.2], [-79.62, 9.42], [-80.25, 8.75], [-81.7, 8.1], [-83.6, 8.7],
+      [-89.0, 10.7], [-95.2, 12.9], [-101.2, 15.4], [-106.8, 18.2],
+      [-111.3, 22.0], [-114.4, 25.2], [-116.4, 28.8], [-117.7, 31.3],
+      b
+    ];
+  }
+  return null;
+}
+
+function validateWaterRoute(route = [], land = []) {
+  if (!Array.isArray(route) || route.length < 2) return null;
+  const cleaned = cleanupRouteCoordinates(route);
+  const sampled = safeGatewayRoute(cleaned, Math.max(80, cleaned.length * 10));
+  if (routeSegmentsHitLand(sampled, land) === 0 && islandRouteCutPenalty(sampled) === 0) return cleaned;
+  return null;
+}
+
+function islandRouteCutPenalty(route = []) {
+  for (let i = 1; i < route.length; i++) {
+    if (caribbeanIslandCutPenalty(route[i - 1], route[i]) >= 9999) return 9999;
+  }
+  return 0;
 }
 
 function boatWaterApproachPoint(city, other, land = [], kind = 'end') {
@@ -2650,11 +2709,13 @@ function caribbeanIslandCutPenalty(a, b) {
   const route = routeBbox(a, b, 0);
   const boxes = [
     ...(naturalEarthRouting?.islandNoCrossBoxes || []),
-    [-85.7, 19.0, -73.9, 24.0],  // Cuba
-    [-75.3, 17.2, -67.9, 20.3],  // Hispaniola
-    [-67.6, 17.5, -64.9, 18.9],  // Puerto Rico
-    [-78.8, 24.0, -72.8, 27.4],  // Bahamas
-    [19.0, 34.4, 26.8, 41.3]     // Aegean island field
+    [-85.9, 18.8, -73.7, 24.2],  // Cuba
+    [-75.6, 17.0, -67.7, 20.5],  // Hispaniola
+    [-67.8, 17.3, -64.7, 19.1],  // Puerto Rico
+    [-79.0, 23.8, -72.6, 27.6],  // Bahamas
+    [-62.7, 10.0, -59.0, 19.0],  // Lesser Antilles / Trinidad field
+    [18.6, 34.2, 27.2, 41.5],    // Aegean island/Greek coast field
+    [-6.5, 30.0, 33.5, 35.2]     // North Africa coast clipping guard
   ];
   for (const box of boxes) {
     if (bboxIntersects(route, box) && lineIntersectsBBoxLoose(a, b, box)) return 9999;
@@ -2751,38 +2812,10 @@ function isNearCoord(a, b, degrees = 1) {
 }
 
 function oceanGatewayBoatRoute(a, b) {
-  const westNorthAmerica = a[0] < -105 && a[1] > 20 && a[1] < 50;
-  const destMediterranean = b[0] > -7 && b[0] < 38 && b[1] > 30 && b[1] < 46;
-  const reverseWestNorthAmerica = b[0] < -105 && b[1] > 20 && b[1] < 50;
-  const sourceMediterranean = a[0] > -7 && a[0] < 38 && a[1] > 30 && a[1] < 46;
-
-  // v5.0.5: Long ocean routes need explicit safe ocean corridors instead of a
-  // single broad curve. These waypoints approximate Pacific coast -> Panama
-  // Canal -> Caribbean/Atlantic -> Gibraltar -> Mediterranean, avoiding the
-  // previous beeline through Europe/Africa.
-  if (westNorthAmerica && destMediterranean) {
-    return [
-      a,
-      [-114.6, 25.2], [-109.0, 20.8], [-102.0, 16.4], [-94.5, 13.2], [-86.5, 10.5],
-      [-80.1, 8.9], [-79.6, 9.4],  // Panama canal / Caribbean exit
-      [-73.5, 17.5], [-61.5, 24.0], [-42.0, 31.5], [-18.0, 35.8],
-      [-5.8, 35.9], [4.0, 37.0], [12.0, 36.8], [18.5, 36.0], [23.2, 37.3],
-      b
-    ];
-  }
-  if (sourceMediterranean && reverseWestNorthAmerica) {
-    return [
-      a,
-      [23.2, 37.3], [18.5, 36.0], [12.0, 36.8], [4.0, 37.0], [-5.8, 35.9],
-      [-18.0, 35.8], [-42.0, 31.5], [-61.5, 24.0], [-73.5, 17.5],
-      [-79.6, 9.4], [-80.1, 8.9],
-      [-86.5, 10.5], [-94.5, 13.2], [-102.0, 16.4], [-109.0, 20.8], [-114.6, 25.2],
-      b
-    ];
-  }
+  const forced = forcedLongWaterCorridor(a, b);
+  if (forced?.length > 2) return forced;
   return null;
 }
-
 
 function boatRouteCandidates(a, b, distance = 0) {
   const mid = midpointCoord(a, b);
