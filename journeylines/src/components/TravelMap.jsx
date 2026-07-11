@@ -2502,7 +2502,9 @@ function waterAvoidingBoatRoute(leg) {
     }
   }
 
-  return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
+  const broadFallback = broadOceanFallbackRoute(startWater, endWater, distance);
+  if (broadFallback?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(broadFallback, 140), land);
+  return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(boatCurveRoute(leg, 0.58), 96), land);
 }
 
 function finalizeBoatRouteWithWaterApproaches(startCity, endCity, waterRoute = [], land = []) {
@@ -2598,11 +2600,51 @@ function bestWaterSideConnector(fromWater, city, land = []) {
   return best;
 }
 
+function broadOceanFallbackRoute(a, b, distance = 0) {
+  if (distance < 900) return null;
+  const mid = midpointCoord(a, b);
+  const candidates = [
+    a,
+    [lerpAngle(a[0], b[0], 0.22), lerp(a[1], b[1], 0.22) - 10],
+    [mid[0], mid[1] - 14],
+    [lerpAngle(a[0], b[0], 0.78), lerp(a[1], b[1], 0.78) - 10],
+    b
+  ];
+  return candidates;
+}
+
 function forcedLongWaterCorridor(a, b) {
   const westNorthAmerica = a[0] < -105 && a[1] > 20 && a[1] < 50;
   const destMediterranean = b[0] > -7 && b[0] < 38 && b[1] > 30 && b[1] < 46;
+  const destNorthEurope = b[0] > -12 && b[0] < 12 && b[1] >= 46 && b[1] < 62;
   const reverseWestNorthAmerica = b[0] < -105 && b[1] > 20 && b[1] < 50;
   const sourceMediterranean = a[0] > -7 && a[0] < 38 && a[1] > 30 && a[1] < 46;
+  const sourceNorthEurope = a[0] > -12 && a[0] < 12 && a[1] >= 46 && a[1] < 62;
+
+  if (westNorthAmerica && destNorthEurope) {
+    return [
+      a,
+      [-117.7, 31.3], [-116.4, 28.8], [-114.4, 25.2], [-111.3, 22.0],
+      [-106.8, 18.2], [-101.2, 15.4], [-95.2, 12.9], [-89.0, 10.7],
+      [-83.6, 8.7], [-81.7, 8.1], [-80.25, 8.75], [-79.62, 9.42], [-78.4, 10.2],
+      [-76.0, 12.4], [-72.5, 13.6], [-68.8, 14.8], [-64.8, 16.3], [-58.0, 20.0],
+      [-50.0, 28.0], [-42.0, 35.0], [-32.0, 42.0], [-22.0, 48.0], [-12.0, 51.0],
+      [-7.0, 52.0], [-5.0, 54.0],
+      b
+    ];
+  }
+
+  if (sourceNorthEurope && reverseWestNorthAmerica) {
+    return [
+      a,
+      [-5.0, 54.0], [-7.0, 52.0], [-12.0, 51.0], [-22.0, 48.0], [-32.0, 42.0],
+      [-42.0, 35.0], [-50.0, 28.0], [-58.0, 20.0], [-64.8, 16.3], [-68.8, 14.8],
+      [-72.5, 13.6], [-76.0, 12.4], [-78.4, 10.2], [-79.62, 9.42], [-80.25, 8.75],
+      [-81.7, 8.1], [-83.6, 8.7], [-89.0, 10.7], [-95.2, 12.9], [-101.2, 15.4],
+      [-106.8, 18.2], [-111.3, 22.0], [-114.4, 25.2], [-116.4, 28.8], [-117.7, 31.3],
+      b
+    ];
+  }
 
   if (westNorthAmerica && destMediterranean) {
     return [
@@ -2725,8 +2767,32 @@ const WATER_GRAPH_NODES = [
   [20.0, 58.0], [28.0, 59.5]
 ];
 
+function waterGraphNodesFromDatabase() {
+  const nodes = [];
+  const seen = new Set();
+  for (const p of (naturalEarthRouting?.waterGraphNodes || [])) {
+    if (!Array.isArray(p) || p.length < 2) continue;
+    const key = `${Number(p[0]).toFixed(2)},${Number(p[1]).toFixed(2)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    nodes.push([Number(p[0]), Number(p[1])]);
+  }
+  for (const corridor of (naturalEarthRouting?.waterCorridors || [])) {
+    for (const p of (corridor?.nodes || [])) {
+      if (!Array.isArray(p) || p.length < 2) continue;
+      const key = `${Number(p[0]).toFixed(2)},${Number(p[1]).toFixed(2)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      nodes.push([Number(p[0]), Number(p[1])]);
+    }
+  }
+  return nodes;
+}
+
+
+
 function waterGraphRoute(a, b, land = [], distance = 0) {
-  const allNodes = [a, b, ...WATER_GRAPH_NODES];
+  const allNodes = [a, b, ...waterGraphNodesFromDatabase(), ...WATER_GRAPH_NODES];
   const startIndex = 0;
   const goalIndex = 1;
   const routeBox = routeBbox(a, b, distance > 2200 ? 38 : distance > 800 ? 16 : 7);
@@ -2738,7 +2804,7 @@ function waterGraphRoute(a, b, land = [], distance = 0) {
   const goal = usable.findIndex(n => n.i === goalIndex);
   if (start < 0 || goal < 0) return null;
 
-  const edgeLimit = distance > 3200 ? 18.5 : distance > 1500 ? 10.5 : distance > 600 ? 5.2 : 2.8;
+  const edgeLimit = distance > 3200 ? 22.0 : distance > 1500 ? 12.5 : distance > 600 ? 6.0 : 3.0;
   const neighbors = new Map();
   for (let i = 0; i < nodes.length; i++) neighbors.set(i, []);
   for (let i = 0; i < nodes.length; i++) {
@@ -2755,7 +2821,7 @@ function waterGraphRoute(a, b, land = [], distance = 0) {
       possible.push({ to: j, w: d + penalty });
     }
     possible.sort((x, y) => x.w - y.w);
-    neighbors.set(i, possible.slice(0, distance > 1800 ? 9 : 6));
+    neighbors.set(i, possible.slice(0, distance > 1800 ? 14 : 8));
   }
 
   const path = astarNodePath(start, goal, nodes, neighbors);

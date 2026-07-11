@@ -12309,3 +12309,38 @@ svg text {
   transform-style: preserve-3d !important;
   backface-visibility: visible !important;
 }
+
+
+/* GlobeHoppers v5.1.7: keep add/edit hop modal usable on shorter screens. */
+.studio-modal-backdrop {
+  align-items: flex-start !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding-top: clamp(10px, 2vh, 28px) !important;
+  padding-bottom: clamp(18px, 4vh, 40px) !important;
+}
+.studio-modal.studio-modal--wide {
+  max-height: calc(100vh - clamp(28px, 6vh, 72px)) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.studio-modal-sticky {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 25 !important;
+}
+.studio-modal-scroll-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-bottom: 28px !important;
+  overscroll-behavior: contain !important;
+}
+.studio-modal-scroll-content::-webkit-scrollbar { width: 10px; }
+.studio-modal-scroll-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.45);
+  border-radius: 999px;
+}

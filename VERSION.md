@@ -1,1 +1,1 @@
-GlobeHoppers v5.1.6 — stable water-side boat routing rollback
+GlobeHoppers v5.1.8 — major water corridor node spine

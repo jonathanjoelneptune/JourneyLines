@@ -21,7 +21,11 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
         key={`${row.id || row.title}-${index}`}
         type={queued ? 'button' : undefined}
         className={`trip-card trip-card--stack-${index} ${queued ? 'trip-card--queued-clickable' : ''}`}
-        style={{ '--accent': row.color || traveler?.color || '#00e5ff', '--trip-border': segmentedBorderGradient(borderColors, row.color || traveler?.color || '#00e5ff') }}
+        style={{
+          '--accent': row.color || traveler?.color || '#00e5ff',
+          '--accent-2': (row.borderColors?.[1] || row.color || traveler?.color || '#00e5ff'),
+          '--trip-border': row.borderGradient || segmentedBorderGradient((row.borderColors || [row.color || traveler?.color || '#00e5ff']).filter(Boolean), row.color || traveler?.color || '#00e5ff')
+        }}
         onClick={queued ? () => onJumpToTrip?.(row.firstIndex) : undefined}
         title={queued ? `Jump to ${row.title}` : undefined}
       >
