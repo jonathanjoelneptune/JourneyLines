@@ -3251,32 +3251,5 @@
     "occasion": "",
     "trailStyle": "stripe",
     "trailColorMode": "members"
-  },
-  {
-    "id": "2026-143-phoenix",
-    "year": 2026,
-    "month": 12,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "December 2026",
-    "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-143",
-    "label": "Phoenix",
-    "travelers": [
-      "joey"
-    ],
-    "guestHoppers": [],
-    "mode": "drive",
-    "roundTrip": true,
-    "returnMode": "drive",
-    "fromLocationId": null,
-    "toLocationId": "phoenix-az",
-    "route": [],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "solid",
-    "trailColorMode": "members"
   }
 ]
