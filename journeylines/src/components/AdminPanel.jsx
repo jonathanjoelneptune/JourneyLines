@@ -1368,12 +1368,19 @@ function DateRangePopover({ popoverRef, draft, cursor, setCursor, phase, onClose
 }
 
 function AutocompleteField({ label, value, onChange, matches, onChoose, compact, prominent }) {
-  const [hideSuggestions, setHideSuggestions] = useState(false);
-  const visibleMatches = hideSuggestions ? [] : matches;
+  const [hideSuggestions, setHideSuggestions] = useState(true);
+  const [userEdited, setUserEdited] = useState(false);
+  useEffect(() => {
+    // Prefilled edit-mode values should not open suggestion popups. Suggestions
+    // only appear after the user actively types in this field.
+    setHideSuggestions(true);
+    setUserEdited(false);
+  }, [label]);
+  const visibleMatches = hideSuggestions || !userEdited ? [] : matches;
   return <label className={`autocomplete-field ${compact ? 'compact' : ''} ${prominent ? 'is-prominent' : ''}`}>{label}
-    <input value={value} onChange={e => { setHideSuggestions(false); onChange(e.target.value); }} placeholder="Start typing a destination" />
+    <input value={value} onFocus={() => { if (!userEdited) setHideSuggestions(true); }} onChange={e => { setUserEdited(true); setHideSuggestions(false); onChange(e.target.value); }} placeholder="Start typing a destination" />
     {!!value && visibleMatches.length > 0 && <div className="autocomplete-menu autocomplete-menu--cities">
-      {visibleMatches.slice(0, 10).map(l => <button type="button" key={`${l._source || 'saved'}-${l.id}`} className={`autocomplete-option autocomplete-option--${l._source || 'saved'}`} onClick={() => { if (l._source === 'loading') return; setHideSuggestions(true); onChoose(l); }}>
+      {visibleMatches.slice(0, 10).map(l => <button type="button" key={`${l._source || 'saved'}-${l.id}`} className={`autocomplete-option autocomplete-option--${l._source || 'saved'}`} onClick={() => { if (l._source === 'loading') return; setHideSuggestions(true); setUserEdited(false); onChoose(l); }}>
         <strong>{suggestionDisplayText(l)}</strong>
         <em>{l._label || 'Saved'}</em>
       </button>)}

@@ -1,1 +1,1 @@
-GlobeHoppers v5.1.8 — major water corridor node spine
+GlobeHoppers v5.2 — Natural Earth dense water routing graph

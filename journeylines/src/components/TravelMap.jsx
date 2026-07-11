@@ -2471,6 +2471,9 @@ function waterAvoidingBoatRoute(leg) {
   const startWater = boatWaterApproachPoint(a, b, land, 'start');
   const endWater = boatWaterApproachPoint(b, a, land, 'end');
 
+  const sameCorridor = sameWaterCorridorRoute(startWater, endWater, land);
+  if (sameCorridor?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(sameCorridor, 180), land);
+
   const forcedCorridor = forcedLongWaterCorridor(startWater, endWater);
   if (forcedCorridor?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(forcedCorridor, 260), land);
 
@@ -2600,8 +2603,44 @@ function bestWaterSideConnector(fromWater, city, land = []) {
   return best;
 }
 
+function sameWaterCorridorRoute(a, b, land = []) {
+  const corridors = naturalEarthRouting?.waterCorridors || [];
+  let best = null;
+  let bestScore = Infinity;
+  for (const c of corridors) {
+    const nodes = (c?.nodes || []).filter(p => Array.isArray(p) && p.length >= 2).map(p => [Number(p[0]), Number(p[1])]);
+    if (nodes.length < 3) continue;
+    const ai = nearestIndexOnNodes(a, nodes);
+    const bi = nearestIndexOnNodes(b, nodes);
+    if (ai < 0 || bi < 0 || ai === bi) continue;
+    const da = Math.sqrt(coordDistance2(a, nodes[ai]));
+    const db = Math.sqrt(coordDistance2(b, nodes[bi]));
+    const maxAttach = c.kind === 'coastal' ? 7.5 : 4.5;
+    if (da > maxAttach || db > maxAttach) continue;
+    const lo = Math.min(ai, bi);
+    const hi = Math.max(ai, bi);
+    const seq = ai <= bi ? nodes.slice(lo, hi + 1) : nodes.slice(lo, hi + 1).reverse();
+    if (seq.length < 2) continue;
+    const route = [a, ...seq, b];
+    if (routeSegmentsHitLand(safeGatewayRoute(route, Math.max(60, route.length * 8)), land) > 0) continue;
+    const direct = Math.sqrt(coordDistance2(a, b)) || 1;
+    const score = (da + db) + (routePathLength2(route) / direct) * 0.03;
+    if (score < bestScore) { best = route; bestScore = score; }
+  }
+  return best;
+}
+function nearestIndexOnNodes(p, nodes = []) {
+  let best = -1;
+  let bestD = Infinity;
+  for (let i = 0; i < nodes.length; i++) {
+    const d = coordDistance2(p, nodes[i]);
+    if (d < bestD) { best = i; bestD = d; }
+  }
+  return best;
+}
+
 function broadOceanFallbackRoute(a, b, distance = 0) {
-  if (distance < 900) return null;
+  if (distance < 2600) return null;
   const mid = midpointCoord(a, b);
   const candidates = [
     a,
@@ -2770,21 +2809,20 @@ const WATER_GRAPH_NODES = [
 function waterGraphNodesFromDatabase() {
   const nodes = [];
   const seen = new Set();
-  for (const p of (naturalEarthRouting?.waterGraphNodes || [])) {
-    if (!Array.isArray(p) || p.length < 2) continue;
-    const key = `${Number(p[0]).toFixed(2)},${Number(p[1]).toFixed(2)}`;
-    if (seen.has(key)) continue;
+  function add(p) {
+    if (!Array.isArray(p) || p.length < 2) return;
+    const lon = Number(p[0]);
+    const lat = Number(p[1]);
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
+    const key = `${lon.toFixed(2)},${lat.toFixed(2)}`;
+    if (seen.has(key)) return;
     seen.add(key);
-    nodes.push([Number(p[0]), Number(p[1])]);
+    nodes.push([lon, lat]);
   }
+  for (const p of (naturalEarthRouting?.waterGraphNodes || [])) add(p);
+  for (const p of (naturalEarthRouting?.waterDetailNodes || [])) add(p);
   for (const corridor of (naturalEarthRouting?.waterCorridors || [])) {
-    for (const p of (corridor?.nodes || [])) {
-      if (!Array.isArray(p) || p.length < 2) continue;
-      const key = `${Number(p[0]).toFixed(2)},${Number(p[1]).toFixed(2)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      nodes.push([Number(p[0]), Number(p[1])]);
-    }
+    for (const p of (corridor?.nodes || [])) add(p);
   }
   return nodes;
 }
@@ -2795,16 +2833,28 @@ function waterGraphRoute(a, b, land = [], distance = 0) {
   const allNodes = [a, b, ...waterGraphNodesFromDatabase(), ...WATER_GRAPH_NODES];
   const startIndex = 0;
   const goalIndex = 1;
-  const routeBox = routeBbox(a, b, distance > 2200 ? 38 : distance > 800 ? 16 : 7);
-  const usable = allNodes
-    .map((p, i) => ({ p, i }))
-    .filter(n => n.i < 2 || bboxContainsExpanded(routeBox, n.p, distance > 2200 ? 12 : 4) || isMajorWaterGateway(n.p));
+  const routeBox = routeBbox(a, b, distance > 4200 ? 32 : distance > 2200 ? 24 : distance > 800 ? 12 : 5.5);
+  let usable = allNodes
+    .map((p, i) => ({ p, i, score: waterNodeRouteScore(p, a, b, distance) }))
+    .filter(n => n.i < 2 || bboxContainsExpanded(routeBox, n.p, distance > 2200 ? 8 : 2.5) || isMajorWaterGateway(n.p));
+
+  // Dense Natural Earth water nodes are useful, but an all-pairs graph over every
+  // water point is too expensive. Keep the points most relevant to the route line,
+  // plus all major gateways. This gives detailed local/coastal routing without
+  // letting broad fallbacks pull same-coast trips into huge triangles.
+  const maxUsable = distance > 3000 ? 1150 : distance > 1200 ? 850 : 620;
+  if (usable.length > maxUsable) {
+    const pinned = usable.filter(n => n.i < 2 || isMajorWaterGateway(n.p));
+    const rest = usable.filter(n => !(n.i < 2 || isMajorWaterGateway(n.p))).sort((x, y) => x.score - y.score).slice(0, Math.max(0, maxUsable - pinned.length));
+    usable = [...pinned, ...rest];
+  }
+
   const nodes = usable.map(n => n.p);
   const start = usable.findIndex(n => n.i === startIndex);
   const goal = usable.findIndex(n => n.i === goalIndex);
   if (start < 0 || goal < 0) return null;
 
-  const edgeLimit = distance > 3200 ? 22.0 : distance > 1500 ? 12.5 : distance > 600 ? 6.0 : 3.0;
+  const edgeLimit = distance > 3200 ? 11.0 : distance > 1500 ? 7.0 : distance > 600 ? 4.0 : 2.2;
   const neighbors = new Map();
   for (let i = 0; i < nodes.length; i++) neighbors.set(i, []);
   for (let i = 0; i < nodes.length; i++) {
@@ -2812,22 +2862,36 @@ function waterGraphRoute(a, b, land = [], distance = 0) {
     for (let j = 0; j < nodes.length; j++) {
       if (i === j) continue;
       const d = Math.sqrt(coordDistance2(nodes[i], nodes[j]));
-      const limit = (i === start || j === goal || i === goal || j === start) ? edgeLimit * 0.72 : edgeLimit;
+      const connector = i === start || j === goal || i === goal || j === start;
+      const limit = connector ? edgeLimit * 1.10 : edgeLimit;
       if (d > limit && !gatewayLongEdgeAllowed(nodes[i], nodes[j], d, distance)) continue;
-      if (waterEdgeHitsLand(nodes[i], nodes[j], land, i === start || j === goal || i === goal || j === start)) continue;
+      if (waterEdgeHitsLand(nodes[i], nodes[j], land, connector)) continue;
       if (caribbeanIslandCutPenalty(nodes[i], nodes[j]) >= 9999) continue;
       if (panamaCanalBadAnglePenalty(nodes[i], nodes[j]) >= 9999) continue;
-      const penalty = caribbeanIslandCutPenalty(nodes[i], nodes[j]) + panamaCanalBadAnglePenalty(nodes[i], nodes[j]);
+      const offshorePenalty = distanceFromPointToSegment(nodes[j], a, b) * (distance < 1800 ? 0.22 : 0.055);
+      const penalty = caribbeanIslandCutPenalty(nodes[i], nodes[j]) + panamaCanalBadAnglePenalty(nodes[i], nodes[j]) + offshorePenalty;
       possible.push({ to: j, w: d + penalty });
     }
     possible.sort((x, y) => x.w - y.w);
-    neighbors.set(i, possible.slice(0, distance > 1800 ? 14 : 8));
+    neighbors.set(i, possible.slice(0, distance > 1800 ? 18 : 12));
   }
 
   const path = astarNodePath(start, goal, nodes, neighbors);
   if (!path?.length) return null;
-  return path.map(i => nodes[i]);
+  const route = path.map(i => nodes[i]);
+  const direct = Math.max(0.0001, Math.sqrt(coordDistance2(a, b)));
+  const ratio = routePathLength2(route) / Math.max(0.0001, direct * direct);
+  if (distance < 1800 && ratio > 4.2) return null;
+  return route;
 }
+
+function waterNodeRouteScore(p, a, b, distance = 0) {
+  if (isMajorWaterGateway(p)) return -1000;
+  const corridor = distanceFromPointToSegment(p, a, b);
+  const endBias = Math.min(Math.sqrt(coordDistance2(p, a)), Math.sqrt(coordDistance2(p, b))) * 0.10;
+  return corridor + endBias;
+}
+
 
 function astarNodePath(start, goal, nodes, neighbors) {
   const open = new Set([start]);
