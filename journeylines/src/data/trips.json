@@ -3280,7 +3280,7 @@
     "trailColorMode": "members"
   },
   {
-    "id": "2026-145-cabo-san-lucas",
+    "id": "5yvjxp",
     "year": 2026,
     "month": 11,
     "day": null,
@@ -3290,6 +3290,33 @@
     "displayDate": "November 2026",
     "displayEndDate": "",
     "sortKey": "2026-11-99-2026-11-99-144",
+    "label": "Athens",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "boat",
+    "roundTrip": true,
+    "returnMode": "boat",
+    "fromLocationId": null,
+    "toLocationId": "athens-esye31",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members"
+  },
+  {
+    "id": "2026-145-cabo-san-lucas",
+    "year": 2026,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-11-99-2026-11-99-145",
     "label": "Cabo San Lucas",
     "travelers": [
       "joey"
@@ -3316,7 +3343,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-145",
+    "sortKey": "2026-12-99-2026-12-99-146",
     "label": "Bahamas",
     "travelers": [
       "joey"
@@ -3343,7 +3370,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-146",
+    "sortKey": "2026-12-99-2026-12-99-147",
     "label": "Cabo San Lucas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -3370,7 +3397,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-147",
+    "sortKey": "2026-12-99-2026-12-99-148",
     "label": "Phoenix",
     "travelers": [
       "joey"

@@ -695,5 +695,18 @@
     "geonameId": 5454711,
     "population": 545852,
     "timezone": "America/Denver"
+  },
+  {
+    "id": "athens-esye31",
+    "name": "Athens",
+    "region": "ESYE31",
+    "country": "Greece",
+    "countryCode": "GR",
+    "continent": "",
+    "lat": 37.97945,
+    "lon": 23.71622,
+    "geonameId": 264371,
+    "population": 664046,
+    "timezone": "Europe/Athens"
   }
 ]
