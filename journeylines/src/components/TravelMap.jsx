@@ -2243,13 +2243,33 @@ function reverseRouteCacheKey(leg) {
 }
 
 function getRoutedGeometry(leg, routedGeometries = {}) {
-  if (Array.isArray(leg?.routeGeometry) && leg.routeGeometry.length > 1) return leg.routeGeometry;
+  // v5.0.1: routeDetails often stores two-point "simpleFallback" geometries.
+  // For car/train/boat that blocks the new Natural Earth generator and leaves
+  // everything looking like a straight line. Only honor cached geometry when it
+  // is more than a straight endpoint placeholder, or when it is an airplane.
+  if (Array.isArray(leg?.routeGeometry) && leg.routeGeometry.length > 1 && !isStraightEndpointPlaceholder(leg, leg.routeGeometry)) return leg.routeGeometry;
   const key = leg?.routeCacheKey || routeCacheKey(leg);
-  if (routedGeometries[key]?.length > 1) return routedGeometries[key];
+  if (routedGeometries[key]?.length > 1 && !isStraightEndpointPlaceholder(leg, routedGeometries[key])) return routedGeometries[key];
   const reverse = routedGeometries[reverseRouteCacheKey(leg)];
-  if (reverse?.length > 1) return [...reverse].reverse();
+  if (reverse?.length > 1) {
+    const reversed = [...reverse].reverse();
+    if (!isStraightEndpointPlaceholder(leg, reversed)) return reversed;
+  }
   const manual = getManualRoute(leg);
   return manual?.length > 1 ? manual : null;
+}
+
+function isStraightEndpointPlaceholder(leg, coords = []) {
+  const mode = leg?.mode;
+  if (mode === 'plane' || mode === 'move') return false;
+  if (!(mode === 'drive' || mode === 'car' || mode === 'train' || mode === 'boat')) return false;
+  if (!Array.isArray(coords) || coords.length !== 2) return false;
+  const a = coords[0];
+  const b = coords[1];
+  return approxCoord(a, [leg?.from?.lon, leg?.from?.lat]) && approxCoord(b, [leg?.to?.lon, leg?.to?.lat]);
+}
+function approxCoord(a, b) {
+  return Array.isArray(a) && Array.isArray(b) && Math.abs(Number(a[0]) - Number(b[0])) < 0.0005 && Math.abs(Number(a[1]) - Number(b[1])) < 0.0005;
 }
 
 function getManualRoute(leg) {

@@ -1470,7 +1470,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
   const derivedTrailColorMode = finalTrailStyle === 'solid' && activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) ? 'squad' : 'members';
   const label = draft.label || displayNameFromLocation(nextLocations.find(l => l.id === toLocationId)) || draft.toLocationText || 'Trip';
   const clean = {
-    id: draft.id || `${draft.year}-${String(trips.length + 1).padStart(3,'0')}-${slug(label)}`,
+    id: draft.id || uniqueTripId(trips),
     year: Number(draft.year),
     month: draft.month ? Number(draft.month) : null,
     day: draft.day ? Number(draft.day) : null,
@@ -1495,6 +1495,26 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     trailColorMode: derivedTrailColorMode
   };
   return { trip: clean, nextLocations };
+}
+
+function uniqueTripId(trips = []) {
+  const used = new Set((trips || []).map(t => String(t.id || '').toLowerCase()).filter(Boolean));
+  for (let i = 0; i < 40; i++) {
+    const id = randomTripId();
+    if (!used.has(id.toLowerCase())) return id;
+  }
+  return randomTripId();
+}
+function randomTripId() {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = new Uint32Array(6);
+  try {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(bytes);
+    else throw new Error('crypto unavailable');
+  } catch {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 0xffffffff);
+  }
+  return Array.from(bytes, n => alphabet[n % alphabet.length]).join('');
 }
 
 function buildYearOptions(locs, currentYear) {

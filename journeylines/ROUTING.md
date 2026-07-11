@@ -1,10 +1,9 @@
-Base: GlobeHoppers v4.41.1
-Update: v5.0 Natural Earth vessel routing
+Base: GlobeHoppers v5.0
+Update: v5.0.1 unique trip IDs and Natural Earth cache bypass
 Changes:
-- Added compact Natural Earth 10m routing guidance dataset.
-- Car routes now use Natural Earth major roads/roads as broad guidance where available, then fall back to road-like generated curves.
-- Train routes now use Natural Earth railroads as broad guidance where available, with tunnel/water crossing allowed by design, then fall back to smoother rail-like curves.
-- Boat routes now use Natural Earth land bounding masks/coastline guidance to bend around land where possible, then fall back to water-style curves.
-- Plane routes remain clean cinematic great-circle arcs.
-- Existing manual route overrides and routeDetails cache still take priority over generated Natural Earth routes.
-- Routing is local/instant and does not require an API key.
+- New trips now receive unique 6-character random alphanumeric IDs.
+- Existing trip IDs are preserved when editing.
+- New trip ID generation checks the current trip list to avoid collisions.
+- Car/train/boat routes now ignore two-point straight-line routeDetails placeholders.
+- This allows Natural Earth-guided generated routing to run for car/train/boat when the cache only has a simple straight line.
+- Plane routes and detailed/manual route geometries continue to work as before.
