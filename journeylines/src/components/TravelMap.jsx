@@ -10,6 +10,7 @@ import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
 import routeDetails from '../data/routeDetails.json';
+import naturalEarthRouting from '../data/naturalEarthRouting.json';
 import { applyRouteDetailsToEntries, routeDetailsGeometryCache } from '../utils/routeDetails.js';
 import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 
@@ -2316,8 +2317,211 @@ function waypointPathForLeg(leg) {
   const reverseKey = `${leg.to.id}->${leg.from.id}:${leg.mode}`;
   const legacy = ROUTE_WAYPOINTS[key] || (ROUTE_WAYPOINTS[reverseKey] ? [...ROUTE_WAYPOINTS[reverseKey]].reverse() : null);
   if (legacy) return [a, ...legacy, b];
-  return [a, b];
+
+  const ne = naturalEarthRouteForLeg(leg);
+  if (ne?.length > 1) return ne;
+
+  return stylizedFallbackRoute(leg);
 }
+
+const NATURAL_EARTH_ROUTE_MEMO = new Map();
+
+function naturalEarthRouteForLeg(leg) {
+  if (!leg?.from || !leg?.to) return null;
+  const mode = leg.mode;
+  if (!(mode === 'drive' || mode === 'car' || mode === 'train' || mode === 'boat')) return null;
+  const key = `${leg.from.id}->${leg.to.id}:${mode}`;
+  if (NATURAL_EARTH_ROUTE_MEMO.has(key)) return NATURAL_EARTH_ROUTE_MEMO.get(key);
+
+  let route = null;
+  if (mode === 'drive' || mode === 'car') route = guidedSurfaceRoute(leg, naturalEarthRouting?.roads || [], 'drive');
+  else if (mode === 'train') route = guidedSurfaceRoute(leg, naturalEarthRouting?.rails || [], 'train');
+  else if (mode === 'boat') route = waterAvoidingBoatRoute(leg);
+
+  if (!route || route.length < 2) route = stylizedFallbackRoute(leg);
+  route = cleanupRouteCoordinates(route);
+  NATURAL_EARTH_ROUTE_MEMO.set(key, route);
+  return route;
+}
+
+function guidedSurfaceRoute(leg, network = [], type = 'drive') {
+  const a = [Number(leg.from.lon), Number(leg.from.lat)];
+  const b = [Number(leg.to.lon), Number(leg.to.lat)];
+  const distance = milesBetween(leg.from, leg.to);
+  const broad = distance > 1200;
+  const mid = midpointCoord(a, b);
+  const corridorPad = type === 'train' ? (broad ? 5.5 : 2.3) : (broad ? 6.8 : 2.8);
+  const candidates = networkCandidates(network, a, b, corridorPad, type === 'drive' ? 22 : 18);
+  if (candidates.length >= 2) {
+    const start = nearestPointOnNetwork(a, candidates);
+    const end = nearestPointOnNetwork(b, candidates);
+    const midNear = nearestPointOnNetwork(mid, candidates);
+    const shaped = [a];
+    if (start) shaped.push(start.point);
+    if (midNear && !tooNearPoint(midNear.point, start?.point) && !tooNearPoint(midNear.point, end?.point)) shaped.push(midNear.point);
+    if (end) shaped.push(end.point);
+    shaped.push(b);
+    return softenPolyline(shaped, type === 'train' ? 0.18 : 0.28, type === 'train' ? 36 : 42);
+  }
+
+  return stylizedSurfaceRoute(leg, type);
+}
+
+function networkCandidates(network = [], a, b, pad = 3, limit = 20) {
+  const box = routeBbox(a, b, pad);
+  const mid = midpointCoord(a, b);
+  return (network || [])
+    .filter(line => bboxIntersects(box, line.b))
+    .map(line => ({ line, score: distancePointToBBox(mid, line.b) - (Number(line.w || 1) * 0.35) }))
+    .sort((x, y) => x.score - y.score)
+    .slice(0, limit)
+    .map(x => x.line);
+}
+
+function nearestPointOnNetwork(target, lines = []) {
+  let best = null;
+  for (const line of lines || []) {
+    for (const p of line.p || []) {
+      const d = coordDistance2(target, p);
+      if (!best || d < best.d) best = { point: p, d };
+    }
+  }
+  return best;
+}
+
+function waterAvoidingBoatRoute(leg) {
+  const a = [Number(leg.from.lon), Number(leg.from.lat)];
+  const b = [Number(leg.to.lon), Number(leg.to.lat)];
+  const distance = milesBetween(leg.from, leg.to);
+  const direct = [a, b];
+  const hitsLand = lineHitsLandBoxes(a, b, naturalEarthRouting?.landBoxes || []);
+  if (!hitsLand && distance < 900) return boatCurveRoute(leg, 0.35);
+
+  const water = naturalEarthRouting?.coast || [];
+  const pad = distance > 1800 ? 10 : distance > 650 ? 5.5 : 2.8;
+  const candidates = networkCandidates(water, a, b, pad, 16);
+  const mid = midpointCoord(a, b);
+  const coastMid = nearestPointOnNetwork(mid, candidates);
+  const perp = routePerpendicular(a, b);
+  const bendAmount = distance > 1800 ? 7.5 : distance > 650 ? 3.6 : 1.35;
+
+  const sideA = [mid[0] + perp[0] * bendAmount, mid[1] + perp[1] * bendAmount];
+  const sideB = [mid[0] - perp[0] * bendAmount, mid[1] - perp[1] * bendAmount];
+  const coastBias = coastMid?.point && !lineHitsLandBoxes(a, coastMid.point, naturalEarthRouting?.landBoxes || []) && !lineHitsLandBoxes(coastMid.point, b, naturalEarthRouting?.landBoxes || [])
+    ? coastMid.point
+    : null;
+
+  const options = [
+    coastBias ? [a, coastBias, b] : null,
+    [a, sideA, b],
+    [a, sideB, b],
+    [a, [sideA[0], sideA[1]], [sideA[0] * 0.45 + b[0] * 0.55, sideA[1] * 0.45 + b[1] * 0.55], b],
+    [a, [sideB[0], sideB[1]], [sideB[0] * 0.45 + b[0] * 0.55, sideB[1] * 0.45 + b[1] * 0.55], b]
+  ].filter(Boolean);
+
+  let best = options[0];
+  let bestScore = Infinity;
+  for (const route of options) {
+    const hits = routeSegmentsHitLand(route, naturalEarthRouting?.landBoxes || []);
+    const length = routePathLength2(route);
+    const score = hits * 100000 + length;
+    if (score < bestScore) { best = route; bestScore = score; }
+  }
+  return softenPolyline(best, 0.34, 50);
+}
+
+function stylizedFallbackRoute(leg) {
+  if (leg.mode === 'boat') return boatCurveRoute(leg, 0.48);
+  if (leg.mode === 'train') return stylizedSurfaceRoute(leg, 'train');
+  if (leg.mode === 'drive' || leg.mode === 'car') return stylizedSurfaceRoute(leg, 'drive');
+  return [[leg.from.lon, leg.from.lat], [leg.to.lon, leg.to.lat]];
+}
+
+function stylizedSurfaceRoute(leg, type = 'drive') {
+  const a = [Number(leg.from.lon), Number(leg.from.lat)];
+  const b = [Number(leg.to.lon), Number(leg.to.lat)];
+  const mid = midpointCoord(a, b);
+  const perp = routePerpendicular(a, b);
+  const distance = milesBetween(leg.from, leg.to);
+  const bend = (type === 'train' ? 0.45 : 0.78) * (distance > 1200 ? 2.4 : distance > 350 ? 1.2 : 0.45);
+  const wiggle = type === 'train' ? 0.28 : 0.58;
+  const c1 = [lerp(a[0], b[0], 0.32) + perp[0] * bend, lerp(a[1], b[1], 0.32) + perp[1] * bend];
+  const c2 = [lerp(a[0], b[0], 0.66) - perp[0] * bend * wiggle, lerp(a[1], b[1], 0.66) - perp[1] * bend * wiggle];
+  return softenPolyline([a, c1, mid, c2, b], type === 'train' ? 0.16 : 0.26, type === 'train' ? 34 : 44);
+}
+
+function boatCurveRoute(leg, strength = 0.45) {
+  const a = [Number(leg.from.lon), Number(leg.from.lat)];
+  const b = [Number(leg.to.lon), Number(leg.to.lat)];
+  const mid = midpointCoord(a, b);
+  const perp = routePerpendicular(a, b);
+  const distance = milesBetween(leg.from, leg.to);
+  const bend = strength * (distance > 1800 ? 7 : distance > 650 ? 3.4 : 1.15);
+  return softenPolyline([a, [mid[0] + perp[0] * bend, mid[1] + perp[1] * bend], b], 0.28, 48);
+}
+
+function softenPolyline(points = [], tension = 0.25, samples = 40) {
+  if (!Array.isArray(points) || points.length < 3) return points;
+  const out = [];
+  const n = Math.max(12, samples);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    out.push(pointOnControlPolyline(points, t, tension));
+  }
+  return cleanupRouteCoordinates(out);
+}
+
+function pointOnControlPolyline(points, t, tension = 0.25) {
+  const p = pointOnPolyline(points, t);
+  if (points.length < 3) return p;
+  const nearest = Math.min(points.length - 1, Math.max(0, Math.round(t * (points.length - 1))));
+  const control = points[nearest];
+  const blend = 1 - Math.min(0.55, Math.abs(t * (points.length - 1) - nearest)) * tension;
+  return [lerp(p[0], control[0], Math.max(0, Math.min(1, blend * 0.20))), lerp(p[1], control[1], Math.max(0, Math.min(1, blend * 0.20)))];
+}
+
+function cleanupRouteCoordinates(coords = []) {
+  const out = [];
+  for (const c of coords || []) {
+    const p = [roundRouteCoord(c?.[0]), roundRouteCoord(c?.[1])];
+    if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+    if (!out.length || Math.abs(out[out.length - 1][0] - p[0]) > 0.0001 || Math.abs(out[out.length - 1][1] - p[1]) > 0.0001) out.push(p);
+  }
+  return out.length >= 2 ? unwrapAntimeridianLine(out) : out;
+}
+
+function roundRouteCoord(v) { return Math.round(Number(v) * 10000) / 10000; }
+function routeBbox(a, b, pad = 0) { return [Math.min(a[0], b[0]) - pad, Math.min(a[1], b[1]) - pad, Math.max(a[0], b[0]) + pad, Math.max(a[1], b[1]) + pad]; }
+function bboxIntersects(a, b) { return a && b && a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1]; }
+function midpointCoord(a, b) { return [lerpAngle(a[0], b[0], 0.5), lerp(a[1], b[1], 0.5)]; }
+function coordDistance2(a, b) { const dx = shortestLonDelta(a[0] - b[0]); const dy = a[1] - b[1]; return dx * dx + dy * dy; }
+function distancePointToBBox(p, b) { const x = Math.max(b[0], Math.min(p[0], b[2])); const y = Math.max(b[1], Math.min(p[1], b[3])); return coordDistance2(p, [x,y]); }
+function routePerpendicular(a, b) { const dx = shortestLonDelta(b[0] - a[0]); const dy = b[1] - a[1]; const len = Math.hypot(dx, dy) || 1; return [-dy / len, dx / len]; }
+function tooNearPoint(a, b) { return !a || !b ? false : coordDistance2(a, b) < 0.05; }
+function routePathLength2(route = []) { let t = 0; for (let i=1;i<route.length;i++) t += coordDistance2(route[i-1], route[i]); return t; }
+function lineHitsLandBoxes(a, b, boxes = []) {
+  const box = routeBbox(a, b, 0);
+  return (boxes || []).some(ob => bboxIntersects(box, ob) && lineIntersectsBBox(a, b, ob));
+}
+function routeSegmentsHitLand(route = [], boxes = []) {
+  let hits = 0;
+  for (let i=1;i<route.length;i++) if (lineHitsLandBoxes(route[i-1], route[i], boxes)) hits++;
+  return hits;
+}
+function lineIntersectsBBox(a, b, box) {
+  if (!box) return false;
+  if (pointInBBox(a, box) || pointInBBox(b, box)) return true;
+  const corners = [[box[0],box[1]],[box[2],box[1]],[box[2],box[3]],[box[0],box[3]]];
+  for (let i=0;i<4;i++) if (segmentsIntersect(a,b,corners[i],corners[(i+1)%4])) return true;
+  return false;
+}
+function pointInBBox(p, b) { return p[0]>=b[0] && p[0]<=b[2] && p[1]>=b[1] && p[1]<=b[3]; }
+function segmentsIntersect(a,b,c,d) {
+  const o1 = orient(a,b,c), o2 = orient(a,b,d), o3 = orient(c,d,a), o4 = orient(c,d,b);
+  return o1 * o2 < 0 && o3 * o4 < 0;
+}
+function orient(a,b,c) { return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]); }
+
 
 const ROUTE_WAYPOINTS = {
   'melbourne-fl->key-west-fl:drive': [[-80.19, 25.76], [-81.32, 25.14]],

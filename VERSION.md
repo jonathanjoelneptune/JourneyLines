@@ -1,1 +1,1 @@
-GlobeHoppers v4.41.1 — medium aircraft landing pitch
+GlobeHoppers v5.0 — Natural Earth vessel routing
