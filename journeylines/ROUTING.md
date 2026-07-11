@@ -1,8 +1,6 @@
-Base: GlobeHoppers v4.40
-Update: v4.41 overview archive visibility and subtle aircraft attitude
+Base: GlobeHoppers v4.41
+Update: v4.41.1 medium aircraft landing pitch
 Changes:
-- Page load / hero state now shows the full archive again: routes and visited cities are visible.
-- Page load / hero state still has no active trip, no active vehicle, and no active destination pulse.
-- Globe overview shows all routes/cities at the 4.20 overview zoom without playing any route.
-- Aircraft takeoff and landing pitch has been softened substantially.
-- Vehicle transform perspective is less extreme so airplane icons stay readable instead of squashing into a line.
+- Takeoff pitch remains subtle from v4.41.
+- Landing pitch restored to the midpoint between the previous strong landing pitch and the v4.41 subtle landing pitch.
+- Landing should now visibly pitch down again without looking like a crash dive.

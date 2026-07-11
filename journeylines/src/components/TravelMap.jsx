@@ -2558,9 +2558,9 @@ function vehiclePitchDeg(mode, phase, progress) {
   const p = Math.max(0, Math.min(1, progress));
   const takeoffWindow = 1 - smoothstep(Math.max(0, Math.min(1, p / 0.24)));
   const landingWindow = smoothstep(Math.max(0, Math.min(1, (p - 0.78) / 0.22)));
-  // v4.41: keep aircraft attitude subtle. Large rotateX values made takeoff
-  // look like a squashed line and landing look like a crash into the city.
-  return Math.round((landingWindow * 18 - takeoffWindow * 20) * 10) / 10;
+  // v4.41.1: keep takeoff subtle, but restore a medium landing attitude.
+  // Previous landing was 72deg, v4.41 was 18deg, so this uses the midpoint.
+  return Math.round((landingWindow * 45 - takeoffWindow * 20) * 10) / 10;
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {

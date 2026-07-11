@@ -1,1 +1,1 @@
-GlobeHoppers v4.41 — overview archive visibility and subtle aircraft attitude
+GlobeHoppers v4.41.1 — medium aircraft landing pitch
