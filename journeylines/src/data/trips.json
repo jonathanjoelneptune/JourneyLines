@@ -3307,7 +3307,7 @@
     "trailColorMode": "members"
   },
   {
-    "id": "2026-143-phoenix",
+    "id": "m7g1ym",
     "year": 2026,
     "month": 12,
     "day": null,
@@ -3317,6 +3317,33 @@
     "displayDate": "December 2026",
     "displayEndDate": "",
     "sortKey": "2026-12-99-2026-12-99-145",
+    "label": "Cabo San Lucas",
+    "travelers": [
+      "hopper-mrcyz5l4"
+    ],
+    "guestHoppers": [],
+    "mode": "boat",
+    "roundTrip": true,
+    "returnMode": "boat",
+    "fromLocationId": null,
+    "toLocationId": "cabo-san-lucas-mx",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members"
+  },
+  {
+    "id": "2026-143-phoenix",
+    "year": 2026,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-12-99-2026-12-99-146",
     "label": "Phoenix",
     "travelers": [
       "joey"
