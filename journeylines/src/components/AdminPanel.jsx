@@ -3,8 +3,9 @@ import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleB
 import routeDetails from '../data/routeDetails.json';
 import { buildRouteDetailsPayload, legacyRouteDetailKeyForEntry, routeDetailKeyForEntry } from '../utils/routeDetails.js';
 import { flattenLegs } from '../utils/tripExpansion.js';
-import { routeLegInWorker } from '../utils/routingClient.js';
+import { routeLegInWorker, routeLegWithDiagnostics } from '../utils/routingClient.js';
 import { compareDateParts, createStableId, isResolvedLocation, normalizeTripForV61, validDateParts } from '../utils/tripModel.js';
+import { createRouteReviewSnapshot, formatReviewDuration, isSurfaceTravelMode, routeReviewSignature, routeSourceLabel } from '../utils/multimodalRouting.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -38,6 +39,15 @@ const empty = {
   startPointId: '', mainPointId: '', mainLegId: '', returnPointId: '', returnLegId: '',
   notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
 };
+const emptyRouteReview = () => ({
+  signature: '',
+  status: 'idle',
+  results: [],
+  approved: false,
+  approvedAt: null,
+  error: null,
+  startedAt: null
+});
 let cityDbPromise = null;
 let cityDbCache = [];
 function loadCityDatabase() {
@@ -189,6 +199,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [cityDbLoading, setCityDbLoading] = useState(false);
   const [citySearchResults, setCitySearchResults] = useState({});
   const [citySearchLoading, setCitySearchLoading] = useState({});
+  const [routeReview, setRouteReview] = useState(() => emptyRouteReview());
+  const routeReviewGenerationRef = useRef(0);
   const tripsRef = useRef(trips);
   const locationsRef = useRef(locations);
   const routeDetailsRef = useRef(routeDetails);
@@ -205,10 +217,148 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   useEffect(() => { locationsRef.current = locations; }, [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
+  const draftReviewLegs = useMemo(
+    () => modal ? buildDraftReviewLegs(draft, locById, locs, homeBases) : [],
+    [modal, draft, locById, locs, homeBases]
+  );
+  const draftSurfaceReviewLegs = useMemo(
+    () => draftReviewLegs.filter(leg => isSurfaceTravelMode(leg.mode)),
+    [draftReviewLegs]
+  );
+  const currentRouteReviewSignature = useMemo(
+    () => routeReviewSignature(draftSurfaceReviewLegs),
+    [draftSurfaceReviewLegs]
+  );
 
   function previewMapLocation(location) {
     if (!location || location.lon == null || location.lat == null) return;
     window.dispatchEvent(new CustomEvent('globehoppers-preview-location', { detail: { lon: location.lon, lat: location.lat, name: displayLocation(location) || location.name } }));
+  }
+
+
+  useEffect(() => {
+    if (!modal) return;
+    if (!draftSurfaceReviewLegs.length) {
+      routeReviewGenerationRef.current += 1;
+      if (routeReview.status !== 'idle' || routeReview.signature || routeReview.results.length || routeReview.approved) {
+        setRouteReview(emptyRouteReview());
+      }
+      return;
+    }
+    if (routeReview.signature && routeReview.signature !== currentRouteReviewSignature) {
+      routeReviewGenerationRef.current += 1;
+      setRouteReview({
+        ...emptyRouteReview(),
+        status: 'stale',
+        error: 'The route changed. Recalculate and approve the updated route before saving.'
+      });
+    }
+  }, [modal, currentRouteReviewSignature, draftSurfaceReviewLegs.length, routeReview.signature, routeReview.status, routeReview.results.length, routeReview.approved]);
+
+  useEffect(() => {
+    if (!modal || !draftSurfaceReviewLegs.length || draftSurfaceReviewLegs.length > 4) return;
+    if (!currentRouteReviewSignature || !draftSurfaceReviewLegs.every(reviewLegHasValidEndpoints)) return;
+    if (routeReview.signature === currentRouteReviewSignature && ['working', 'ready', 'error'].includes(routeReview.status)) return;
+    if (routeReview.approved && routeReview.signature === currentRouteReviewSignature) return;
+    const timer = window.setTimeout(() => reviewDraftRoutes(false), 700);
+    return () => window.clearTimeout(timer);
+  // The route signature is the stable dependency; reviewDraftRoutes intentionally reads the current draft snapshot.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modal, currentRouteReviewSignature, draftSurfaceReviewLegs.length]);
+
+  async function reviewDraftRoutes(forceRefresh = false) {
+    const legs = buildDraftReviewLegs(draft, locById, locs, homeBases).filter(leg => isSurfaceTravelMode(leg.mode));
+    const signature = routeReviewSignature(legs);
+    if (!legs.length) {
+      setRouteReview(emptyRouteReview());
+      return;
+    }
+    const incomplete = legs.find(leg => !reviewLegHasValidEndpoints(leg));
+    if (incomplete) {
+      setRouteReview({
+        ...emptyRouteReview(),
+        status: 'incomplete',
+        error: `Choose valid locations for ${incomplete.from?.name || 'the origin'} and ${incomplete.to?.name || 'the destination'} before route review.`
+      });
+      return;
+    }
+
+    const generation = ++routeReviewGenerationRef.current;
+    setRouteReview({
+      signature,
+      status: 'working',
+      results: [],
+      approved: false,
+      approvedAt: null,
+      error: null,
+      startedAt: Date.now()
+    });
+
+    const results = new Array(legs.length);
+    let cursor = 0;
+    const concurrency = Math.max(1, Math.min(2, legs.length));
+    await Promise.all(Array.from({ length: concurrency }, async () => {
+      while (cursor < legs.length) {
+        const index = cursor++;
+        const leg = legs[index];
+        try {
+          const routed = await routeLegWithDiagnostics(leg, {
+            reason: 'Hop route review',
+            forceRefresh,
+            preferOnline: true
+          });
+          const contextualWarnings = routeEndpointContextWarnings(leg);
+          const warnings = [...new Set([...(routed?.warnings || []), ...contextualWarnings])];
+          results[index] = {
+            ...routed,
+            legId: leg.legId || leg.id,
+            mode: leg.mode,
+            from: leg.from,
+            to: leg.to,
+            warnings,
+            confidence: routed?.errors?.length ? 'error' : warnings.length ? 'medium' : (routed?.confidence || 'high')
+          };
+        } catch (error) {
+          results[index] = {
+            legId: leg.legId || leg.id,
+            mode: leg.mode,
+            from: leg.from,
+            to: leg.to,
+            geometry: null,
+            routeMiles: 0,
+            estimatedMinutes: 0,
+            source: 'routing-error',
+            provider: 'GlobeHoppers routing worker',
+            warnings: routeEndpointContextWarnings(leg),
+            errors: [error?.message || 'The route could not be calculated.'],
+            confidence: 'error'
+          };
+        }
+      }
+    }));
+
+    if (generation !== routeReviewGenerationRef.current) return;
+    const failed = results.filter(result => (result?.errors || []).length || !result?.geometry?.length);
+    setRouteReview({
+      signature,
+      status: failed.length ? 'error' : 'ready',
+      results,
+      approved: false,
+      approvedAt: null,
+      error: failed.length ? `${failed.length} route${failed.length === 1 ? '' : 's'} need attention before this Hop can be approved.` : null,
+      startedAt: null
+    });
+  }
+
+  function approveDraftRoutes() {
+    const complete = routeReview.signature === currentRouteReviewSignature
+      && routeReview.results.length === draftSurfaceReviewLegs.length
+      && routeReview.results.every(result => result?.geometry?.length > 1 && !(result?.errors || []).length);
+    if (!complete) {
+      setFormError('Recalculate the route and resolve any routing errors before approving it.');
+      return;
+    }
+    setRouteReview(current => ({ ...current, approved: true, approvedAt: new Date().toISOString(), status: 'ready' }));
   }
 
   useEffect(() => {
@@ -332,6 +482,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       returnPointId: createStableId('point'),
       returnLegId: createStableId('leg')
     };
+    routeReviewGenerationRef.current += 1;
+    setRouteReview(emptyRouteReview());
     initialDraftSignatureRef.current = draftSignature(nextDraft);
     setDraft(nextDraft);
     setModal('add');
@@ -383,6 +535,28 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         modeFromPrevious: routePoint.modeFromPrevious || normalizedTrip.mode || 'plane'
       }))
     };
+    const initialReviewLegs = buildDraftReviewLegs(nextDraft, locById, locs, homeBases).filter(leg => isSurfaceTravelMode(leg.mode));
+    const initialReviewSignature = routeReviewSignature(initialReviewLegs);
+    const savedReview = normalizedTrip.routeReview;
+    const savedReviewIsCurrent = Boolean(savedReview?.approved && savedReview?.signature === initialReviewSignature);
+    routeReviewGenerationRef.current += 1;
+    setRouteReview(savedReviewIsCurrent ? {
+      signature: initialReviewSignature,
+      status: 'ready',
+      results: (savedReview.legs || []).map((result, index) => ({
+        ...result,
+        legId: result?.legId || initialReviewLegs[index]?.legId,
+        mode: result?.mode || initialReviewLegs[index]?.mode,
+        from: initialReviewLegs[index]?.from,
+        to: initialReviewLegs[index]?.to,
+        geometry: null,
+        cachedApproval: true
+      })),
+      approved: true,
+      approvedAt: savedReview.approvedAt || null,
+      error: null,
+      startedAt: null
+    } : emptyRouteReview());
     setEditingId(normalizedTrip.id);
     initialDraftSignatureRef.current = draftSignature(nextDraft);
     setDraft(nextDraft);
@@ -408,6 +582,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       setModalClosing(false);
       setEditingId(null);
       setDraft(empty);
+      routeReviewGenerationRef.current += 1;
+      setRouteReview(emptyRouteReview());
       initialDraftSignatureRef.current = '';
       try { modalTriggerRef.current?.focus?.(); } catch {}
       modalTriggerRef.current = null;
@@ -491,12 +667,20 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     setBusy(true);
     try {
       validateHopDraftForSave(draft);
+      validateRouteReviewForSave(draftSurfaceReviewLegs, currentRouteReviewSignature, routeReview);
       const currentTrips = tripsRef.current || trips;
       const currentLocations = locationsRef.current || locations;
       const currentScroll = studioListRef.current?.scrollTop ?? null;
       const existingTrip = editingId ? currentTrips.find(item => item.id === editingId) : null;
       const { trip, nextLocations } = normalizeTrip(draft, currentTrips, currentLocations, homeBases, normalizedHoppers);
-      const normalizedTrip = normalizeTripForV61(trip, homeBases);
+      const nextLocationMap = Object.fromEntries((nextLocations || []).map(location => [location.id, location]));
+      const persistedSurfaceLegs = flattenLegs([trip], nextLocationMap, homeBases)
+        .map(entry => entry.leg)
+        .filter(leg => isSurfaceTravelMode(leg.mode));
+      const persistedReview = persistedSurfaceLegs.length
+        ? createRouteReviewSnapshot(routeReview, routeReviewSignature(persistedSurfaceLegs))
+        : null;
+      const normalizedTrip = normalizeTripForV61({ ...trip, routeReview: persistedReview }, homeBases);
       const updatedTrips = editingId
         ? currentTrips.map(item => item.id === editingId ? { ...item, ...normalizedTrip, id: editingId } : item)
         : [...currentTrips, normalizedTrip];
@@ -1123,6 +1307,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       citySearchResults={citySearchResults}
       citySearchLoading={citySearchLoading}
       onRequestCitySuggestions={requestCitySuggestions}
+      routeReview={routeReview}
+      routeReviewLegs={draftSurfaceReviewLegs}
+      routeReviewSignature={currentRouteReviewSignature}
+      onReviewRoutes={reviewDraftRoutes}
+      onApproveRoutes={approveDraftRoutes}
     />}
   </section>;
 }
@@ -1216,6 +1405,125 @@ function validateHopDraftForSave(draft = {}) {
   if (hasAnyEndDate && !validDateParts(draft.endYear, draft.endMonth, draft.endDay)) {
     throw new Error('Choose a complete and valid end date.');
   }
+}
+
+
+function validateRouteReviewForSave(legs = [], signature = '', review = {}) {
+  if (!legs.length) return;
+  const incomplete = legs.find(leg => !reviewLegHasValidEndpoints(leg));
+  if (incomplete) throw new Error('Choose valid endpoints for every road, rail, and boat leg before saving.');
+  if (review.signature !== signature || !review.approved) {
+    throw new Error('Review and approve the road, rail, and water routes before saving this Hop.');
+  }
+  if ((review.results || []).length !== legs.length) {
+    throw new Error('Route review is incomplete. Recalculate all surface legs before saving.');
+  }
+  const failed = (review.results || []).find(result => (result?.errors || []).length || (!result?.geometry?.length && !result?.cachedApproval));
+  if (failed) throw new Error('One or more reviewed routes still have errors. Resolve or recalculate them before saving.');
+}
+
+function buildDraftReviewLegs(draft = {}, locById = {}, locs = [], homeBases = []) {
+  const defaultFromId = activeHomeBaseId(homeBases, draft);
+  const start = draft.overrideFrom
+    ? previewDraftLocation(draft.fromLocationId, draft.fromCity, draft.fromLocationText, locById, locs)
+    : previewDraftLocation(defaultFromId, null, '', locById, locs);
+  const destination = draft.toCustomEnabled
+    ? previewCustomLocation(draft)
+    : previewDraftLocation(draft.toLocationId, draft.toCity, draft.toLocationText, locById, locs);
+  if (!start || !destination) return [];
+  const legs = [];
+  let previous = start;
+  if (destination) {
+    legs.push({
+      id: draft.mainLegId || 'main-leg',
+      legId: draft.mainLegId || 'main-leg',
+      mode: draft.mode || 'plane',
+      from: previous,
+      to: destination
+    });
+    previous = destination;
+  }
+  for (const extra of draft.extraLegs || []) {
+    if (!extra?.locationId && !extra?.city && !String(extra?.locationText || '').trim()) continue;
+    const next = previewDraftLocation(extra.locationId, extra.city, extra.locationText, locById, locs);
+    legs.push({
+      id: extra.legId || extra.draftId || `extra-${legs.length}`,
+      legId: extra.legId || extra.draftId || `extra-${legs.length}`,
+      mode: extra.modeFromPrevious || draft.mode || 'plane',
+      from: previous,
+      to: next
+    });
+    previous = next;
+  }
+  if (draft.roundTrip && start && previous && endpointReviewIdentity(start) !== endpointReviewIdentity(previous)) {
+    legs.push({
+      id: draft.returnLegId || 'return-leg',
+      legId: draft.returnLegId || 'return-leg',
+      mode: draft.returnMode || draft.mode || 'plane',
+      from: previous,
+      to: start
+    });
+  }
+  return legs;
+}
+
+function previewDraftLocation(locationId, city, text, locById = {}, locs = []) {
+  const saved = locationId ? locById[locationId] : findLocationByText(locs, text);
+  if (saved) return reviewEndpointFromLocation(saved);
+  if (city) {
+    const option = citySuggestionToOption(city);
+    return reviewEndpointFromLocation({ ...option, id: cityLocationId(city, text) });
+  }
+  if (String(text || '').trim()) return { id: `unresolved-${slug(text)}`, name: String(text).trim(), lon: NaN, lat: NaN };
+  return null;
+}
+
+function previewCustomLocation(draft = {}) {
+  const name = String(draft.toCustomName || 'Custom destination').trim();
+  const lat = Number(draft.toCustomLat);
+  const lon = Number(draft.toCustomLon);
+  return {
+    id: `custom-${slug(name)}-${Number.isFinite(lat) ? lat.toFixed(4) : 'lat'}-${Number.isFinite(lon) ? lon.toFixed(4) : 'lon'}`,
+    name,
+    lat,
+    lon
+  };
+}
+
+function reviewEndpointFromLocation(location = {}) {
+  return {
+    id: location.id || slug(displayLocation(location) || location.name),
+    name: displayLocation(location) || location.name || 'Location',
+    lat: Number(location.lat),
+    lon: Number(location.lon),
+    type: location.type || location.locationType || null
+  };
+}
+
+function reviewLegHasValidEndpoints(leg = {}) {
+  return [leg.from, leg.to].every(endpoint => {
+    const lat = Number(endpoint?.lat);
+    const lon = Number(endpoint?.lon);
+    return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+  });
+}
+
+function endpointReviewIdentity(endpoint = {}) {
+  const lat = Number(endpoint?.lat);
+  const lon = Number(endpoint?.lon);
+  return `${endpoint?.id || endpoint?.name || ''}@${Number.isFinite(lon) ? lon.toFixed(5) : 'x'},${Number.isFinite(lat) ? lat.toFixed(5) : 'x'}`;
+}
+
+function routeEndpointContextWarnings(leg = {}) {
+  const mode = leg.mode;
+  const names = `${leg.from?.name || ''} ${leg.to?.name || ''}`.toLowerCase();
+  if (mode === 'train' && !/(station|depot|terminal|gare|sants|bahnhof|st\.?\s*pancras|union station)/i.test(names)) {
+    return ['This rail leg uses city coordinates. Choose saved station locations for more precise station-to-station routing.'];
+  }
+  if (mode === 'boat' && !/(port|harbou?r|marina|pier|cruise|ferry|terminal|dock|wharf|quay)/i.test(names)) {
+    return ['This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing.'];
+  }
+  return [];
 }
 
 function formatHumanList(items = []) {
@@ -1356,7 +1664,7 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, citySearchResults = {}, citySearchLoading = {}, onRequestCitySuggestions = () => {}}) {
+function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, citySearchResults = {}, citySearchLoading = {}, onRequestCitySuggestions = () => {}, routeReview = emptyRouteReview(), routeReviewLegs = [], routeReviewSignature: currentReviewSignature = '', onReviewRoutes = () => {}, onApproveRoutes = () => {}}) {
   const cityMatchesFor = query => citySearchResults[normalizeSearchText(query)] || [];
   const cityLoadingFor = query => Boolean(citySearchLoading[normalizeSearchText(query)]);
   const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityMatchesFor(draft.toLocationText), true, cityLoadingFor(draft.toLocationText));
@@ -1523,7 +1831,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
           <div className="studio-modal-top-actions">
             {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete hop</button>}
             <button onClick={onClose}>Cancel</button>
-            <button className="primary" disabled={busy} onClick={onSave}>{busy ? 'Saving…' : 'Save Hop'}</button>
+            <button className="primary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Saving…' : routeReview.status === 'working' ? 'Reviewing…' : 'Save Hop'}</button>
           </div>
         </div>
 
@@ -1658,6 +1966,13 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
 
         <div className="studio-modal-sidecol">
           <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} hopperData={normalizedHoppers} />
+          {!!routeReviewLegs.length && <RouteReviewPanel
+            review={routeReview}
+            legs={routeReviewLegs}
+            currentSignature={currentReviewSignature}
+            onReview={onReviewRoutes}
+            onApprove={onApproveRoutes}
+          />}
           <TrailStylePanel
             draft={draft}
             currentHopSquad={currentHopSquad}
@@ -1744,6 +2059,113 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
       </div>)}
     </div>
   </aside>;
+}
+
+
+function RouteReviewPanel({ review = emptyRouteReview(), legs = [], currentSignature = '', onReview = () => {}, onApprove = () => {} }) {
+  const isCurrent = Boolean(review.signature && review.signature === currentSignature);
+  const hasErrors = (review.results || []).some(result => (result?.errors || []).length || (!result?.geometry?.length && !result?.cachedApproval));
+  const canApprove = isCurrent && review.status === 'ready' && !hasErrors && review.results.length === legs.length && !review.approved;
+  const statusLabel = review.approved && isCurrent
+    ? 'Approved'
+    : review.status === 'working'
+      ? 'Calculating'
+      : review.status === 'error'
+        ? 'Needs attention'
+        : review.status === 'ready'
+          ? 'Ready to approve'
+          : review.status === 'stale'
+            ? 'Route changed'
+            : 'Review required';
+
+  return <section className={`route-review-panel compact-section route-review-panel--${review.approved && isCurrent ? 'approved' : review.status || 'idle'}`} aria-live="polite">
+    <div className="route-review-heading">
+      <div>
+        <p className="eyebrow">Multimodal route review</p>
+        <h3>Road, rail & water</h3>
+      </div>
+      <span className="route-review-status">{statusLabel}</span>
+    </div>
+    <p className="route-review-intro">GlobeHoppers checks each surface leg before saving so cars follow roads, trains follow rail corridors, and boats stay on navigable water.</p>
+
+    <div className="route-review-list">
+      {legs.map((leg, index) => {
+        const result = (review.results || []).find(row => String(row?.legId || '') === String(leg.legId || leg.id || '')) || review.results?.[index];
+        const warnings = result?.warnings || [];
+        const errors = result?.errors || [];
+        const state = errors.length ? 'error' : warnings.length ? 'warning' : result ? 'ok' : 'pending';
+        return <article className={`route-review-leg route-review-leg--${state}`} key={leg.legId || leg.id || index}>
+          <div className="route-review-leg-head">
+            <span className="route-review-mode">{modeIcon(leg.mode)}</span>
+            <div>
+              <strong>Leg {index + 1}: {leg.from?.name || 'Origin'} → {leg.to?.name || 'Destination'}</strong>
+              <small>{MODE_OPTIONS.find(option => option.id === leg.mode)?.label || leg.mode}</small>
+            </div>
+            <span className="route-review-confidence">{result?.confidence || 'pending'}</span>
+          </div>
+          <RouteReviewMiniMap geometry={result?.geometry} mode={leg.mode} />
+          {result && <div className="route-review-metrics">
+            <span><b>{Math.round(Number(result.routeMiles || result.directMiles || 0)).toLocaleString()}</b> mi</span>
+            <span><b>{formatReviewDuration(result.estimatedMinutes)}</b> estimated</span>
+            <span><b>{routeSourceLabel(result.source)}</b></span>
+          </div>}
+          {!!errors.length && <ul className="route-review-messages route-review-messages--error">{errors.map((message, messageIndex) => <li key={`${message}-${messageIndex}`}>{message}</li>)}</ul>}
+          {!!warnings.length && <ul className="route-review-messages route-review-messages--warning">{warnings.map((message, messageIndex) => <li key={`${message}-${messageIndex}`}>{message}</li>)}</ul>}
+          {!result && review.status !== 'working' && <p className="route-review-pending">Route has not been calculated yet.</p>}
+          {!result && review.status === 'working' && <p className="route-review-pending">Calculating this route…</p>}
+        </article>;
+      })}
+    </div>
+
+    {review.error && <p className="route-review-error" role="alert">{review.error}</p>}
+    <div className="route-review-actions">
+      <button type="button" className="secondary" disabled={review.status === 'working'} onClick={() => onReview(Boolean(review.results?.length))}>
+        {review.status === 'working' ? 'Calculating routes…' : review.results?.length ? 'Recalculate' : `Review ${legs.length} route${legs.length === 1 ? '' : 's'}`}
+      </button>
+      <button type="button" className="primary" disabled={!canApprove} onClick={onApprove}>
+        {review.approved && isCurrent ? 'Routes approved' : 'Use reviewed routes'}
+      </button>
+    </div>
+  </section>;
+}
+
+function RouteReviewMiniMap({ geometry, mode }) {
+  const points = routePreviewSvgPoints(geometry);
+  if (!points) return <div className="route-review-map route-review-map--empty"><span>{modeIcon(mode)}</span><small>Route preview appears after calculation</small></div>;
+  return <svg className="route-review-map" viewBox="0 0 300 86" role="img" aria-label="Generated route geometry preview" preserveAspectRatio="none">
+    <path className="route-review-map-grid" d="M0 22H300M0 43H300M0 64H300M75 0V86M150 0V86M225 0V86" />
+    <polyline points={points} className={`route-review-map-line route-review-map-line--${mode}`} />
+    <circle cx={points.split(' ')[0].split(',')[0]} cy={points.split(' ')[0].split(',')[1]} r="4" className="route-review-map-endpoint" />
+    <circle cx={points.split(' ').at(-1).split(',')[0]} cy={points.split(' ').at(-1).split(',')[1]} r="4" className="route-review-map-endpoint" />
+  </svg>;
+}
+
+function routePreviewSvgPoints(geometry = []) {
+  const clean = (geometry || [])
+    .map(point => Array.isArray(point) ? [Number(point[0]), Number(point[1])] : null)
+    .filter(point => point && Number.isFinite(point[0]) && Number.isFinite(point[1]));
+  if (clean.length < 2) return '';
+  const unwrapped = [clean[0]];
+  for (let index = 1; index < clean.length; index++) {
+    let lon = clean[index][0];
+    const previousLon = unwrapped[index - 1][0];
+    while (lon - previousLon > 180) lon -= 360;
+    while (lon - previousLon < -180) lon += 360;
+    unwrapped.push([lon, clean[index][1]]);
+  }
+  const minLon = Math.min(...unwrapped.map(point => point[0]));
+  const maxLon = Math.max(...unwrapped.map(point => point[0]));
+  const minLat = Math.min(...unwrapped.map(point => point[1]));
+  const maxLat = Math.max(...unwrapped.map(point => point[1]));
+  const lonSpan = Math.max(0.001, maxLon - minLon);
+  const latSpan = Math.max(0.001, maxLat - minLat);
+  const stride = Math.max(1, Math.floor(unwrapped.length / 120));
+  const sampled = unwrapped.filter((_, index) => index === 0 || index === unwrapped.length - 1 || index % stride === 0);
+  return sampled.map(point => {
+    const x = 12 + ((point[0] - minLon) / lonSpan) * 276;
+    const y = 74 - ((point[1] - minLat) / latSpan) * 62;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
 }
 
 function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedTravelerCount, effectiveTrailColorMode, effectiveTrailStyle, onSetTrailStyle, onSetTrailColorMode }) {
@@ -2052,7 +2474,8 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     notes: draft.notes || '',
     occasion: draft.occasion || '',
     trailStyle: finalTrailStyle,
-    trailColorMode: derivedTrailColorMode
+    trailColorMode: derivedTrailColorMode,
+    routeReview: draft.routeReview || null
   }, homeBases);
 
   return { trip: clean, nextLocations };

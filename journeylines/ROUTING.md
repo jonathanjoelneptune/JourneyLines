@@ -1,4 +1,8 @@
-# GlobeHoppers v6.0 Routing and Playback Architecture
+# GlobeHoppers Routing
+
+GlobeHoppers v7 uses the multimodal routing pipeline described in [`MULTIMODAL-v7.md`](MULTIMODAL-v7.md). Cars prefer Mapbox Directions when configured, trains use a local Natural Earth rail graph, and boats use the navigable-water graph. Every surface route must pass Route Review and be approved before its Hop can be saved.
+
+## Legacy routing implementation notes
 
 ## Startup
 

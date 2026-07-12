@@ -1,9 +1,9 @@
 import generatedRoutes from '../data/generatedRoutes.json';
 import { flattenLegs } from './tripExpansion.js';
-import { ROUTING_VERSION, routingMemoryGeometry } from './routingClient.js';
+import { ROUTING_VERSION, routingMemoryGeometry, routingMemoryResult } from './routingClient.js';
 
-export const ROUTE_DETAILS_VERSION = '6.1';
-export const ROUTE_DETAILS_CACHE_VERSION = 'natural-earth-v6.0';
+export const ROUTE_DETAILS_VERSION = '7.0';
+export const ROUTE_DETAILS_CACHE_VERSION = ROUTING_VERSION;
 
 export function routeDetailKeyForEntry(entry) {
   const tripId = String(entry?.trip?.id || entry?.trip?.label || entry?.trip?.title || 'trip');
@@ -166,8 +166,14 @@ function routeGeometryForPayload(leg, old = {}, cacheVersion = ROUTE_DETAILS_CAC
     return { geometry: oldGeometry, source: old.geometrySource || 'existingRouteDetails', detail: old.geometryDetail || 'preserved' };
   }
 
-  const workerGeometry = sanitizeGeometry(routingMemoryGeometry(leg));
-  if (workerGeometry) return { geometry: workerGeometry, source: 'routingWorker', detail: ROUTING_VERSION };
+  const workerResult = routingMemoryResult(leg);
+  const workerGeometry = sanitizeGeometry(workerResult?.geometry || routingMemoryGeometry(leg));
+  if (workerGeometry) return {
+    geometry: workerGeometry,
+    source: workerResult?.source || 'routingWorker',
+    detail: workerResult?.detail || ROUTING_VERSION,
+    meta: workerResult || null
+  };
 
   const legacyGeneratedKey = `${generatedRoutes?.version || 'v2.16'}:${leg?.from?.id}->${leg?.to?.id}:${leg?.mode}`;
   const generatedDirect = sanitizeGeometry(generated[directKey] || generated[legacyGeneratedKey]);
@@ -260,7 +266,13 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
         geometry,
         geometrySource: geometryInfo.source,
         geometryDetail: geometryInfo.detail,
-        geometryPointCount: geometry.length
+        geometryPointCount: geometry.length,
+        routeMiles: Number(geometryInfo.meta?.routeMiles || geometryInfo.meta?.validation?.routeMiles || 0),
+        estimatedMinutes: Number(geometryInfo.meta?.estimatedMinutes || 0),
+        routeConfidence: geometryInfo.meta?.confidence || null,
+        routeWarnings: Array.isArray(geometryInfo.meta?.warnings) ? geometryInfo.meta.warnings : [],
+        routeErrors: Array.isArray(geometryInfo.meta?.errors) ? geometryInfo.meta.errors : [],
+        routeValidation: geometryInfo.meta?.validation || null
       } : {
         geometrySource: geometryInfo.source,
         geometryDetail: geometryInfo.detail,
@@ -277,7 +289,7 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
     source: 'globe-hoppers-website',
     cacheVersion: ROUTE_DETAILS_CACHE_VERSION,
     routingVersion: ROUTE_DETAILS_CACHE_VERSION,
-    notes: 'Generated route metadata for v6 worker-first rendering. Saved geometry is reused before background routing.',
+    notes: 'Generated route metadata for v7 multimodal route review. Saved geometry and validation are reused before background routing.',
     routes
   };
 }

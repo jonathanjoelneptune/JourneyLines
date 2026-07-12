@@ -1,3 +1,18 @@
+GlobeHoppers v7.0 — Multimodal Journeys and Route Review
+
+- Added a required Route Review workflow for road, rail, and water legs before a Hop can be saved.
+- Car routing now reuses private build-time Mapbox geometry when available, can use Mapbox Directions with a configured public runtime token, and then falls back to the local Natural Earth road network.
+- Train routing now uses a worker-built Natural Earth rail graph with explicit lower-confidence corridor fallbacks when the source network is incomplete.
+- Boat routing continues to use navigable-water graph routing with denser land-intersection validation and explicit canal-edge permissions.
+- Added route source, distance, estimated duration, confidence, warnings, errors, and a compact geometry preview for every reviewed surface leg.
+- Route edits invalidate prior approval. Surface routes must be recalculated and approved again before saving.
+- Reviewed geometry and diagnostics are retained in memory, IndexedDB, and routeDetails metadata for playback and repository persistence.
+- Added bounded worker and Mapbox request timeouts, stale-worker protection, crash recovery, non-blocking cache-write failures, and per-leg review error containment.
+- Added mode-specific cinematic playback timing for car, train, and boat travel.
+- Added v7.0 worker, route-assessment, source-integrity, and production-build verification.
+
+---
+
 GlobeHoppers v6.3 — Resume State and Add/Edit Hop Preview Layout
 
 - The primary playback control now displays Play before the journey begins, Pause during playback, Resume after playback has been paused, and Complete after the final leg.

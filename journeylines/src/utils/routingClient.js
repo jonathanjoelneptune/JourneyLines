@@ -1,14 +1,18 @@
+import generatedRoutes from '../data/generatedRoutes.json';
 import { enforceRouteCacheLimit, getCachedRoute, putCachedRoute, pruneOldRoutingVersions, routeCacheKeyV6 } from './routeCacheIndexedDb.js';
+import { assessMultimodalRoute, canonicalTravelMode, isSurfaceTravelMode, sanitizeRouteGeometry } from './multimodalRouting.js';
 
-export const ROUTING_VERSION = 'natural-earth-v6.0';
+export const ROUTING_VERSION = 'multimodal-v7.0';
 const listeners = new Set();
 const pending = new Map();
 const memoryRoutes = new Map();
+const memoryRouteResults = new Map();
 const memoryPlans = new Map();
 const inFlightRoutes = new Map();
 const inFlightPlans = new Map();
-const WORKER_INIT_TIMEOUT_MS = 30000;
-const WORKER_REQUEST_TIMEOUT_MS = 45000;
+const WORKER_INIT_TIMEOUT_MS = 45000;
+const WORKER_REQUEST_TIMEOUT_MS = 60000;
+const MAPBOX_REQUEST_TIMEOUT_MS = 18000;
 
 let worker = null;
 let workerEpoch = 0;
@@ -18,7 +22,7 @@ let initPromise = null;
 let status = {
   state: 'idle',
   label: 'Routing engine idle',
-  detail: 'Detailed routing will load in the background.',
+  detail: 'Detailed multimodal routing will load in the background.',
   ready: false,
   queued: 0,
   activeJob: null,
@@ -158,8 +162,8 @@ export async function prewarmRoutingEngine(reason = 'idle') {
   initialized = true;
   emit({
     state: 'loading',
-    label: 'Loading routing engine',
-    detail: `Preparing detailed Natural Earth routing in the background (${reason}).`,
+    label: 'Loading multimodal routing',
+    detail: `Preparing road, rail, coastline, and water routing in the background (${reason}).`,
     ready: false,
     error: null
   });
@@ -167,8 +171,8 @@ export async function prewarmRoutingEngine(reason = 'idle') {
     .then(result => {
       emit({
         state: 'ready',
-        label: 'Routing engine ready',
-        detail: `${Number(result?.nodeCount || 0).toLocaleString()} water nodes indexed · worker active`,
+        label: 'Multimodal routing ready',
+        detail: `${Number(result?.roadNodeCount || 0).toLocaleString()} road · ${Number(result?.railNodeCount || 0).toLocaleString()} rail · ${Number(result?.nodeCount || 0).toLocaleString()} water nodes`,
         ready: true,
         dataVersion: result?.dataVersion || null,
         loadedAt: Date.now(),
@@ -179,7 +183,7 @@ export async function prewarmRoutingEngine(reason = 'idle') {
       return getRoutingStatus();
     })
     .catch(error => {
-    disposeWorker(error?.message || 'Routing engine initialization failed.', false);
+      disposeWorker(error?.message || 'Routing engine initialization failed.', false);
       emit({ state: 'error', label: 'Routing engine unavailable', detail: error.message, ready: false, error: error.message });
       throw error;
     });
@@ -187,16 +191,102 @@ export async function prewarmRoutingEngine(reason = 'idle') {
 }
 
 export async function routeLegInWorker(leg, options = {}) {
+  const result = await routeLegResult(leg, options);
+  return result?.geometry || null;
+}
+
+export async function routeLegWithDiagnostics(leg, options = {}) {
+  if (!leg?.from || !leg?.to) {
+    return assessMultimodalRoute({ leg, geometry: null, source: 'missing-endpoints' });
+  }
+
+  const providerWarnings = [];
+  const mode = canonicalTravelMode(leg.mode);
+  if (mode === 'drive' && options.preferOnline !== false) {
+    const token = runtimeMapboxToken();
+    if (token) {
+      try {
+        const online = await requestMapboxDrivingRoute(leg, token);
+        const assessed = assessMultimodalRoute({
+          leg,
+          geometry: online.geometry,
+          source: 'mapbox-directions',
+          provider: 'Mapbox Directions',
+          validation: online.validation
+        });
+        if (!assessed.errors.length) {
+          rememberRouteResult(leg, assessed);
+          try {
+            await cacheAssessedRoute(leg, assessed);
+          } catch (error) {
+            console.warn('[GlobeHoppers] Mapbox route cache write failed; continuing with the reviewed route.', error);
+          }
+          return assessed;
+        }
+        providerWarnings.push(...assessed.errors.map(message => `Mapbox route was rejected: ${message}`));
+      } catch (error) {
+        providerWarnings.push(`Online road routing was unavailable: ${error?.message || String(error)}`);
+      }
+    }
+  }
+
+  try {
+    const result = await routeLegResult(leg, options);
+    const assessed = assessMultimodalRoute({
+      leg,
+      geometry: result?.geometry,
+      source: result?.source || 'routing-worker',
+      provider: result?.provider || 'GlobeHoppers routing worker',
+      validation: result?.validation || {},
+      providerWarnings
+    });
+    rememberRouteResult(leg, { ...result, ...assessed });
+    return { ...result, ...assessed };
+  } catch (error) {
+    return assessMultimodalRoute({
+      leg,
+      geometry: null,
+      source: 'routing-error',
+      providerWarnings: [...providerWarnings, error?.message || String(error)]
+    });
+  }
+}
+
+async function routeLegResult(leg, options = {}) {
   if (!leg?.from || !leg?.to) return null;
   const key = routeCacheKeyV6(leg, ROUTING_VERSION);
-  if (memoryRoutes.has(key)) return memoryRoutes.get(key);
-  if (inFlightRoutes.has(key)) return inFlightRoutes.get(key);
+  if (!options.forceRefresh && memoryRouteResults.has(key)) return memoryRouteResults.get(key);
+  if (!options.forceRefresh && inFlightRoutes.has(key)) return inFlightRoutes.get(key);
 
   const job = (async () => {
-    const cached = await getCachedRoute(key, ROUTING_VERSION);
-    if (cached?.length > 1) {
-      memoryRoutes.set(key, cached);
-      return cached;
+    if (!options.forceRefresh) {
+      const cached = await getCachedRoute(key, ROUTING_VERSION);
+      if (cached?.length > 1) {
+        const cachedResult = {
+          geometry: sanitizeRouteGeometry(cached),
+          source: 'indexed-route-cache',
+          provider: 'Browser route cache',
+          dataVersion: status.dataVersion,
+          routingVersion: ROUTING_VERSION,
+          validation: {}
+        };
+        rememberRouteResult(leg, cachedResult);
+        return cachedResult;
+      }
+      const generated = generatedDrivingRoute(leg);
+      if (generated?.geometry) {
+        const generatedResult = {
+          geometry: generated.geometry,
+          source: 'mapbox-build-cache',
+          provider: 'Mapbox Directions build cache',
+          detail: generated.reversed ? 'reversed-build-cache' : 'build-cache',
+          dataVersion: generatedRoutes?.generatedAt || generatedRoutes?.version || null,
+          routingVersion: ROUTING_VERSION,
+          validation: { maxEndpointGapMiles: 0 }
+        };
+        rememberRouteResult(leg, generatedResult);
+        return generatedResult;
+      }
     }
 
     await prewarmRoutingEngine(options.reason || 'route request');
@@ -207,36 +297,34 @@ export async function routeLegInWorker(leg, options = {}) {
       activeJob: key
     });
     const result = await request('route', {
-      leg: {
-        id: leg.legId || leg.id || null,
-        legId: leg.legId || leg.id || null,
-        mode: leg.mode,
-        from: { id: leg.from.id, name: leg.from.name, lon: Number(leg.from.lon), lat: Number(leg.from.lat) },
-        to: { id: leg.to.id, name: leg.to.name, lon: Number(leg.to.lon), lat: Number(leg.to.lat) },
-        miles: Number(leg.miles || 0)
-      },
+      leg: serializeLeg(leg),
       routingVersion: ROUTING_VERSION
     });
-    const geometry = result?.geometry;
-    if (Array.isArray(geometry) && geometry.length > 1) {
-      memoryRoutes.set(key, geometry);
-      await putCachedRoute(key, geometry, ROUTING_VERSION, {
-        mode: leg.mode,
-        source: result?.source || 'worker',
-        dataVersion: result?.dataVersion || status.dataVersion
-      });
-      enforceRouteCacheLimit(500).catch(() => {});
+    const geometry = sanitizeRouteGeometry(result?.geometry);
+    if (geometry) {
+      const normalized = { ...result, geometry, provider: result?.provider || 'GlobeHoppers routing worker' };
+      rememberRouteResult(leg, normalized);
+      try {
+        await putCachedRoute(key, geometry, ROUTING_VERSION, {
+          mode: leg.mode,
+          source: result?.source || 'worker',
+          dataVersion: result?.dataVersion || status.dataVersion
+        });
+        enforceRouteCacheLimit(500).catch(() => {});
+      } catch (error) {
+        console.warn('[GlobeHoppers] Route cache write failed; continuing with in-memory geometry.', error);
+      }
       emit({
         state: 'ready',
-        label: 'Routing engine ready',
+        label: 'Multimodal routing ready',
         detail: `Route cached · ${geometry.length.toLocaleString()} points`,
         activeJob: null,
         completed: Number(status.completed || 0) + 1,
         ready: true
       });
-      return geometry;
+      return normalized;
     }
-    return null;
+    return { ...result, geometry: null };
   })();
 
   inFlightRoutes.set(key, job);
@@ -259,14 +347,7 @@ export async function buildPlaybackPlanInWorker(leg, geometry, options = {}) {
   const job = (async () => {
     await prewarmRoutingEngine(options.reason || 'playback plan');
     const result = await request('playbackPlan', {
-      leg: {
-        id: leg.legId || leg.id || null,
-        legId: leg.legId || leg.id || null,
-        mode: leg.mode,
-        from: { id: leg.from.id, lon: Number(leg.from.lon), lat: Number(leg.from.lat) },
-        to: { id: leg.to.id, lon: Number(leg.to.lon), lat: Number(leg.to.lat) },
-        miles: Number(leg.miles || 0)
-      },
+      leg: serializeLeg(leg),
       geometry: Array.isArray(geometry) ? geometry : null,
       samples: options.samples || 0
     });
@@ -311,11 +392,112 @@ export function routingMemoryGeometry(leg) {
   return memoryRoutes.get(routeCacheKeyV6(leg, ROUTING_VERSION)) || null;
 }
 
+export function routingMemoryResult(leg) {
+  return memoryRouteResults.get(routeCacheKeyV6(leg, ROUTING_VERSION)) || null;
+}
+
 export function prewarmWhenIdle() {
   const run = () => prewarmRoutingEngine('browser idle').catch(() => {});
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(run, { timeout: 5000 });
   } else {
     window.setTimeout(run, 1800);
+  }
+}
+
+function rememberRouteResult(leg, result) {
+  const key = routeCacheKeyV6(leg, ROUTING_VERSION);
+  if (result?.geometry) memoryRoutes.set(key, result.geometry);
+  memoryRouteResults.set(key, result);
+  if (memoryRouteResults.size > 600) {
+    const oldest = memoryRouteResults.keys().next().value;
+    memoryRouteResults.delete(oldest);
+    memoryRoutes.delete(oldest);
+  }
+}
+
+async function cacheAssessedRoute(leg, result) {
+  if (!result?.geometry?.length) return;
+  const key = routeCacheKeyV6(leg, ROUTING_VERSION);
+  await putCachedRoute(key, result.geometry, ROUTING_VERSION, {
+    mode: leg.mode,
+    source: result.source,
+    dataVersion: status.dataVersion
+  });
+  enforceRouteCacheLimit(500).catch(() => {});
+}
+
+
+function generatedDrivingRoute(leg) {
+  if (canonicalTravelMode(leg?.mode) !== 'drive') return null;
+  const routes = generatedRoutes?.routes;
+  if (!routes || typeof routes !== 'object') return null;
+  const version = generatedRoutes?.version || 'v2.16';
+  const fromId = leg?.from?.id;
+  const toId = leg?.to?.id;
+  if (!fromId || !toId) return null;
+  const direct = sanitizeRouteGeometry(routes[`${version}:${fromId}->${toId}:drive`]);
+  if (direct) return { geometry: direct, reversed: false };
+  const reverse = sanitizeRouteGeometry(routes[`${version}:${toId}->${fromId}:drive`]);
+  if (reverse) return { geometry: [...reverse].reverse(), reversed: true };
+  return null;
+}
+
+function serializeLeg(leg) {
+  return {
+    id: leg.legId || leg.id || null,
+    legId: leg.legId || leg.id || null,
+    mode: canonicalTravelMode(leg.mode),
+    from: { id: leg.from.id, name: leg.from.name, lon: Number(leg.from.lon), lat: Number(leg.from.lat) },
+    to: { id: leg.to.id, name: leg.to.name, lon: Number(leg.to.lon), lat: Number(leg.to.lat) },
+    miles: Number(leg.miles || 0)
+  };
+}
+
+function runtimeMapboxToken() {
+  const runtime = typeof window !== 'undefined' ? window.JOURNEYLINES_CONFIG?.mapboxToken : '';
+  const buildTime = import.meta.env.VITE_MAPBOX_TOKEN || '';
+  const token = String(runtime || buildTime || '').trim();
+  return token.startsWith('pk.') ? token : '';
+}
+
+async function requestMapboxDrivingRoute(leg, token) {
+  const from = `${Number(leg.from.lon)},${Number(leg.from.lat)}`;
+  const to = `${Number(leg.to.lon)},${Number(leg.to.lat)}`;
+  const params = new URLSearchParams({
+    access_token: token,
+    alternatives: 'false',
+    geometries: 'geojson',
+    overview: 'full',
+    steps: 'false'
+  });
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), MAPBOX_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${from};${to}?${params}`, {
+      signal: controller.signal,
+      cache: 'no-store',
+      referrerPolicy: 'strict-origin-when-cross-origin'
+    });
+    const text = await response.text();
+    if (!response.ok) throw new Error(`Mapbox Directions ${response.status}: ${text.slice(0, 180)}`);
+    let payload;
+    try { payload = JSON.parse(text); } catch { throw new Error('Mapbox returned unreadable route data.'); }
+    const route = payload?.routes?.[0];
+    const geometry = sanitizeRouteGeometry(route?.geometry?.coordinates);
+    if (!geometry) throw new Error('Mapbox returned no usable driving geometry.');
+    return {
+      geometry,
+      validation: {
+        mapboxDistanceMeters: Number(route?.distance || 0),
+        mapboxDurationSeconds: Number(route?.duration || 0),
+        maxEndpointGapMiles: 0
+      }
+    };
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error(`Mapbox Directions timed out after ${Math.round(MAPBOX_REQUEST_TIMEOUT_MS / 1000)} seconds.`);
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
   }
 }

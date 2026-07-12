@@ -1,5 +1,5 @@
 let routingData = null;
-let routingVersion = 'natural-earth-v6.0';
+let routingVersion = 'multimodal-v7.0';
 let dataVersion = null;
 let landIndex = null;
 let waterNodeIndex = null;
@@ -8,9 +8,12 @@ let corridorEdges = new Set();
 let corridorCoordEdges = new Set();
 let permittedLandCrossingEdges = new Set();
 let routeCache = new Map();
+let roadGraph = null;
+let railGraph = null;
 
 const LAND_CELL = 8;
 const WATER_CELL = 4;
+const SURFACE_CELL = 2;
 
 self.onmessage = async event => {
   const message = event.data || {};
@@ -56,7 +59,9 @@ async function initialize(payload = {}) {
       ready: true,
       dataVersion,
       nodeCount: waterNodes.length,
-      landRingCount: routingData?.landRings?.length || 0
+      landRingCount: routingData?.landRings?.length || 0,
+      roadNodeCount: roadGraph?.nodes?.length || 0,
+      railNodeCount: railGraph?.nodes?.length || 0
     };
   }
   routingVersion = payload.routingVersion || routingVersion;
@@ -80,10 +85,12 @@ async function initialize(payload = {}) {
   });
   landIndex = buildLandIndex(routingData?.landRings || []);
   buildWaterGraphData();
+  roadGraph = buildSurfaceGraph(routingData?.roads || [], 'road');
+  railGraph = buildSurfaceGraph(routingData?.rails || [], 'rail');
   postStatus({
     state: 'ready',
     label: 'Routing engine ready',
-    detail: `${waterNodes.length.toLocaleString()} water nodes · ${(routingData?.landRings?.length || 0).toLocaleString()} land polygons`,
+    detail: `${(roadGraph?.nodes?.length || 0).toLocaleString()} road · ${(railGraph?.nodes?.length || 0).toLocaleString()} rail · ${waterNodes.length.toLocaleString()} water nodes`,
     ready: true,
     dataVersion,
     loadedAt: Date.now()
@@ -92,7 +99,9 @@ async function initialize(payload = {}) {
     ready: true,
     dataVersion,
     nodeCount: waterNodes.length,
-    landRingCount: routingData?.landRings?.length || 0
+    landRingCount: routingData?.landRings?.length || 0,
+    roadNodeCount: roadGraph?.nodes?.length || 0,
+    railNodeCount: railGraph?.nodes?.length || 0
   };
 }
 
@@ -164,32 +173,209 @@ function buildWaterGraphData() {
   });
 }
 
+
+function buildSurfaceGraph(lines = [], kind = 'surface') {
+  const nodes = [];
+  const adjacency = [];
+  const nodeByKey = new Map();
+  const spatial = new Map();
+
+  const addNode = point => {
+    const coord = toCoord(point);
+    if (!coord) return -1;
+    const key = coordKey(coord, 2);
+    if (nodeByKey.has(key)) return nodeByKey.get(key);
+    const id = nodes.length;
+    nodeByKey.set(key, id);
+    nodes.push(coord);
+    adjacency.push([]);
+    const cell = surfaceCellKey(coord);
+    const list = spatial.get(cell) || [];
+    list.push(id);
+    spatial.set(cell, list);
+    return id;
+  };
+
+  const addEdge = (a, b) => {
+    if (a < 0 || b < 0 || a === b) return;
+    const weight = haversineMiles(nodes[a], nodes[b]);
+    if (!Number.isFinite(weight) || weight <= 0 || weight > 600) return;
+    adjacency[a].push([b, weight]);
+    adjacency[b].push([a, weight]);
+  };
+
+  for (const line of lines || []) {
+    const ids = (line?.p || []).map(addNode).filter(id => id >= 0);
+    for (let index = 1; index < ids.length; index++) addEdge(ids[index - 1], ids[index]);
+  }
+
+  return { kind, nodes, adjacency, spatial };
+}
+
+function surfaceCellKey(point) {
+  return `${Math.floor(Number(point[0]) / SURFACE_CELL)}:${Math.floor(Number(point[1]) / SURFACE_CELL)}`;
+}
+
+function nearestSurfaceNode(graph, point, maxRadiusDegrees = 12) {
+  if (!graph?.nodes?.length) return null;
+  const cx = Math.floor(Number(point[0]) / SURFACE_CELL);
+  const cy = Math.floor(Number(point[1]) / SURFACE_CELL);
+  const maxCells = Math.max(1, Math.ceil(maxRadiusDegrees / SURFACE_CELL));
+  let bestId = -1;
+  let bestMiles = Infinity;
+  for (let radius = 0; radius <= maxCells; radius++) {
+    for (let x = cx - radius; x <= cx + radius; x++) {
+      for (let y = cy - radius; y <= cy + radius; y++) {
+        if (radius > 0 && x !== cx - radius && x !== cx + radius && y !== cy - radius && y !== cy + radius) continue;
+        for (const id of graph.spatial.get(`${x}:${y}`) || []) {
+          const miles = haversineMiles(point, graph.nodes[id]);
+          if (miles < bestMiles) {
+            bestMiles = miles;
+            bestId = id;
+          }
+        }
+      }
+    }
+    if (bestId >= 0 && bestMiles < Math.max(18, radius * SURFACE_CELL * 45)) break;
+  }
+  return bestId >= 0 ? { id: bestId, miles: bestMiles } : null;
+}
+
+function astarSurfaceRoute(graph, startId, goalId, startPoint, goalPoint) {
+  if (!graph?.nodes?.length || startId < 0 || goalId < 0) return null;
+  if (startId === goalId) return [graph.nodes[startId]];
+  const open = new MinHeap();
+  open.push(startId, 0);
+  const came = new Map();
+  const g = new Map([[startId, 0]]);
+  const closed = new Set();
+  const directMiles = Math.max(1, haversineMiles(startPoint, goalPoint));
+  const maxVisited = directMiles > 5000 ? 160000 : directMiles > 1800 ? 120000 : 80000;
+  let visited = 0;
+
+  while (open.size && visited++ < maxVisited) {
+    const current = open.pop();
+    if (closed.has(current)) continue;
+    if (current === goalId) {
+      const path = [];
+      let cursor = current;
+      path.unshift(graph.nodes[cursor]);
+      while (came.has(cursor)) {
+        cursor = came.get(cursor);
+        path.unshift(graph.nodes[cursor]);
+      }
+      return simplifySurfacePath(path);
+    }
+    closed.add(current);
+    for (const [next, weight] of graph.adjacency[current] || []) {
+      if (closed.has(next)) continue;
+      const nextPoint = graph.nodes[next];
+      const corridorPenalty = Math.min(80, distancePointToSegment(nextPoint, startPoint, goalPoint) * 3.5);
+      const tentative = (g.get(current) ?? Infinity) + weight + corridorPenalty;
+      if (tentative >= (g.get(next) ?? Infinity)) continue;
+      came.set(next, current);
+      g.set(next, tentative);
+      const heuristic = haversineMiles(nextPoint, goalPoint) * 0.94;
+      open.push(next, tentative + heuristic);
+    }
+  }
+  return null;
+}
+
+function simplifySurfacePath(path = []) {
+  const clean = cleanRoute(path);
+  if (clean.length <= 220) return clean;
+  const stride = Math.max(1, Math.floor(clean.length / 180));
+  const out = [clean[0]];
+  for (let index = stride; index < clean.length - 1; index += stride) out.push(clean[index]);
+  out.push(clean[clean.length - 1]);
+  return cleanRoute(out);
+}
+
 function routeLeg(leg = {}) {
   if (!leg?.from || !leg?.to) throw new Error('Route endpoints are missing.');
-  const mode = leg.mode || 'plane';
+  const mode = leg.mode === 'car' ? 'drive' : (leg.mode || 'plane');
   const fromKey = `${leg.from.id || 'from'}@${Number(leg.from.lon).toFixed(5)},${Number(leg.from.lat).toFixed(5)}`;
   const toKey = `${leg.to.id || 'to'}@${Number(leg.to.lon).toFixed(5)},${Number(leg.to.lat).toFixed(5)}`;
   const key = `${routingVersion}:${leg.legId || leg.id || 'legacy'}:${fromKey}->${toKey}:${mode}`;
   if (routeCache.has(key)) return routeCache.get(key);
 
-  let geometry;
-  let source;
+  let routed;
   if (mode === 'boat') {
-    geometry = routeBoat(leg);
-    source = 'natural-earth-water-graph';
+    const geometry = routeBoat(leg);
+    routed = {
+      geometry,
+      source: 'natural-earth-water-graph',
+      detail: 'water-graph'
+    };
   } else if (mode === 'train') {
-    geometry = routeSurface(leg, routingData?.rails || [], 'train');
-    source = 'natural-earth-rail';
-  } else if (mode === 'drive' || mode === 'car') {
-    geometry = routeSurface(leg, routingData?.roads || [], 'drive');
-    source = 'natural-earth-road';
+    routed = routeSurface(leg, railGraph, routingData?.rails || [], 'train');
+  } else if (mode === 'drive') {
+    routed = routeSurface(leg, roadGraph, routingData?.roads || [], 'drive');
   } else {
-    geometry = greatCircleCoordinates(leg.from, leg.to, 180);
-    source = 'great-circle';
+    routed = {
+      geometry: greatCircleCoordinates(leg.from, leg.to, 180),
+      source: 'great-circle',
+      detail: 'air-route'
+    };
   }
-  const result = { geometry: cleanRoute(geometry), source, dataVersion, routingVersion };
+
+  const geometry = cleanRoute(routed?.geometry || []);
+  const validation = validateGeneratedRoute(leg, geometry, mode, routed || {});
+  const result = {
+    geometry,
+    source: routed?.source || 'routing-worker',
+    detail: routed?.detail || '',
+    provider: 'GlobeHoppers multimodal worker',
+    validation,
+    dataVersion,
+    routingVersion
+  };
   routeCache.set(key, result);
   return result;
+}
+
+function validateGeneratedRoute(leg, geometry, mode, routed = {}) {
+  const from = [Number(leg.from.lon), Number(leg.from.lat)];
+  const to = [Number(leg.to.lon), Number(leg.to.lat)];
+  const routeMiles = routeMilesHaversine(geometry);
+  const directMiles = haversineMiles(from, to);
+  const startGap = geometry?.length ? haversineMiles(from, geometry[0]) : Infinity;
+  const endGap = geometry?.length ? haversineMiles(to, geometry[geometry.length - 1]) : Infinity;
+  const landCrossings = mode === 'boat' && geometry?.length ? countBoatLandCrossings(geometry) : 0;
+  const surfaceWaterRatio = mode === 'drive' || mode === 'train' ? routeWaterSampleRatio(geometry) : 0;
+  return {
+    routeMiles,
+    directMiles,
+    startEndpointGapMiles: startGap,
+    endEndpointGapMiles: endGap,
+    maxEndpointGapMiles: Math.max(startGap, endGap),
+    landCrossings,
+    surfaceWaterRatio,
+    stationaryFallback: Boolean(mode === 'boat' && directMiles > 2 && routeMiles < 0.25),
+    networkStartGapMiles: Number(routed?.networkStartGapMiles || 0),
+    networkEndGapMiles: Number(routed?.networkEndGapMiles || 0),
+    graphVisited: Number(routed?.graphVisited || 0),
+    usedFallback: Boolean(routed?.usedFallback)
+  };
+}
+
+function routeMilesHaversine(route = []) {
+  let total = 0;
+  for (let index = 1; index < (route || []).length; index++) total += haversineMiles(route[index - 1], route[index]);
+  return total;
+}
+
+function routeWaterSampleRatio(route = []) {
+  if (!Array.isArray(route) || route.length < 2) return 1;
+  let checked = 0;
+  let water = 0;
+  const stride = Math.max(1, Math.floor(route.length / 100));
+  for (let index = 0; index < route.length; index += stride) {
+    checked++;
+    if (!isLand(route[index])) water++;
+  }
+  return checked ? water / checked : 1;
 }
 
 function routeBoat(leg) {
@@ -522,23 +708,69 @@ function broadWaterFallback(a, b) {
   return options[0];
 }
 
-function routeSurface(leg, network, type) {
+function routeSurface(leg, graph, network, type) {
   const a = [Number(leg.from.lon), Number(leg.from.lat)];
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
   const baja = bajaSurfaceRoute(a, b, type);
-  if (baja) return baja;
+  if (baja) {
+    return {
+      geometry: baja,
+      source: type === 'train' ? 'natural-earth-rail-fallback' : 'natural-earth-road-fallback',
+      detail: 'baja-corridor',
+      usedFallback: true,
+      networkStartGapMiles: 0,
+      networkEndGapMiles: 0
+    };
+  }
+
+  const start = nearestSurfaceNode(graph, a, type === 'train' ? 9 : 7);
+  const goal = nearestSurfaceNode(graph, b, type === 'train' ? 9 : 7);
+  if (start && goal) {
+    const path = astarSurfaceRoute(graph, start.id, goal.id, a, b);
+    if (path?.length > 1) {
+      const geometry = cleanRoute([a, ...path, b]);
+      if (surfaceMostlyOnLand(geometry)) {
+        return {
+          geometry,
+          source: type === 'train' ? 'natural-earth-rail-graph' : 'natural-earth-road-graph',
+          detail: 'connected-network',
+          usedFallback: false,
+          networkStartGapMiles: start.miles,
+          networkEndGapMiles: goal.miles
+        };
+      }
+    }
+  }
+
   const box = expandedBox(a, b, type === 'train' ? 3 : 5);
-  const lines = (network || []).filter(line => boxesIntersect(box, line?.b)).slice(0, 1000);
+  const lines = (network || []).filter(line => boxesIntersect(box, line?.b)).slice(0, 1200);
   const controls = [a];
-  for (const t of type === 'train' ? [0.25, 0.5, 0.75] : [0.2, 0.4, 0.6, 0.8]) {
+  const targetAttachLimit = type === 'train' ? 0.75 : 1.4;
+  const corridorLimit = type === 'train' ? 1.2 : 2.8;
+  for (const t of type === 'train' ? [0.2, 0.4, 0.6, 0.8] : [0.16, 0.32, 0.5, 0.68, 0.84]) {
     const target = lerpCoord(a, b, t);
     const nearest = nearestNetworkPoint(target, lines);
-    if (nearest && distancePointToSegment(nearest, a, b) < (type === 'train' ? 2.2 : 4.8)) controls.push(nearest);
+    if (nearest?.point && nearest.distance <= targetAttachLimit && distancePointToSegment(nearest.point, a, b) < corridorLimit) controls.push(nearest.point);
   }
   controls.push(b);
-  let route = smoothControlRoute(controls, type === 'train' ? 90 : 110);
-  if (!surfaceMostlyOnLand(route)) route = smoothControlRoute([a, midpoint(a, b), b], 90);
-  return route;
+  let geometry = controls.length > 2
+    ? smoothControlRoute(controls, type === 'train' ? 110 : 130)
+    : resampleEqualDistance([a, b], type === 'train' ? 110 : 130);
+  let detail = controls.length > 2 ? 'local-control-corridor' : 'direct-land-corridor';
+  const directMiles = Math.max(1, haversineMiles(a, b));
+  const stretchLimit = type === 'train' ? 2.4 : 2.8;
+  if (!surfaceMostlyOnLand(geometry) || routeMilesHaversine(geometry) > directMiles * stretchLimit + 50) {
+    geometry = resampleEqualDistance([a, b], 100);
+    detail = 'direct-land-corridor';
+  }
+  return {
+    geometry,
+    source: type === 'train' ? 'natural-earth-rail-fallback' : 'natural-earth-road-fallback',
+    detail,
+    usedFallback: true,
+    networkStartGapMiles: start?.miles || 0,
+    networkEndGapMiles: goal?.miles || 0
+  };
 }
 
 function bajaSurfaceRoute(a, b, type = 'train') {
@@ -578,7 +810,7 @@ function nearestNetworkPoint(target, lines) {
       }
     }
   }
-  return best;
+  return best ? { point: best, distance: bestDistance } : null;
 }
 
 function surfaceMostlyOnLand(route) {
@@ -746,6 +978,16 @@ function routeHasLand(route) {
 function countLandSegments(route) {
   let count = 0;
   for (let i = 1; i < route.length; i++) if (segmentHitsLand(route[i - 1], route[i], false)) count++;
+  return count;
+}
+
+function countBoatLandCrossings(route) {
+  let count = 0;
+  for (let i = 1; i < route.length; i++) {
+    const a = route[i - 1];
+    const b = route[i];
+    if (segmentHitsLand(a, b, isCorridorCoordinateEdge(a, b))) count++;
+  }
   return count;
 }
 

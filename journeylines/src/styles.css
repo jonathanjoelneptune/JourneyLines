@@ -12581,3 +12581,242 @@ svg text {
   }
 }
 
+
+/* GlobeHoppers v7.0 multimodal route review. */
+.route-review-panel {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  box-sizing: border-box;
+  border: 1px solid rgba(80, 205, 230, 0.22);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(4, 20, 35, 0.90), rgba(8, 27, 42, 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+.route-review-panel--approved {
+  border-color: rgba(89, 235, 151, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 0 22px rgba(49, 214, 132, 0.06);
+}
+.route-review-panel--error {
+  border-color: rgba(255, 115, 115, 0.42);
+}
+.route-review-heading,
+.route-review-leg-head,
+.route-review-actions,
+.route-review-metrics {
+  display: flex;
+  align-items: center;
+}
+.route-review-heading {
+  justify-content: space-between;
+  gap: 12px;
+}
+.route-review-heading h3,
+.route-review-heading p {
+  margin: 0;
+}
+.route-review-heading h3 {
+  margin-top: 2px;
+  font-size: 1rem;
+}
+.route-review-status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(0, 229, 255, 0.09);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  color: rgba(205, 248, 255, 0.92);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.route-review-panel--approved .route-review-status {
+  background: rgba(67, 224, 139, 0.12);
+  border-color: rgba(67, 224, 139, 0.34);
+  color: #a7f3c5;
+}
+.route-review-intro {
+  margin: 0;
+  color: rgba(215, 229, 239, 0.70);
+  font-size: 0.76rem;
+  line-height: 1.42;
+}
+.route-review-list {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+}
+.route-review-leg {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 11px;
+  border-radius: 14px;
+  border: 1px solid rgba(130, 164, 185, 0.16);
+  background: rgba(9, 25, 39, 0.78);
+}
+.route-review-leg--ok {
+  border-color: rgba(76, 220, 148, 0.24);
+}
+.route-review-leg--warning {
+  border-color: rgba(251, 191, 36, 0.30);
+}
+.route-review-leg--error {
+  border-color: rgba(248, 113, 113, 0.40);
+}
+.route-review-leg-head {
+  min-width: 0;
+  gap: 9px;
+}
+.route-review-leg-head > div {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  gap: 2px;
+}
+.route-review-leg-head strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.79rem;
+}
+.route-review-leg-head small {
+  color: rgba(208, 224, 236, 0.56);
+  font-size: 0.66rem;
+}
+.route-review-mode {
+  display: grid;
+  flex: 0 0 31px;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(0, 229, 255, 0.09);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+}
+.route-review-confidence {
+  flex: 0 0 auto;
+  color: rgba(208, 224, 236, 0.62);
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.route-review-leg--ok .route-review-confidence { color: #86efac; }
+.route-review-leg--warning .route-review-confidence { color: #fde68a; }
+.route-review-leg--error .route-review-confidence { color: #fca5a5; }
+.route-review-map {
+  display: block;
+  width: 100%;
+  height: 86px;
+  overflow: hidden;
+  border-radius: 11px;
+  background: radial-gradient(circle at 35% 40%, rgba(0, 229, 255, 0.07), transparent 46%), rgba(2, 13, 24, 0.72);
+  border: 1px solid rgba(103, 145, 169, 0.14);
+}
+.route-review-map--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(205, 221, 232, 0.48);
+  font-size: 0.69rem;
+}
+.route-review-map-grid {
+  fill: none;
+  stroke: rgba(129, 173, 197, 0.10);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.route-review-map-line {
+  fill: none;
+  stroke: #51e2ff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.28));
+}
+.route-review-map-line--train { stroke: #a7f3d0; }
+.route-review-map-line--boat { stroke: #93c5fd; }
+.route-review-map-line--drive,
+.route-review-map-line--car { stroke: #fcd34d; }
+.route-review-map-endpoint {
+  fill: #f8fafc;
+  stroke: rgba(3, 16, 27, 0.9);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.route-review-metrics {
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  color: rgba(210, 225, 236, 0.61);
+  font-size: 0.65rem;
+}
+.route-review-metrics span:last-child {
+  flex: 1 1 100%;
+}
+.route-review-metrics b {
+  color: rgba(236, 248, 255, 0.88);
+  font-weight: 750;
+}
+.route-review-messages {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 10px 8px 25px;
+  border-radius: 10px;
+  font-size: 0.66rem;
+  line-height: 1.38;
+}
+.route-review-messages--warning {
+  background: rgba(245, 158, 11, 0.08);
+  color: rgba(254, 226, 160, 0.90);
+}
+.route-review-messages--error {
+  background: rgba(239, 68, 68, 0.09);
+  color: rgba(254, 202, 202, 0.94);
+}
+.route-review-pending,
+.route-review-error {
+  margin: 0;
+  font-size: 0.69rem;
+  line-height: 1.4;
+}
+.route-review-pending { color: rgba(205, 221, 232, 0.54); }
+.route-review-error {
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: rgba(239, 68, 68, 0.09);
+  border: 1px solid rgba(248, 113, 113, 0.24);
+  color: #fecaca;
+}
+.route-review-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.route-review-actions button {
+  min-height: 36px;
+}
+@media (max-width: 980px) {
+  .route-review-panel {
+    order: 2;
+  }
+}
+@media (max-width: 560px) {
+  .route-review-heading,
+  .route-review-leg-head {
+    align-items: flex-start;
+  }
+  .route-review-leg-head strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .route-review-actions button {
+    flex: 1 1 100%;
+  }
+}

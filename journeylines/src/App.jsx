@@ -443,7 +443,7 @@ export default function App() {
       if (resolvedIndex !== activeIndex) {
         const progress = Math.max(0, Math.min(1, Number(identity.progress) || 0));
         const resolvedLeg = legs[resolvedIndex]?.leg;
-        const dur = legDurationMs(resolvedLeg?.miles || 500, speed);
+        const dur = legDurationMs(resolvedLeg?.miles || 500, speed, resolvedLeg?.mode);
         setActiveIndex(resolvedIndex);
         setLegProgress(progress);
         tRef.current = { last: null, elapsed: progress * dur };
@@ -571,7 +571,7 @@ export default function App() {
       : sameLeg
         ? Number(identity.progress || 0)
         : Math.max(0, Math.min(1, Number(legProgress) || 0));
-    const duration = legDurationMs(entry?.leg?.miles || 500, speed);
+    const duration = legDurationMs(entry?.leg?.miles || 500, speed, entry?.leg?.mode);
     const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
     const playbackKey = `${entry?.trip?.id || ''}:${entry?.legId || entry?.leg?.legId || entry?.legIndex || 0}`;
     const generation = playbackEngine.configure({
@@ -642,7 +642,7 @@ export default function App() {
     }
 
     const currentLeg = legs[activeIndex]?.leg;
-    const dur = legDurationMs(currentLeg?.miles || 500, speed);
+    const dur = legDurationMs(currentLeg?.miles || 500, speed, currentLeg?.mode);
     tRef.current = { last: null, elapsed: Math.max(0, Number(legProgress) || 0) * dur };
     if (wasGlobeOverview) {
       setIsPlaying(false);
@@ -751,7 +751,7 @@ export default function App() {
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
     const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
     const selectedLeg = legs[safeIndex]?.leg;
-    const dur = legDurationMs(selectedLeg?.miles || 500, speed);
+    const dur = legDurationMs(selectedLeg?.miles || 500, speed, selectedLeg?.mode);
 
     const applyJump = () => {
       setGlobeOverview(false);
