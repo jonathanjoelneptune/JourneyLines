@@ -20,3 +20,8 @@ Studio includes:
 - A placeholder for future photo uploads
 
 The repo and GitHub Pages path remain `JourneyLines` for now.
+
+## Quality assurance
+
+Release QA records are stored under `journeylines/QA/` rather than at the repository root.
+

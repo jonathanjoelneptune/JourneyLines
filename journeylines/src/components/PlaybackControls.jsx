@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, timelineComplete = false, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false, timelineComplete = false, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -76,9 +76,13 @@ export default function PlaybackControls({ isPlaying, timelineComplete = false, 
 
   const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
   const tooltipMarker = hoverMarker || activeMarker;
+  const playbackActionLabel = timelineComplete ? 'Complete' : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume' : 'Play'));
+  const playbackActionAriaLabel = timelineComplete
+    ? 'Timeline complete. Use Restart Journey to begin again.'
+    : (isPlaying ? 'Pause travel timeline' : (hasPlaybackStarted ? 'Resume travel timeline' : 'Play travel timeline'));
 
   return <div className="controls glass" style={timelineStyle}>
-    <button type="button" className="controls-play-pill" onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete} aria-label={timelineComplete ? 'Timeline complete. Use Restart Journey to begin again.' : (isPlaying ? 'Pause travel timeline' : 'Play travel timeline')} title={timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{timelineComplete ? 'Complete' : (isPlaying ? 'Pause' : 'Play')}</button>
+    <button type="button" className="controls-play-pill" onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete} aria-label={playbackActionAriaLabel} title={timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{playbackActionLabel}</button>
     <label className="timeline-scrubber">Timeline
       <div className="timeline-scrubber-stack">
         <div className="progress progress--scrubbable" onMouseMove={(e) => { if (e.target === e.currentTarget || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN') setHoverMarker(null); }} onMouseLeave={() => setHoverMarker(null)}>

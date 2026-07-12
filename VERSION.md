@@ -1,3 +1,16 @@
+GlobeHoppers v6.3 — Resume State and Add/Edit Hop Preview Layout
+
+- The primary playback control now displays Play before the journey begins, Pause during playback, Resume after playback has been paused, and Complete after the final leg.
+- The top-bar playback control uses matching Play, Pause, Resume, and completed-state accessible labels.
+- Widened the desktop Add/Edit Hop modal and rebalanced the editor/preview columns so the Hop Preview retains a protected minimum width.
+- Reserved additional space between Hop Preview content and its independent scrollbar, preventing title circles, route markers, and traveler status text from being clipped.
+- Added responsive preview-row wrapping and minimum-width protections for high-leg-count Hops.
+- Preserved the stacked narrow-screen layout below 980 px.
+- Moved QA release records into `journeylines/QA/` and removed QA documents from the repository root.
+- Added v6.3 static verification, responsive layout checks, and a production build gate.
+
+---
+
 GlobeHoppers v6.2 — Playback Command Ownership, Worker Recovery, Accessibility, and Integrity Diagnostics
 
 - Added an explicit Restart Journey command. Restart is now the only command that returns to the home/intro state.

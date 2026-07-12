@@ -1,13 +1,14 @@
 {
   "name": "journeylines",
   "private": true,
-  "version": "6.2.0",
+  "version": "6.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "generate:routes": "node scripts/generate-mapbox-routes.mjs"
+    "generate:routes": "node scripts/generate-mapbox-routes.mjs",
+    "verify:v6.3": "node scripts/verify-v6.3.mjs ."
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
