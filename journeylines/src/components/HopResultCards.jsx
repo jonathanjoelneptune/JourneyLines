@@ -17,10 +17,14 @@ export default function HopResultCards({ rows = [], onSelect = () => {}, classNa
     >
       <span className="destination-trip-queue__ball" aria-hidden="true"></span>
       <span className="destination-trip-queue__content">
-        <span className="destination-trip-queue__date">{row.date || row.year || ''}</span>
-        <strong>{row.title || 'Hop'}</strong>
-        <span className="destination-trip-queue__route">{row.route || ''}</span>
-        <em>{row.traveler || ''}</em>
+        <span className="hop-result-card__identity">
+          <strong>{row.title || 'Hop'}</strong>
+          {row.traveler && <em>{row.traveler}</em>}
+        </span>
+        <span className="hop-result-card__details">
+          <span className="destination-trip-queue__route">{row.route || ''}</span>
+          <span className="destination-trip-queue__date">{row.date || row.year || ''}</span>
+        </span>
       </span>
     </button>)}
   </div>;

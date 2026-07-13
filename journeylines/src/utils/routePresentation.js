@@ -150,10 +150,11 @@ export function presentationPointBudget(totalMiles, mode, profile = 'playback', 
   const normalizedMode = normalizeMode(mode);
   const miles = Math.max(0, Number(totalMiles) || 0);
   const profileScale = profile === 'overview' ? 0.45 : profile === 'regional' ? 0.70 : 1;
-  const base = normalizedMode === 'boat' ? 12 : normalizedMode === 'train' ? 30 : 24;
-  const distanceFactor = normalizedMode === 'boat' ? 1.55 : normalizedMode === 'train' ? 4.0 : 3.25;
-  const maximum = normalizedMode === 'boat' ? 54 : normalizedMode === 'train' ? 150 : 118;
-  return clamp(Math.round((base + Math.sqrt(miles) * distanceFactor) * profileScale), 24, maximum);
+  const base = normalizedMode === 'boat' ? 6 : normalizedMode === 'train' ? 30 : 24;
+  const distanceFactor = normalizedMode === 'boat' ? 0.78 : normalizedMode === 'train' ? 4.0 : 3.25;
+  const maximum = normalizedMode === 'boat' ? 34 : normalizedMode === 'train' ? 150 : 118;
+  const minimum = normalizedMode === 'boat' ? 18 : 24;
+  return clamp(Math.round((base + Math.sqrt(miles) * distanceFactor) * profileScale), minimum, maximum);
 }
 
 function prethinIndexes(points, cumulative, maximumPoints = 6000) {
@@ -222,7 +223,7 @@ function appendSafeSpan(points, cumulative, start, end, mode, totalMiles, output
   // Marine presentation is intentionally less literal than road/rail. Broad
   // route-native chords keep boats offshore instead of tracing every cove,
   // while the corridor guard still prevents implausible long shortcuts.
-  const stretchLimit = mode === 'boat' ? 2.20 : mode === 'train' ? 1.38 : 1.48;
+  const stretchLimit = mode === 'boat' ? 3.50 : mode === 'train' ? 1.38 : 1.48;
   const safe = directMiles <= maxSegmentMiles && stretchRatio <= stretchLimit;
 
   if (safe) {
@@ -242,9 +243,9 @@ function refineSharpPresentationCorners(points, selectedIndexes, cumulative, mod
   if (!Array.isArray(selectedIndexes) || selectedIndexes.length < 3) return selectedIndexes || [];
   const selected = [...new Set(selectedIndexes)].sort((a, b) => a - b);
   const additions = new Set(selected);
-  const turnThreshold = mode === 'boat' ? 44 : mode === 'train' ? 32 : 38;
+  const turnThreshold = mode === 'boat' ? 62 : mode === 'train' ? 32 : 38;
   const targetMiles = mode === 'boat'
-    ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 1.15, 8, 38)
+    ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 1.65, 14, 64)
     : mode === 'train'
       ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.52, 2.5, 15)
       : clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.34, 1.5, 9);
@@ -264,7 +265,7 @@ function refineSharpPresentationCorners(points, selectedIndexes, cumulative, mod
     // Very abrupt retained corners receive a second pair of route-native anchors.
     // The vessel still travels only through provider points; the extra anchors
     // distribute the visual turn instead of cutting one sharp presentation elbow.
-    if (turn > 78) {
+    if (turn > (mode === 'boat' ? 112 : 78)) {
       const innerBefore = indexAtDistanceBefore(cumulative, current, previous, targetMiles * 0.42);
       const innerAfter = indexAtDistanceAfter(cumulative, current, next, targetMiles * 0.42);
       if (innerBefore > previous && innerBefore < current) additions.add(innerBefore);
@@ -355,15 +356,15 @@ function cumulativeMidpointIndex(cumulative, start, end) {
 
 function maximumPresentationSegmentMiles(mode, totalMiles) {
   const routeScale = Math.sqrt(Math.max(1, totalMiles));
-  if (mode === 'boat') return clamp(routeScale * 11.0, 110, 420);
+  if (mode === 'boat') return clamp(routeScale * 18.5, 210, 850);
   if (mode === 'train') return clamp(routeScale * 4.0, 36, 145);
   return clamp(routeScale * 4.2, 34, 155);
 }
 
 function softenPresentationCorners(points, mode) {
   if (!Array.isArray(points) || points.length < 3) return points || [];
-  const iterations = mode === 'boat' ? 2 : 1;
-  const amount = mode === 'boat' ? 0.30 : mode === 'train' ? 0.15 : 0.22;
+  const iterations = mode === 'boat' ? 3 : 1;
+  const amount = mode === 'boat' ? 0.34 : mode === 'train' ? 0.15 : 0.22;
   let current = points.map(point => [...point]);
   for (let iteration = 0; iteration < iterations; iteration += 1) {
     const next = [[...current[0]]];
@@ -388,13 +389,13 @@ function softenPresentationCorners(points, mode) {
 
 function minimumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 2.2 : profile === 'regional' ? 1.5 : 1;
-  const base = mode === 'boat' ? 0.70 : mode === 'train' ? 0.16 : 0.20;
+  const base = mode === 'boat' ? 1.35 : mode === 'train' ? 0.16 : 0.20;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 18, 0.8, 2.4);
 }
 
 function maximumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 1.8 : profile === 'regional' ? 1.3 : 1;
-  const base = mode === 'boat' ? 18.0 : mode === 'train' ? 4.2 : 5.5;
+  const base = mode === 'boat' ? 30.0 : mode === 'train' ? 4.2 : 5.5;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 28, 0.65, 2.4);
 }
 

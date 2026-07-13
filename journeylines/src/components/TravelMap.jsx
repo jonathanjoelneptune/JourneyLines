@@ -211,6 +211,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const latestDesiredCameraRef = useRef(null);
   const idleCameraRef = useRef(null);
   const idleModePreviousRef = useRef(false);
+  const overviewLockTimersRef = useRef(new Set());
   const destinationSelectionActiveRef = useRef(false);
   const trailTuningFramedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
@@ -238,6 +239,26 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     frozenEntry: null
   });
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
+
+
+  const clearOverviewLockTimers = () => {
+    for (const timer of overviewLockTimersRef.current) window.clearTimeout(timer);
+    overviewLockTimersRef.current.clear();
+  };
+  const scheduleOverviewLock = (callback, delay) => {
+    const timer = window.setTimeout(() => {
+      overviewLockTimersRef.current.delete(timer);
+      callback();
+    }, delay);
+    overviewLockTimersRef.current.add(timer);
+    return timer;
+  };
+  const playbackHasCameraPriority = () => Boolean(
+    playbackOwnsOverlayRef.current
+    || introLaunchRef.current.active
+    || latestFrameContextRef.current?.isPlaying
+    || latestFrameContextRef.current?.introLaunching
+  );
   const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
 
   useEffect(() => { preloadBaseVesselIcons(); }, []);
@@ -395,6 +416,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       clearTimeout(timelineCompletionRef.current?.timer);
       clearTimeout(manualSpinResumeTimerRef.current);
       clearTimeout(playbackCameraReturnRef.current?.timer);
+      clearOverviewLockTimers();
       clearTimeout(manualGestureRef.current?.wheelTimer);
       clearTimeout(fadeTrailRef.current?.timer);
       clearTimeout(trailProfileMorphRef.current?.timer);
@@ -439,26 +461,29 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !globeOverview || idleMode) return;
+    if (!map || !mapReady || !globeOverview || idleMode || isPlaying || introLaunching) return;
     try {
       userCameraOverrideRef.current = false;
       manualSpinPauseRef.current = false;
       clearTimeout(manualSpinResumeTimerRef.current);
       resetAnimatingRef.current = true;
       lastCameraRef.current = null;
+      clearOverviewLockTimers();
       map.stop();
       map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
-      window.setTimeout(() => {
+      scheduleOverviewLock(() => {
+        if (playbackHasCameraPriority()) return;
         try { map.jumpTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, essential: true }); } catch {}
         resetAnimatingRef.current = false;
       }, 1580);
     } catch { resetAnimatingRef.current = false; }
-  }, [globeOverview, mapReady, idleMode]);
+  }, [globeOverview, mapReady, idleMode, isPlaying, introLaunching]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     function handleForceGlobeOverview() {
+      if (playbackHasCameraPriority()) return;
       try {
         userCameraOverrideRef.current = false;
         resetAnimatingRef.current = true;
@@ -469,11 +494,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         }
         manualSpinPauseRef.current = false;
         clearTimeout(manualSpinResumeTimerRef.current);
+        clearOverviewLockTimers();
         map.stop();
         map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 2200, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
         // Preserve ownership until the zoom-out completes, then lock the exact
         // globe overview zoom before idle spin resumes.
-        window.setTimeout(() => {
+        scheduleOverviewLock(() => {
+          if (playbackHasCameraPriority()) return;
           try { map.jumpTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, essential: true }); } catch {}
           resetAnimatingRef.current = false;
         }, 2280);
@@ -792,6 +819,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (!map || !mapReady) return;
     const wasIdle = idleModePreviousRef.current;
     idleModePreviousRef.current = Boolean(idleMode);
+    if (isPlaying) {
+      idleCameraRef.current = null;
+      try { map.stop(); } catch {}
+      return;
+    }
     if (idleMode && !wasIdle) {
       idleCameraRef.current = captureCameraState(map);
       manualSpinPauseRef.current = true;
@@ -816,7 +848,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       } catch { resetAnimatingRef.current = false; manualSpinPauseRef.current = false; }
     }
     if (!idleMode && wasIdle && idleExitMode === 'play') idleCameraRef.current = null;
-  }, [idleMode, idleExitMode, mapReady]);
+  }, [idleMode, idleExitMode, mapReady, isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -835,8 +867,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
     };
     map.on('move', refresh);
+    map.on('zoom', refresh);
     return () => {
       map.off('move', refresh);
+      map.off('zoom', refresh);
     };
   }, [mapReady]);
 
@@ -867,11 +901,25 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     try { map.scrollZoom?.setWheelZoomRate?.(1 / 360); } catch {}
     try { map.scrollZoom?.setZoomRate?.(1 / 70); } catch {}
     if (isPlaying) {
+      // Playback is the sole camera owner once a Hop begins. Cancel any delayed
+      // View Globe lock, idle restore, or residual ease before the frame loop
+      // starts; otherwise a stale overview callback can snap back to Zoom 4.20
+      // a few seconds into the route.
+      clearOverviewLockTimers();
       clearTimeout(playbackCameraReturnRef.current.timer);
       playbackCameraReturnRef.current = createPlaybackReturnState();
       userCameraOverrideRef.current = false;
       manualSpinPauseRef.current = false;
+      idleCameraRef.current = null;
+      resetAnimatingRef.current = false;
       clearTimeout(manualSpinResumeTimerRef.current);
+      try { map.stop(); } catch {}
+      const liveCamera = captureCameraState(map);
+      if (liveCamera) {
+        lastCameraRef.current = { ...liveCamera, center: [...liveCamera.center] };
+        latestDesiredCameraRef.current = { ...liveCamera, center: [...liveCamera.center] };
+      }
+      frameRenderStatsRef.current.lastCamera = 0;
     } else {
       clearTimeout(playbackCameraReturnRef.current.timer);
       playbackCameraReturnRef.current = createPlaybackReturnState();
@@ -2242,7 +2290,7 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       borderZoomFade: Number(config?.borderZoomFade ?? 1),
       trailRole: role
     },
-    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 420 : staticRouteSamples(200, 120, 68), routedGeometries) }
+    geometry: mapLineGeometry(routeCoordinates(leg, progress, active ? 420 : staticRouteSamples(200, 120, 68), routedGeometries))
   };
 }
 
@@ -2271,10 +2319,56 @@ function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, widt
       borderZoomFade: Number(config?.borderZoomFade ?? 1),
       trailRole: role
     },
-    geometry: { type: 'LineString', coordinates: coords }
+    geometry: mapLineGeometry(coords)
   };
 }
 
+
+function mapLineGeometry(coords = []) {
+  const segments = splitLineAtAntimeridian(coords);
+  if (segments.length <= 1) return { type: 'LineString', coordinates: segments[0] || [[0, 0], [0, 0]] };
+  return { type: 'MultiLineString', coordinates: segments };
+}
+
+function splitLineAtAntimeridian(coords = []) {
+  if (!Array.isArray(coords) || coords.length < 2) return [coords || []];
+  const segments = [];
+  let current = [[normalizeMapLongitude(coords[0][0]), Number(coords[0][1])]];
+  for (let index = 1; index < coords.length; index += 1) {
+    const previousRaw = coords[index - 1];
+    const nextRaw = coords[index];
+    const previousLon = Number(previousRaw?.[0]);
+    const nextLon = Number(nextRaw?.[0]);
+    const previousLat = Number(previousRaw?.[1]);
+    const nextLat = Number(nextRaw?.[1]);
+    if (![previousLon, nextLon, previousLat, nextLat].every(Number.isFinite)) continue;
+    const normalizedPrevious = normalizeMapLongitude(previousLon);
+    const normalizedNext = normalizeMapLongitude(nextLon);
+    const normalizedDelta = normalizedNext - normalizedPrevious;
+    const crosses = Math.abs(normalizedDelta) > 180;
+    if (!crosses) {
+      current.push([normalizedNext, nextLat]);
+      continue;
+    }
+
+    const crossesEastward = normalizedPrevious > 0 && normalizedNext < 0;
+    const boundary = crossesEastward ? 180 : -180;
+    const adjustedNext = crossesEastward ? normalizedNext + 360 : normalizedNext - 360;
+    const denominator = adjustedNext - normalizedPrevious;
+    const t = Math.abs(denominator) < 1e-9 ? 0.5 : clamp((boundary - normalizedPrevious) / denominator, 0, 1);
+    const boundaryLat = lerp(previousLat, nextLat, t);
+    current.push([boundary, boundaryLat]);
+    if (current.length > 1) segments.push(current);
+    current = [[-boundary, boundaryLat], [normalizedNext, nextLat]];
+  }
+  if (current.length > 1) segments.push(current);
+  return segments.length ? segments : [[[normalizeMapLongitude(coords[0][0]), Number(coords[0][1])], [normalizeMapLongitude(coords.at(-1)[0]), Number(coords.at(-1)[1])]]];
+}
+
+function normalizeMapLongitude(value) {
+  const numeric = Number(value) || 0;
+  return ((numeric + 540) % 360) - 180;
+}
 
 function trailRoleForFeature(index, color) {
   const key = String(index || '').toLowerCase();
@@ -2464,7 +2558,14 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
   // A wrapped or nearly horizon-to-horizon projection can turn the decorative
   // takeoff arc into a stray horizontal line. The real route remains on the map;
   // suppress only this short-lived screen-space embellishment.
-  if (dist < 8 || dist > Math.hypot(canvasWidth, canvasHeight) * 0.72 || Math.abs(dx) > canvasWidth * 0.68) {
+  const endpointMarginX = canvasWidth * 0.18;
+  const endpointMarginY = canvasHeight * 0.18;
+  const endpointsNearViewport = fromPt.x >= -endpointMarginX && fromPt.x <= canvasWidth + endpointMarginX
+    && vehiclePt.x >= -endpointMarginX && vehiclePt.x <= canvasWidth + endpointMarginX
+    && fromPt.y >= -endpointMarginY && fromPt.y <= canvasHeight + endpointMarginY
+    && vehiclePt.y >= -endpointMarginY && vehiclePt.y <= canvasHeight + endpointMarginY;
+  const dateLineRoute = Math.abs(shortestLonDelta(Number(leg.to.lon) - Number(leg.from.lon))) > 150;
+  if (!endpointsNearViewport || dateLineRoute || dist < 8 || dist > Math.hypot(canvasWidth, canvasHeight) * 0.58 || Math.abs(dx) > canvasWidth * 0.52) {
     pathEl.style.opacity = '0';
     pathEl.setAttribute('d', '');
     return;
@@ -2797,16 +2898,25 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   const h = canvas?.clientHeight || window.innerHeight;
   const zoom = map.getZoom?.() || 1.5;
   const runtime = runtimeRef?.current || {};
-  const screenBoost = clamp((Math.min(w, h) - 720) / 1800, 0, 0.22);
-  const zoomBoost = clamp((zoom - 3.8) * 0.13, 0, 0.62);
-  const labelScale = clamp(1 + screenBoost + zoomBoost, 1, 1.72);
-  const uiScale = clamp(1 + screenBoost * 0.55 + zoomBoost * 0.22, 1, 1.27);
+  const screenBoost = clamp((Math.min(w, h) - 720) / 1500, 0, 0.28);
+  const zoomBoost = clamp((zoom - 3.65) * 0.22, 0, 1.02);
+  const labelScale = clamp(1 + screenBoost + zoomBoost, 1, 2.18);
+  const uiScale = clamp(1 + screenBoost * 0.48 + zoomBoost * 0.16, 1, 1.30);
   const rootStyle = document.documentElement.style;
-  const previousLabelScale = Number(rootStyle.getPropertyValue('--gh-map-label-scale')) || 0;
-  const previousUiScale = Number(rootStyle.getPropertyValue('--gh-map-ui-scale')) || 0;
+  const shellStyle = map.getContainer?.()?.closest?.('.maplibre-shell')?.style || null;
+  const previousLabelScale = Number(shellStyle?.getPropertyValue('--gh-map-label-scale') || rootStyle.getPropertyValue('--gh-map-label-scale')) || 0;
+  const previousUiScale = Number(shellStyle?.getPropertyValue('--gh-map-ui-scale') || rootStyle.getPropertyValue('--gh-map-ui-scale')) || 0;
   try {
-    if (Math.abs(previousLabelScale - labelScale) > 0.015) rootStyle.setProperty('--gh-map-label-scale', labelScale.toFixed(3));
-    if (Math.abs(previousUiScale - uiScale) > 0.015) rootStyle.setProperty('--gh-map-ui-scale', uiScale.toFixed(3));
+    if (Math.abs(previousLabelScale - labelScale) > 0.015) {
+      const value = labelScale.toFixed(3);
+      rootStyle.setProperty('--gh-map-label-scale', value);
+      shellStyle?.setProperty('--gh-map-label-scale', value);
+    }
+    if (Math.abs(previousUiScale - uiScale) > 0.015) {
+      const value = uiScale.toFixed(3);
+      rootStyle.setProperty('--gh-map-ui-scale', value);
+      shellStyle?.setProperty('--gh-map-ui-scale', value);
+    }
   } catch {}
   const visibleGlobeCenter = visualGlobeCenterCoordinate(map, w, h);
   const cameraTarget = (() => {
@@ -2826,12 +2936,13 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    // In pitched travel mode, unprojecting the screen center can land far ahead
-    // of the camera target and make true backside cities appear artificially
-    // close. Use the actual cinematic target for hemisphere ownership while
-    // playing; the visual-center method remains ideal for upright globe mode.
-    const horizonCenter = cameraSubpointCoordinate(map) || (playback ? cameraTarget : visibleGlobeCenter);
-    const angularDistance = angularDistanceDeg(horizonCenter, { lon: loc.lon, lat: loc.lat });
+    // Be deliberately conservative at the globe limb. A point must belong to
+    // both the map-center hemisphere and the visible screen-center hemisphere.
+    // This prevents pitched views from keeping far-side aircraft or cities alive
+    // merely because one projection estimate still considers them projectable.
+    const visualDistance = angularDistanceDeg(visibleGlobeCenter, { lon: loc.lon, lat: loc.lat });
+    const targetDistance = angularDistanceDeg(cameraTarget, { lon: loc.lon, lat: loc.lat });
+    const angularDistance = Math.max(visualDistance, targetDistance);
     const activePlacard = activeIds.has(loc.id);
     const now = performance.now();
     const prior = stateMap?.get(loc.id) || { visible: false, hiddenUntil: 0, seenSafeSince: 0 };
@@ -2847,9 +2958,9 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     if (playback) {
       // Cull before the geometric limb. Perspective and placard height make a
       // marker look behind the horizon well before 90 degrees on pitched views.
-      const centerCutoff = activePlacard ? 62 : Math.min(56, hardPlacardHorizonCutoffDeg(zoom) - 10);
-      const fadeStart = centerCutoff - (activePlacard ? 10 : 12);
-      const focusCutoff = activePlacard ? 62 : Math.min(50, localPlacardFocusCutoffDeg(zoom) + 22);
+      const centerCutoff = activePlacard ? 56 : Math.min(49, hardPlacardHorizonCutoffDeg(zoom) - 14);
+      const fadeStart = centerCutoff - (activePlacard ? 8 : 10);
+      const focusCutoff = activePlacard ? 56 : Math.min(44, localPlacardFocusCutoffDeg(zoom) + 18);
       const safelyVisible = onScreenLoose && angularDistance <= centerCutoff && focusDistance <= focusCutoff;
       markerOpacity = safelyVisible ? clamp((centerCutoff - angularDistance) / Math.max(1, centerCutoff - fadeStart), 0, 1) : 0;
       if (!safelyVisible) {
@@ -2861,7 +2972,7 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
         visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 60;
       }
     } else {
-      const horizonCutoff = Math.min(72, hardPlacardHorizonCutoffDeg(zoom));
+      const horizonCutoff = Math.min(64, hardPlacardHorizonCutoffDeg(zoom) - 4);
       visible = Boolean(onScreenLoose && angularDistance <= horizonCutoff);
     }
 
@@ -2981,14 +3092,27 @@ function rectsOverlap(a, b, pad = 0) {
   return !(a.x + a.width + pad < b.x || b.x + b.width + pad < a.x || a.y + a.height + pad < b.y || b.y + b.height + pad < a.y);
 }
 
-function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 74) {
+function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 58) {
   if (!map || lon == null || lat == null) return false;
   try {
-    const center = map.getCenter();
-    const distance = angularDistanceDeg({ lon: center.lng, lat: center.lat }, { lon, lat });
-    return distance <= marginDeg;
+    const canvas = map.getCanvas?.();
+    const width = canvas?.clientWidth || window.innerWidth;
+    const height = canvas?.clientHeight || window.innerHeight;
+    const visualCenter = visualGlobeCenterCoordinate(map, width, height);
+    const mapCenterRaw = map.getCenter?.();
+    const mapCenter = Number.isFinite(mapCenterRaw?.lng) && Number.isFinite(mapCenterRaw?.lat)
+      ? { lon: Number(mapCenterRaw.lng), lat: Number(mapCenterRaw.lat) }
+      : visualCenter;
+    const pitch = Number(map.getPitch?.() || 0);
+    const conservativeCutoff = Math.min(Number(marginDeg) || 58, pitch > 45 ? 50 : pitch > 24 ? 53 : 57);
+    const coordinate = { lon: Number(lon), lat: Number(lat) };
+    const visualDistance = angularDistanceDeg(visualCenter, coordinate);
+    const targetDistance = angularDistanceDeg(mapCenter, coordinate);
+    if (Math.max(visualDistance, targetDistance) > conservativeCutoff) return false;
+    const point = map.project([coordinate.lon, coordinate.lat]);
+    return isVisibleOnGlobe(map, point, 0.955);
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -3754,11 +3878,11 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
     cruise = distance > 700 ? 6.55 : distance > 250 ? 6.95 : 7.25;
     close = distance > 700 ? 7.55 : distance > 250 ? 7.88 : 8.12;
   } else if (isBoat || isTrain) {
-    cruise = distance > 3500 ? 3.05 : distance > 1500 ? 3.55 : distance > 500 ? 5.10 : 6.10;
-    close = distance > 3500 ? 4.10 : distance > 1500 ? 4.80 : distance > 500 ? 6.25 : 7.05;
+    cruise = distance > 3500 ? 4.08 : distance > 1500 ? 4.32 : distance > 500 ? 5.22 : 6.10;
+    close = distance > 3500 ? 4.58 : distance > 1500 ? 4.98 : distance > 500 ? 6.25 : 7.05;
   } else {
-    cruise = distance > 4500 ? 3.18 : distance > 1500 ? 4.05 : distance > 500 ? 5.30 : 6.40;
-    close = distance > 4500 ? 4.95 : distance > 1500 ? 5.82 : distance > 500 ? 6.70 : 7.50;
+    cruise = distance > 4500 ? 4.03 : distance > 1500 ? 4.42 : distance > 500 ? 5.38 : 6.40;
+    close = distance > 4500 ? 4.72 : distance > 1500 ? 5.42 : distance > 500 ? 6.70 : 7.50;
   }
 
   const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;

@@ -1,3 +1,23 @@
+# GlobeHoppers v7.5.2
+
+Released: July 13, 2026
+
+## v7.5.2 — Camera Ownership, Timeline Layout, and Globe-Culling Corrections
+
+- Makes active playback the exclusive camera owner. Delayed View Globe and idle callbacks now check the live playback context before applying any final camera lock, preventing the second abrupt zoom-out after a Hop begins.
+- Preserves the staged manual-camera return sequence: zoom out only when required for globe clearance, reorient first, and then zoom back to the current vessel framing.
+- Raises long-distance follow-camera zoom floors so air and surface playback no longer falls back to the older continent-style framing.
+- Broadens marine presentation routes further in open water with fewer anchors, larger safe chords, and stronger one-time smoothing while retaining sharp route anchors through channels and constrained approaches.
+- Keeps the timeline viewport, scrubber, and year/month label rail at a fixed height at every horizontal zoom level. Month labels replace the year row rather than adding another row.
+- Reorganizes shared destination/search cards into a left trip-name column and a right route/date column.
+- Expands the invisible city-marker hit target without changing the visible white circle or placard position.
+- Applies zoom-responsive label variables directly to the live map shell as well as the document root, avoiding older high-specificity placard rules that could keep text at a fixed size.
+- Splits rendered route geometry at the antimeridian and suppresses wrapped decorative arcs, preventing the Seoul/Tokyo horizontal trail artifact during zoom changes.
+- Uses both the visual globe center and map camera target for conservative hemisphere ownership. Vehicles and placards are hidden before they pass the visible globe limb.
+- Gives Additional Legs the same teal route-entry border, background, and inner field treatment as Route and Destination.
+
+---
+
 # GlobeHoppers v7.5.1
 
 Released: July 13, 2026

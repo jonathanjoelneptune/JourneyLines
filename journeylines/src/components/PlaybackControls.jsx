@@ -31,7 +31,12 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const visibleMonthTicks = useMemo(() => {
     if (visibleTimelineYears > 3.25) return [];
     const step = visibleTimelineYears <= 1.25 ? 1 : visibleTimelineYears <= 2.15 ? 2 : 3;
-    return (monthTicks || []).filter(tick => step === 1 || (Number(tick.month) - 1) % step === 0);
+    return (monthTicks || [])
+      .filter(tick => step === 1 || (Number(tick.month) - 1) % step === 0)
+      .map(tick => ({
+        ...tick,
+        displayLabel: Number(tick.month) === 1 ? `Jan ${tick.year}` : tick.label
+      }));
   }, [monthTicks, visibleTimelineYears]);
   const searchResults = useMemo(() => {
     const query = normalizeSearchText(debouncedSearchText);
@@ -204,7 +209,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       </div>
       <div
         ref={timelineViewportRef}
-        className={`timeline-scroll-viewport ${timelineZoom > 1 ? 'is-zoomed' : ''} ${timelineAnimating ? 'is-animating' : ''}`}
+        className={`timeline-scroll-viewport ${timelineZoom > 1 ? 'is-zoomed' : ''} ${visibleMonthTicks.length ? 'has-months' : ''} ${timelineAnimating ? 'is-animating' : ''}`}
         onPointerDown={beginTimelinePan}
         onPointerMove={moveTimelinePan}
         onPointerUp={endTimelinePan}
@@ -277,14 +282,14 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
                 onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
               />
             </div>
-            <div className="timeline-year-scale" aria-hidden="true">
+            {visibleMonthTicks.length === 0 && <div className="timeline-year-scale" aria-hidden="true">
               {yearSegments.map(segment => <span key={segment.year} className="timeline-year-scale__segment" style={{ left: `${segment.start * 100}%`, width: `${Math.max(0, segment.end - segment.start) * 100}%` }}>
                 <b>{segment.year}</b>
               </span>)}
-            </div>
+            </div>}
             {visibleMonthTicks.length > 0 && <div className="timeline-month-scale" aria-hidden="true">
               {visibleMonthTicks.map(tick => <span key={tick.id} className="timeline-month-scale__tick" style={{ left: `${tick.progress * 100}%` }}>
-                <i></i><b>{tick.label}</b>
+                <i></i><b>{tick.displayLabel || tick.label}</b>
               </span>)}
             </div>}
           </div>

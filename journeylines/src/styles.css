@@ -13829,3 +13829,182 @@ svg text {
   }
   .destination-trip-queue__card.hop-result-card { min-height: 66px !important; }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.2 — camera ownership, fixed timeline rail, result layout */
+/* ========================================================================== */
+
+/* Timeline zoom changes only the horizontal scale. Pins, years, and months all
+   share the same fixed-height rail, so adding month labels never grows the bar. */
+.timeline-scroll-viewport,
+.timeline-scroll-viewport.is-zoomed {
+  box-sizing: border-box !important;
+  height: 54px !important;
+  min-height: 54px !important;
+  max-height: 54px !important;
+  padding-top: 34px !important;
+  padding-bottom: 0 !important;
+  margin-top: -26px !important;
+  overflow-y: hidden !important;
+}
+.timeline-scroll-viewport:not(.is-zoomed) { overflow-x: visible !important; }
+.timeline-scroll-viewport.is-zoomed { overflow-x: auto !important; }
+.timeline-scroll-content,
+.timeline-scroll-viewport.is-zoomed .timeline-scroll-content {
+  position: relative !important;
+  display: block !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  align-items: initial !important;
+}
+.timeline-scrubber-stack,
+.timeline-scroll-viewport.is-zoomed .timeline-scrubber-stack {
+  position: relative !important;
+  display: block !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  padding-bottom: 0 !important;
+}
+.timeline-year-scale,
+.timeline-month-scale {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 13px !important;
+  min-height: 13px !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+.timeline-month-scale__tick { top: 0 !important; }
+.timeline-month-scale__tick b { font-size: .54rem !important; }
+
+/* Result cards are split into a trip-identity column and a route/date column.
+   This layout is shared by destination selection and Timeline search. */
+.destination-trip-queue__card.hop-result-card {
+  grid-template-columns: 17px minmax(0, 1fr) !important;
+  min-height: 78px !important;
+  padding: 9px 10px 9px 6px !important;
+}
+.destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+  display: grid !important;
+  grid-template-columns: minmax(0, .46fr) minmax(0, .54fr) !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+}
+.hop-result-card__identity,
+.hop-result-card__details {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.hop-result-card__identity {
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+}
+.hop-result-card__details {
+  justify-content: space-between;
+  align-items: flex-end;
+  text-align: right;
+  padding: 1px 0;
+}
+.hop-result-card__identity strong {
+  width: 100%;
+  color: #f7fdff !important;
+  font-size: .88rem !important;
+  line-height: 1.12 !important;
+  overflow-wrap: anywhere;
+}
+.hop-result-card__identity em {
+  width: 100%;
+  margin-top: 4px;
+  color: rgba(209,229,239,.70) !important;
+  font-size: .63rem !important;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+.hop-result-card__details .destination-trip-queue__route {
+  width: 100%;
+  color: rgba(232,245,250,.90) !important;
+  font-size: .68rem !important;
+  line-height: 1.16 !important;
+  overflow-wrap: anywhere;
+}
+.hop-result-card__details .destination-trip-queue__date {
+  width: 100%;
+  margin-top: 5px;
+  color: rgba(207,229,239,.72) !important;
+  font-size: .63rem !important;
+  line-height: 1.1 !important;
+  overflow-wrap: anywhere;
+}
+
+/* Make the complete city marker substantially easier to click without moving
+   its visual anchor. The transparent pseudo-element participates in hit testing. */
+.maplibregl-marker.jl-map-pin,
+.jl-map-pin {
+  overflow: visible !important;
+  touch-action: manipulation;
+}
+.maplibregl-marker.jl-map-pin::before,
+.jl-map-pin::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: -24px !important;
+  display: block !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+  z-index: 2 !important;
+}
+.jl-map-pin-inner { position: relative !important; z-index: 3 !important; }
+
+/* Legacy high-specificity playback styles previously overrode the root scale.
+   Apply the live zoom variable at equal-or-higher specificity. */
+.maplibre-shell .maplibregl-marker.jl-map-pin .jl-map-pin-name,
+.maplibre-shell .jl-map-pin .jl-map-pin-name,
+.maplibre-shell.playback-active .maplibregl-marker.jl-map-pin .jl-map-pin-name,
+.maplibre-shell.playback-active .jl-map-pin .jl-map-pin-name,
+.maplibre-shell.placards-no-bg .maplibregl-marker.jl-map-pin .jl-map-pin-name,
+.maplibre-shell.placards-no-bg .jl-map-pin .jl-map-pin-name {
+  font-size: calc(11px * var(--gh-map-label-scale, 1)) !important;
+  line-height: 1.02 !important;
+}
+.maplibre-shell .maplibregl-marker.jl-map-pin .jl-map-pin-dot,
+.maplibre-shell .jl-map-pin .jl-map-pin-dot,
+.maplibre-shell.playback-active .jl-map-pin .jl-map-pin-dot {
+  width: calc(9px * var(--gh-map-label-scale, 1)) !important;
+  height: calc(9px * var(--gh-map-label-scale, 1)) !important;
+  min-width: calc(9px * var(--gh-map-label-scale, 1)) !important;
+}
+
+/* Additional Legs uses the same teal route-entry language as Route and the
+   prominent Start/Destination fields, rather than a neutral gray card. */
+.studio-modal-maincol .additional-legs-section.route-section {
+  border: 1px solid rgba(0,229,255,.26) !important;
+  background: linear-gradient(135deg, rgba(0,229,255,.085), rgba(255,255,255,.025)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025), 0 12px 34px rgba(0,0,0,.20) !important;
+}
+.studio-modal-maincol .additional-legs-section .legs-block {
+  padding: 10px !important;
+  border: 1px solid rgba(38,244,255,.26) !important;
+  border-radius: 18px !important;
+  background: rgba(0,229,255,.055) !important;
+}
+.studio-modal-maincol .additional-legs-section .legs-header h3 {
+  color: rgba(238,250,253,.96) !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+@media (max-width: 700px) {
+  .destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+    grid-template-columns: minmax(0, .45fr) minmax(0, .55fr) !important;
+    gap: 7px !important;
+  }
+  .hop-result-card__identity strong { font-size: .82rem !important; }
+  .hop-result-card__details .destination-trip-queue__route { font-size: .64rem !important; }
+}
