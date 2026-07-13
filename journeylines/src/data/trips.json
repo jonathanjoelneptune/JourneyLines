@@ -6755,5 +6755,52 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "1mh8ml",
+    "routeModelVersion": 2,
+    "year": 2027,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2027",
+    "displayEndDate": "",
+    "sortKey": "2027-06-99-2027-06-99-158",
+    "label": "Dallas June 2027",
+    "travelers": [
+      "hopper-mrcyz5l4"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": "san-antonio-tx",
+    "toLocationId": "dallas-tx",
+    "route": [
+      {
+        "pointId": "point-0271e3b809f6",
+        "locationId": "san-antonio-tx",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-aba4ed52747a",
+        "legId": "leg-904f9a2e23e8",
+        "locationId": "dallas-tx",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-5e0615f25a37",
+        "legId": "leg-c9242b03eeee",
+        "locationId": "san-antonio-tx",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
