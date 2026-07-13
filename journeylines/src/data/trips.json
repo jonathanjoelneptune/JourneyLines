@@ -6438,5 +6438,189 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeModelVersion": 2
+  },
+  {
+    "id": "ssqo3l",
+    "routeModelVersion": 2,
+    "year": 2027,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2027",
+    "displayEndDate": "",
+    "sortKey": "2027-01-99-2027-01-99-153",
+    "label": "Boston",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "boston-ma",
+    "route": [
+      {
+        "pointId": "point-cc99a0840e9c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-a44f2a9ec2a0",
+        "legId": "leg-90dd88ea919a",
+        "locationId": "boston-ma",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-551f4f6b7e91",
+        "legId": "leg-9a0cb041d9d5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "8xlo3k",
+    "routeModelVersion": 2,
+    "year": 2027,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2027",
+    "displayEndDate": "",
+    "sortKey": "2027-01-99-2027-01-99-154",
+    "label": "Chiclayo",
+    "travelers": [
+      "hopper-mrcyz5l4",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [
+      {
+        "pointId": "point-d4d16c64869c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-60680b85ceee",
+        "legId": "leg-25e9a66d00e1",
+        "locationId": "chicago-il",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-8193668c3b8f",
+        "legId": "leg-dec447e53a64",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-25e9a66d00e1\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"chicago-il@-87.62980@41.87810\"},{\"id\":\"leg-dec447e53a64\",\"mode\":\"drive\",\"from\":\"chicago-il@-87.62980@41.87810\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-13T05:09:02.889Z",
+      "legs": [
+        {
+          "legId": "leg-25e9a66d00e1",
+          "mode": "drive",
+          "source": "natural-earth-road-fallback",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 1731.56,
+          "routeMiles": 1745.67,
+          "estimatedMinutes": 2026,
+          "confidence": "medium",
+          "warnings": [
+            "Valhalla/OpenStreetMap was unavailable: Valhalla routing failed. https://valhalla1.openstreetmap.de: HTTP 400: {\"error_code\":154,\"error\":\"Path distance exceeds the max distance limit: 1500000 meters\",\"status_code\":400,\"status\":\"Bad Request\"} | https://valhalla.openstreetmap.de: Failed to fetch",
+            "The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor."
+          ],
+          "errors": [],
+          "geometryPointCount": 130,
+          "reviewedAt": "2026-07-13T05:09:02.881Z"
+        },
+        {
+          "legId": "leg-dec447e53a64",
+          "mode": "drive",
+          "source": "natural-earth-road-fallback",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 1731.56,
+          "routeMiles": 1745.67,
+          "estimatedMinutes": 2026,
+          "confidence": "medium",
+          "warnings": [
+            "Valhalla/OpenStreetMap was unavailable: Valhalla routing failed. https://valhalla1.openstreetmap.de: HTTP 400: {\"error_code\":154,\"error\":\"Path distance exceeds the max distance limit: 1500000 meters\",\"status_code\":400,\"status\":\"Bad Request\"} | https://valhalla.openstreetmap.de: Failed to fetch",
+            "The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor."
+          ],
+          "errors": [],
+          "geometryPointCount": 130,
+          "reviewedAt": "2026-07-13T05:09:02.889Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "xv35b2",
+    "routeModelVersion": 2,
+    "year": 2027,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2027",
+    "displayEndDate": "",
+    "sortKey": "2027-01-99-2027-01-99-155",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "hopper-mrcyz5l4"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "george-town-ky",
+    "route": [
+      {
+        "pointId": "point-248c48a7d7f4",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-62ebeb46d6ea",
+        "legId": "leg-b352d7df0c9d",
+        "locationId": "george-town-ky",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-3e14b75f6bf2",
+        "legId": "leg-5750eda46ea7",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
