@@ -1,7 +1,7 @@
 {
   "name": "journeylines",
   "private": true,
-  "version": "7.1.1",
+  "version": "7.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "generate:routes": "node scripts/generate-mapbox-routes.mjs",
     "verify:v7.1": "node scripts/verify-v7.1.mjs .",
-    "verify:v7.1.1": "node scripts/verify-v7.1.1.mjs ."
+    "verify:v7.1.1": "node scripts/verify-v7.1.1.mjs .",
+    "verify:v7.1.2": "node scripts/verify-v7.1.2.mjs ."
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

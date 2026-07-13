@@ -1,3 +1,9 @@
+## v7.1.2 surface-route presentation
+
+Validated car, train, and boat geometry remains the routing source of truth. Before drawing or sampling it for playback, GlobeHoppers creates an in-memory equal-distance presentation path with conservative mode-specific corner smoothing. Exact endpoints remain anchored, the smoothed path is not written back into routeDetails or provider caches, and map rendering and worker playback use the same implementation. This prevents the vehicle from diverging from the visible trail while reducing visually sharp long-segment corners.
+
+Disconnected timeline entries are treated as camera relocations rather than route legs. Playback remains on the completed leg while the camera glides to the next origin, then advances and resumes only after the map reports that the movement has settled or the guarded timeout completes.
+
 # GlobeHoppers Routing
 
 GlobeHoppers v7.1 automatically calculates and validates surface routes without requiring user approval. Driving routes use Valhalla with OpenStreetMap data as the primary live provider. Mapbox Directions is the secondary live fallback, the existing Mapbox build cache is retained as a later fallback, and Natural Earth remains the final local road approximation. Train and boat routing continue through the local worker graphs.

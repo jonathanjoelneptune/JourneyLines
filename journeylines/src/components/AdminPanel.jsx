@@ -180,7 +180,7 @@ async function acquireRepoSaveLock(onStatus = () => {}) {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -209,6 +209,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const restoreScrollRef = useRef(null);
   const modalCloseTimerRef = useRef(null);
   const initialDraftSignatureRef = useRef('');
+  const initialAddRequestRef = useRef(0);
   const modalTriggerRef = useRef(null);
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
@@ -365,6 +366,14 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     return resolved;
   }
 
+
+  useEffect(() => {
+    if (!initialAddRequestId || initialAddRequestRef.current === initialAddRequestId) return;
+    initialAddRequestRef.current = initialAddRequestId;
+    openAdd();
+  // The request id is a one-shot command from the lazy-loaded parent.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAddRequestId]);
 
   useEffect(() => {
     if (!initialEditTripId) return;

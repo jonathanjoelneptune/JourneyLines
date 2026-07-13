@@ -1,3 +1,5 @@
+import { isSurfaceRouteMode, smoothSurfaceRouteGeometry } from '../utils/routeSmoothing.js';
+
 let routingData = null;
 let routingVersion = 'multimodal-v7.1';
 let dataVersion = null;
@@ -828,6 +830,7 @@ function buildPlaybackPlan(leg, geometry, requestedSamples) {
   const mode = leg?.mode || 'plane';
   let route = Array.isArray(geometry) && geometry.length > 1 ? geometry.map(toCoord).filter(Boolean) : null;
   if (!route?.length) route = mode === 'plane' || mode === 'move' ? greatCircleCoordinates(leg.from, leg.to, 220) : [[leg.from.lon, leg.from.lat], [leg.to.lon, leg.to.lat]];
+  if (isSurfaceRouteMode(mode) && route.length > 2) route = smoothSurfaceRouteGeometry(route, mode, { profile: 'playback' });
   const routeMiles = Number(leg?.miles || 0);
   const sampleCount = Math.max(96, Math.min(900, Number(requestedSamples) || Math.round(160 + Math.sqrt(Math.max(0, routeMiles)) * 8)));
   const samples = resampleEqualDistance(route, sampleCount);

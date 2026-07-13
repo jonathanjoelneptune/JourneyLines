@@ -52,14 +52,14 @@ const waypointStart = travelMap.indexOf('function waypointPathForLeg');
 const waypointEnd = travelMap.indexOf('const ROUTE_WAYPOINTS', waypointStart);
 const waypointBlock = travelMap.slice(waypointStart, waypointEnd);
 check(waypointBlock.includes('return stylizedFallbackRoute(leg);'), 'The lightweight fallback must remain available when no route is ready.');
-check(travelMap.includes('const routed = getRoutedGeometry(leg, routedGeometries);'), 'Vehicle position must prefer routed geometry.');
+check(travelMap.includes('const routed = getVisualRoutedGeometry(leg, routedGeometries);') || travelMap.includes('const routed = getRoutedGeometry(leg, routedGeometries);'), 'Vehicle position must prefer routed geometry.');
 
 // Release metadata and QA placement.
-equal(packageJson.version, '7.1.1', 'Package version must be 7.1.1.');
+check(/^7\.1\.(?:1|[2-9]|\d{2,})$/.test(packageJson.version), 'Package version must be v7.1.1 or a later v7.1 patch.');
 check(packageJson.scripts['verify:v7.1.1'], 'Package must expose the v7.1.1 verification command.');
 check(fs.existsSync(path.join(root, 'QA/QA-v7.1.1.md')), 'v7.1.1 QA record must live under journeylines/QA/.');
 check(!fs.existsSync(path.resolve(root, '../QA-v7.1.1.md')), 'v7.1.1 QA record must not be duplicated at repository root.');
-check(read('VERSION.md').startsWith('GlobeHoppers v7.1.1'), 'journeylines/VERSION.md must identify v7.1.1 first.');
+check(read('VERSION.md').startsWith(`GlobeHoppers v${packageJson.version}`), 'journeylines/VERSION.md must identify the current package version first.');
 
 if (process.env.SKIP_BUILD !== '1') {
   const build = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], {

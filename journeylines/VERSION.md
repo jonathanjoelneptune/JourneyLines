@@ -1,3 +1,16 @@
+GlobeHoppers v7.1.2 — Surface Route Smoothing, Relocation Glide, and Add Hop Launch Reliability
+
+- Added conservative equal-distance smoothing for car, train, and boat geometry so active vehicles and completed trails follow the same detailed route with fewer visually sharp corners.
+- Surface smoothing preserves exact route endpoints, limits lateral displacement by mode and route length, and is applied consistently in both map rendering and worker-generated playback plans.
+- Disconnected timeline entries now pause at the completed destination, glide the camera to the next trip's starting location, and resume playback only after the relocation animation settles.
+- Connected legs and connected trips retain the existing continuous-handoff behavior without an unnecessary relocation glide.
+- The relocation transition has single-owner cancellation, timeout fallback, invalid-target handling, and cleanup when the user opens Studio, jumps, views the globe, or restarts.
+- Fixed the first-click Add Hop failure caused by dispatching the open command before the lazy-loaded Studio listener mounted.
+- Add Hop now passes a durable one-shot request into Studio, opens directly in modal-only mode on the first click, and no longer opens the GlobeHopper Timeline behind it.
+- Added v7.1.2 route-smoothing, relocation-state, lazy-launch, cancellation, and production-build regression checks.
+
+---
+
 GlobeHoppers v7.1.1 — Detailed Surface Route Playback
 
 - Fixed a playback-only geometry mismatch where the completed car/train/boat trail used the detailed routed geometry but the moving vehicle remained locked to a temporary stylized fallback.

@@ -5,6 +5,7 @@ import TripCard from './components/TripCard.jsx';
 import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
 import { legDurationMs } from './utils/routeTiming.js';
+import { milesBetween } from './utils/distanceUtils.js';
 import { auditHopperData, normalizeHopperData, resolveTripVisual, travelerListForLegacy, multiMemberCircleBackground, segmentedBorderGradient } from './utils/hopperUtils.js';
 import baseTrips from './data/trips.json';
 import baseLocations from './data/locations.json';
@@ -136,6 +137,13 @@ function legIdentityForEntry(entry, index = 0, progress = 0) {
   };
 }
 
+function playbackLegsConnect(previousLeg, nextLeg, toleranceMiles = 3.5) {
+  if (!previousLeg?.to || !nextLeg?.from) return false;
+  if (previousLeg.to.id && nextLeg.from.id && previousLeg.to.id === nextLeg.from.id) return true;
+  const gap = milesBetween(previousLeg.to, nextLeg.from);
+  return Number.isFinite(gap) && gap <= toleranceMiles;
+}
+
 function findLegIndexByIdentity(legs = [], identity = {}) {
   if (!identity?.tripId) return -1;
   if (identity?.legId) {
@@ -260,6 +268,8 @@ export default function App() {
   const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
   const [studioEditTripId, setStudioEditTripId] = useState(null);
   const [studioModalOnly, setStudioModalOnly] = useState(false);
+  const [studioAddRequestId, setStudioAddRequestId] = useState(0);
+  const [relocationTransition, setRelocationTransition] = useState(null);
   const tripDrawerScrollRef = useRef(0);
   const studioDrawerScrollRef = useRef(0);
   const [introLaunching, setIntroLaunching] = useState(false);
@@ -298,6 +308,8 @@ export default function App() {
   const pendingPlaySavedTripRef = useRef(null);
   const resumeAfterStudioRef = useRef(false);
   const resumeAfterTabHiddenRef = useRef(false);
+  const relocationTransitionRef = useRef(null);
+  const relocationSequenceRef = useRef(0);
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
 
   // Committed trip/location/hopper data comes from deployed repo JSON.
@@ -401,10 +413,11 @@ export default function App() {
   legsRef.current = legs;
   speedRef.current = speed;
   isPlayingRef.current = isPlaying;
+  relocationTransitionRef.current = relocationTransition;
 
   advancePlaybackRef.current = () => {
     const currentLegs = legsRef.current || [];
-    if (!currentLegs.length) return;
+    if (!currentLegs.length || relocationTransitionRef.current) return;
     const identity = activePlaybackRef.current;
     const resolved = findLegIndexByIdentity(currentLegs, identity);
     const baseIndex = resolved >= 0 ? resolved : Math.max(0, Math.min(activeIndexRef.current, currentLegs.length - 1));
@@ -416,7 +429,30 @@ export default function App() {
       setIsPlaying(false);
       return;
     }
+
+    const currentEntry = currentLegs[baseIndex];
     const nextEntry = currentLegs[nextIndex];
+    if (!playbackLegsConnect(currentEntry?.leg, nextEntry?.leg)) {
+      playbackEngine.pause();
+      setIsPlaying(false);
+      setLegProgress(1);
+      activePlaybackRef.current = { ...legIdentityForEntry(currentEntry, baseIndex, 1), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
+      const id = `relocation-${++relocationSequenceRef.current}`;
+      const transition = {
+        id,
+        from: currentEntry?.leg?.to || null,
+        to: nextEntry?.leg?.from || null,
+        nextIndex,
+        nextTripId: nextEntry?.trip?.id || null,
+        nextLegId: nextEntry?.legId || nextEntry?.leg?.legId || nextEntry?.leg?.id || null,
+        nextMode: nextEntry?.leg?.mode || 'plane',
+        distanceMiles: milesBetween(currentEntry?.leg?.to || {}, nextEntry?.leg?.from || {})
+      };
+      relocationTransitionRef.current = transition;
+      setRelocationTransition(transition);
+      return;
+    }
+
     activePlaybackRef.current = { ...legIdentityForEntry(nextEntry, nextIndex, 0), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
     setLegProgress(0);
     setActiveIndex(nextIndex);
@@ -597,6 +633,24 @@ export default function App() {
   }, [isPlaying]);
 
 
+  const completeRelocationTransition = useCallback((requestId) => {
+    const transition = relocationTransitionRef.current;
+    if (!transition || transition.id !== requestId) return;
+    const currentLegs = legsRef.current || [];
+    const nextIndex = Math.max(0, Math.min(Number(transition.nextIndex) || 0, Math.max(0, currentLegs.length - 1)));
+    const nextEntry = currentLegs[nextIndex];
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
+    if (!nextEntry) {
+      setIsPlaying(false);
+      return;
+    }
+    activePlaybackRef.current = { ...legIdentityForEntry(nextEntry, nextIndex, 0), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
+    setLegProgress(0);
+    setActiveIndex(nextIndex);
+    setIsPlaying(true);
+  }, []);
+
   function freezePlaybackClock() {
     const snapshot = playbackEngine.snapshot();
     playbackEngine.pause();
@@ -607,6 +661,7 @@ export default function App() {
   }
 
   function play() {
+    if (relocationTransitionRef.current) return;
     if (!legs.length) {
       setIsPlaying(false);
       setIntroLaunching(false);
@@ -659,6 +714,8 @@ export default function App() {
     setIsPlaying(true);
   }, [legProgress]);
   function editTravelHistory() {
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
     setGlobeOverview(false);
     setShowHero(false);
     setTripDrawerOpen(false);
@@ -670,6 +727,8 @@ export default function App() {
   }
 
   function editTimelineMarker(marker) {
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
     prewarmRoutingEngine('Edit Hop').catch(() => {});
     const tripId = marker?.id || marker?.tripId;
     if (!tripId) return;
@@ -688,6 +747,8 @@ export default function App() {
     setIsPlaying(false);
   }
   function addTravelTimelineEntry() {
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
     prewarmRoutingEngine('Add Hop').catch(() => {});
     resumeAfterStudioRef.current = isPlaying;
     freezePlaybackClock();
@@ -695,16 +756,18 @@ export default function App() {
     setShowHero(false);
     setTripDrawerOpen(false);
     setStudioEditTripId(null);
-    setStudioModalOnly(!admin);
+    setStudioModalOnly(true);
+    setStudioAddRequestId(value => value + 1);
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
     tRef.current.last = null;
     setIsPlaying(false);
-    window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-open-new-trip')), 80);
   }
   function pause() { resumeAfterTabHiddenRef.current = false; freezePlaybackClock(); setIsPlaying(false); }
   function viewGlobe() {
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
     resumeAfterStudioRef.current = isPlaying;
     freezePlaybackClock();
     setAdmin(false);
@@ -719,6 +782,8 @@ export default function App() {
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview')), 12);
   }
   function restartJourney() {
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
     cancelPendingJumpTimers();
     resumeAfterStudioRef.current = false;
     resumeAfterTabHiddenRef.current = false;
@@ -747,6 +812,8 @@ export default function App() {
   }
 
   function jumpToLeg(index, progressWithinLeg = 0, autoPlay = false) {
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
     const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
@@ -896,11 +963,14 @@ export default function App() {
   const progress = legs.length ? Math.min(1, (Math.min(activeIndex, legs.length - 1) + Math.min(1, legProgress)) / legs.length) : 1;
   const timelineComplete = started && legs.length > 0 && activeIndex >= legs.length - 1 && Number(legProgress || 0) >= 0.999999;
   const hasPlaybackStarted = started && !introLaunching && activeIndex >= 0 && activeIndex < legs.length && !timelineComplete;
-  const topbarPlaybackTitle = timelineComplete
-    ? 'Timeline Complete — Use Restart Journey'
-    : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume Travel History' : 'Play Travel History'));
+  const isRelocating = Boolean(relocationTransition);
+  const topbarPlaybackTitle = isRelocating
+    ? 'Moving to the next Hop'
+    : timelineComplete
+      ? 'Timeline Complete — Use Restart Journey'
+      : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume Travel History' : 'Play Travel History'));
 
-  return <main className={`app ${isPlaying ? 'is-playing' : ''}`} data-theme={theme}>
+  return <main className={`app ${isPlaying ? 'is-playing' : ''} ${isRelocating ? 'is-relocating' : ''}`} data-theme={theme}>
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
@@ -910,10 +980,10 @@ export default function App() {
       <button className="topbar-pill topbar-hoppers" onClick={() => { setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}><span className="topbar-hoppers-icon" aria-hidden="true">👤</span><span>Hoppers</span></button>
       <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
       <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
-      <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
+      <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} disabled={isRelocating} onClick={isPlaying ? pause : play}>{isRelocating ? '…' : isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -926,7 +996,7 @@ export default function App() {
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} hasPlaybackStarted={hasPlaybackStarted} timelineComplete={timelineComplete} onPlay={play} onPause={pause} onReset={restartJourney} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
+    <PlaybackControls isPlaying={isPlaying} hasPlaybackStarted={hasPlaybackStarted} timelineComplete={timelineComplete} isRelocating={isRelocating} onPlay={play} onPause={pause} onReset={restartJourney} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
       freezePlaybackClock();
       setIsPlaying(false);
       setFilter(value);
@@ -944,7 +1014,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
+    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
   </main>;
 }
 
