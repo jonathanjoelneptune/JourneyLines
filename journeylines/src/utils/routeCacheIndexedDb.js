@@ -1,3 +1,4 @@
+import { bidirectionalRouteKey } from './routeReuse.js';
 const DB_NAME = 'globehoppers-routing-v6';
 const DB_VERSION = 1;
 const STORE = 'routes';
@@ -100,6 +101,11 @@ export function routeCacheKeyV6(leg, routingVersion = 'natural-earth-v6.0') {
   return `${routingVersion}:${legId}:${from}->${to}:${leg?.mode || 'plane'}`;
 }
 
+
+
+export function bidirectionalRouteCacheKey(leg, routingVersion = 'natural-earth-v6.0') {
+  return bidirectionalRouteKey(leg, routingVersion);
+}
 
 export async function deleteCachedRoute(key) {
   memoryFallback.delete(key);

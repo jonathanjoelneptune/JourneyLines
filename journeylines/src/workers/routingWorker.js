@@ -33,10 +33,11 @@ self.onmessage = async event => {
       return;
     }
     if (type === 'playbackPlan') {
-      const result = buildPlaybackPlan(payload.leg, payload.geometry, payload.samples);
+      const geometry = unpackCoordinateBuffer(payload.geometryPacked, payload.geometryPointCount) || payload.geometry;
+      const result = buildPlaybackPlan(payload.leg, geometry, payload.samples);
       const transfer = [];
       for (const value of Object.values(result || {})) {
-        if (value instanceof Float32Array || value instanceof Uint32Array || value instanceof Uint16Array) transfer.push(value.buffer);
+        if (value instanceof Float32Array || value instanceof Float64Array || value instanceof Uint32Array || value instanceof Uint16Array) transfer.push(value.buffer);
       }
       self.postMessage({ id, ok: true, result }, transfer);
       return;
@@ -826,6 +827,15 @@ function surfaceMostlyOnLand(route) {
   return !checked || water / checked < 0.06;
 }
 
+function unpackCoordinateBuffer(value, pointCount = 0) {
+  if (!(value instanceof Float64Array || value instanceof Float32Array)) return null;
+  const count = Math.min(Math.floor(value.length / 2), Math.max(0, Number(pointCount) || Math.floor(value.length / 2)));
+  if (count < 2) return null;
+  const geometry = new Array(count);
+  for (let index = 0; index < count; index += 1) geometry[index] = [value[index * 2], value[index * 2 + 1]];
+  return geometry;
+}
+
 function buildPlaybackPlan(leg, geometry, requestedSamples) {
   const mode = leg?.mode || 'plane';
   let route = Array.isArray(geometry) && geometry.length > 1 ? geometry.map(toCoord).filter(Boolean) : null;
@@ -860,6 +870,7 @@ function buildPlaybackPlan(leg, geometry, requestedSamples) {
 
   const overview = new Float32Array(flattenCoords(simplifyToCount(samples, 64)));
   const regional = new Float32Array(flattenCoords(simplifyToCount(samples, 180)));
+  const presentation = new Float32Array(flattenCoords(route));
   return {
     sampleCount,
     totalMiles: total,
@@ -869,6 +880,7 @@ function buildPlaybackPlan(leg, geometry, requestedSamples) {
     cumulative,
     overview,
     regional,
+    presentation,
     routingVersion,
     dataVersion
   };

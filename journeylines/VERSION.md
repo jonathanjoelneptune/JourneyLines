@@ -1,3 +1,20 @@
+GlobeHoppers v7.1.4 — Surface Playback Performance Recovery
+
+- Replaced active-leg raw geometry copying with stable references and a single prepared presentation path, preventing cache invalidation and main-thread route re-simplification at leg start.
+- Packed playback-plan input into transferable Float64Array buffers so large provider routes are moved to the routing worker without structured-cloning nested coordinate arrays.
+- Added canonical bidirectional surface-route caching. Matching car, train, and boat return legs reuse the outbound route and playback plan in reverse instead of requesting and preparing duplicate geometry.
+- Made the playback engine the sole owner of vehicle overlays while playing; MapLibre move/render callbacks no longer duplicate overlay projection work.
+- Reduced active-trail GeoJSON updates to approximately 12, 10, or 8 updates per second by quality level and reused the already-built feature list for transition fades.
+- Replaced per-frame completed-history fade and profile-morph GeoJSON rebuilding with one-time source updates and MapLibre paint transitions.
+- Adaptive quality now throttles camera updates to approximately 60, 40, or 30 FPS while preserving display-rate vehicle motion.
+- Disabled the wide historical-route glow and reduced passive blur during playback, while keeping the active route fully styled.
+- Suspended full-screen map filters and decorative star animation during playback to reduce compositing overhead.
+- Reduced MapLibre tile cache/prefetch settings and bounded the custom tile-warmup set.
+- Added opt-in development instrumentation for frame time, long tasks, overlay/camera/trail updates, worker round trips, and GeoJSON setData calls.
+- Added v7.1.4 bidirectional-route, transferable-buffer, performance-ownership, render-budget, regression, and production-build verification.
+
+---
+
 GlobeHoppers v7.1.3 — Lightweight Surface Playback
 
 - Replaced dense equal-distance surface-route smoothing with bounded corridor-preserving presentation geometry.

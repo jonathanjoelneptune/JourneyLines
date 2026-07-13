@@ -16,6 +16,8 @@ import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROU
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
 import { buildSurfacePresentationGeometry, isSurfaceRouteMode, surfaceRouteRenderSamples } from '../utils/routePresentation.js';
+import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection } from '../utils/routeReuse.js';
+import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame } from '../utils/playbackPerformance.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
@@ -185,6 +187,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const routeRequestsRef = useRef(new Set());
   const currentOverlayStateRef = useRef(null);
   const userCameraOverrideRef = useRef(false);
+  const playbackOwnsOverlayRef = useRef(false);
   const tilePreloadRef = useRef(new Set());
   const lastActiveRouteUpdateRef = useRef(0);
   const zoomReadoutThrottleRef = useRef(0);
@@ -201,9 +204,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const trailTuningFramedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [zoomReadout, setZoomReadout] = useState(INTRO_GLOBE_ZOOM);
-  const fadeTrailRef = useRef({ active: false, features: [], started: 0, duration: 650, raf: 0, key: '' });
-  const trailProfileMorphRef = useRef({ active: false, tripId: '', started: 0, duration: 3000, raf: 0 });
+  const fadeTrailRef = useRef({ active: false, features: [], started: 0, duration: 520, raf: 0, timer: 0, key: '' });
+  const trailProfileMorphRef = useRef({ active: false, tripId: '', started: 0, duration: 900, raf: 0, timer: 0 });
   const previousActiveRouteRef = useRef({ key: '', active: null, progress: 0, features: [] });
+  const completedRouteRenderRef = useRef({ signature: '' });
   const playbackPlansRef = useRef(new Map());
   const routedGeometriesRef = useRef({});
   const latestFrameContextRef = useRef(null);
@@ -212,6 +216,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     lastPulse: false,
     lastRouteKey: '',
     lastFrame: 0,
+    lastCamera: 0,
+    lastTrailProgress: -1,
+    lastPlanCheck: 0,
+    playbackPlan: null,
     lastActiveEntry: null,
     transitionStartedAt: 0,
     transitionKind: 'initial',
@@ -284,7 +292,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
             geometry = await routeLegInWorker(leg, { reason: 'current/next trip prefetch' });
             if (cancelled || !geometry?.length) continue;
             const key = leg.routeCacheKey || routeCacheKey(leg);
-            setRoutedGeometries(previous => previous[key] === geometry ? previous : { ...previous, [key]: geometry });
+            const pairKey = isSurfaceRouteMode(leg.mode) ? bidirectionalRouteKey(leg) : '';
+            const canonicalGeometry = pairKey ? canonicalGeometryForLeg(leg, geometry) : null;
+            setRoutedGeometries(previous => {
+              if (previous[key] === geometry && (!pairKey || previous[pairKey] === canonicalGeometry)) return previous;
+              return { ...previous, [key]: geometry, ...(pairKey && canonicalGeometry ? { [pairKey]: canonicalGeometry } : {}) };
+            });
           } catch {}
         }
         try {
@@ -322,9 +335,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       interactive: true,
       renderWorldCopies: false,
       fadeDuration: 700,
-      maxTileCacheSize: 3000,
+      maxTileCacheSize: 1200,
       refreshExpiredTiles: false,
-      prefetchZoomDelta: 5
+      prefetchZoomDelta: 2
     });
 
     mapRef.current = map;
@@ -333,6 +346,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     map.on('load', () => {
       try { map.setProjection({ type: 'globe' }); } catch {}
       const updateZoomReadout = () => {
+        // Avoid React state updates while the playback engine owns the camera.
+        // The readout catches up immediately when playback pauses.
+        if (playbackOwnsOverlayRef.current) return;
         const now = performance.now();
         if (now - (zoomReadoutThrottleRef.current || 0) < 180) return;
         zoomReadoutThrottleRef.current = now;
@@ -363,6 +379,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       clearTimeout(arrivalTimerRef.current);
       clearTimeout(timelineCompletionRef.current?.timer);
       clearTimeout(manualSpinResumeTimerRef.current);
+      clearTimeout(fadeTrailRef.current?.timer);
+      clearTimeout(trailProfileMorphRef.current?.timer);
       map.remove();
       mapRef.current = null;
       setMapReady(false);
@@ -569,6 +587,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (!map) return;
     const refresh = () => {
       throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef, labelVisibilityStateRef, placardRuntimeRef);
+      // map.jumpTo() emits move/render events synchronously. During playback the
+      // playback engine already updates the vehicle once per display frame, so
+      // these listeners must not repeat the same projection and DOM work.
+      if (playbackOwnsOverlayRef.current) return;
       const state = currentOverlayStateRef.current;
       if (!state) return;
       updateOverlay(map, state.active, state.scene, state.color);
@@ -577,12 +599,22 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
     };
     map.on('move', refresh);
-    map.on('render', refresh);
     return () => {
       map.off('move', refresh);
-      map.off('render', refresh);
     };
   }, [mapReady]);
+
+  useEffect(() => {
+    playbackOwnsOverlayRef.current = Boolean(isPlaying);
+    if (!isPlaying && mapRef.current) setZoomReadout(Number(mapRef.current.getZoom?.() || INTRO_GLOBE_ZOOM));
+    return () => { playbackOwnsOverlayRef.current = false; };
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+    setCompletedRoutePaintState(map, { multiplier: 1, duration: 180, playback: Boolean(isPlaying) });
+  }, [mapReady, isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -608,14 +640,29 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
-    // Completed route history is static map data. Only rebuild it when a leg
-    // completes, route cache changes, or display settings change. Avoid doing
-    // this in the per-frame playback loop.
+    // Completed route history is static map data. Route prefetch can update
+    // routedGeometries several times while the current vehicle is moving; those
+    // cache-only updates must not serialize the entire historical timeline.
+    const lastCompleted = completedLegs[completedLegs.length - 1];
+    const completedStructureSignature = [
+      completedLegs.length,
+      lastCompleted?.trip?.id || '',
+      lastCompleted?.legId || lastCompleted?.leg?.legId || lastCompleted?.legIndex || '',
+      showTrails ? 1 : 0,
+      active?.trip?.id || '',
+      Number(trailOpacity || 0).toFixed(3),
+      Number(trailWidth || 0).toFixed(3),
+      trailTuningOpen ? 1 : 0
+    ].join('|');
+    if (isPlaying && showTrails && !trailTuningOpen && !fadeTrailRef.current.active && !trailProfileMorphRef.current.active
+      && completedRouteRenderRef.current.signature === completedStructureSignature) return;
+
     if (trailTuningOpen) syncTrailTuningDemo(map, trailTuningConfig, trailWidth);
     else {
       if (showTrails) {
         fadeTrailRef.current.active = false;
         window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
+      window.clearTimeout(fadeTrailRef.current.timer || 0);
         if (trailProfileMorphRef.current.active) return;
       }
       const heldTripId = fadeTrailRef.current?.key ? String(fadeTrailRef.current.key).split(':')[0] : '';
@@ -630,7 +677,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldFeatures, active?.trip?.id || null);
       }
     }
-  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig, isPlaying]);
+    completedRouteRenderRef.current.signature = completedStructureSignature;
+  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig, isPlaying, active?.trip?.id]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -868,6 +916,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (prevRoute.key && prevRoute.key !== activeRouteKey && !showTrails && isPlaying && prevRoute.features?.length) {
       const sameTrip = prevRoute.active?.trip?.id && prevRoute.active.trip.id === active?.trip?.id;
       window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
+      window.clearTimeout(fadeTrailRef.current.timer || 0);
       if (sameTrip) {
         // Within one trip, keep all completed legs from that same trip visible
         // while the return/next leg plays. This preserves the round-trip visual.
@@ -890,12 +939,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (isPlaying) return;
 
     if (now - lastActiveRouteUpdateRef.current > 16 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
-      syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
+      const activeFeatures = syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
       previousActiveRouteRef.current = {
         key: activeRouteKey,
         active,
         progress: scene.lineProgress,
-        features: activeRouteFeaturesForFade(active, scene.lineProgress, routedGeometries, hopperData || travById, trailTuningConfig)
+        features: activeRouteFeaturesForFadeFromFeatures(activeFeatures)
       };
       lastActiveRouteUpdateRef.current = now;
     }
@@ -952,29 +1001,42 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
       const now = Number(frame.timestamp || performance.now());
       const quality = frame.quality || 'high';
-      const trailInterval = quality === 'high' ? 50 : quality === 'medium' ? 76 : 110;
+      const trailInterval = quality === 'high' ? 84 : quality === 'medium' ? 100 : 125;
+      const cameraInterval = quality === 'high' ? 16 : quality === 'medium' ? 25 : 34;
       const stats = frameRenderStatsRef.current;
+      recordPlaybackFrame(now, quality);
 
       if (stats.lastRouteKey !== routeKey) {
         const previousEntry = stats.lastActiveEntry;
-      stats.transitionStartCamera = lastCameraRef.current
-        ? { ...lastCameraRef.current, center: [...lastCameraRef.current.center] }
-        : null;
+        const liveGeometry = getRoutedGeometry(activeEntry.leg, routedGeometriesRef.current);
+        const livePlan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
+        stats.transitionStartCamera = lastCameraRef.current
+          ? { ...lastCameraRef.current, center: [...lastCameraRef.current.center] }
+          : null;
         stats.transitionKind = previousEntry && legsConnect(previousEntry?.leg, activeEntry?.leg) ? 'continuous' : previousEntry ? 'relocation' : 'initial';
         stats.transitionStartedAt = now;
         stats.lastRouteKey = routeKey;
         stats.lastTrail = 0;
-        stats.frozenEntry = freezeActiveEntryGeometry(activeEntry, routedGeometriesRef.current);
+        stats.lastCamera = 0;
+        stats.lastTrailProgress = -1;
+        stats.lastPlanCheck = now;
+        stats.playbackPlan = livePlan;
+        stats.frozenEntry = freezeActiveEntryGeometry(activeEntry, routedGeometriesRef.current, livePlan);
         stats.lastActiveEntry = activeEntry;
+      } else if ((!stats.playbackPlan || !stats.frozenEntry?.leg?.presentationGeometry) && now - Number(stats.lastPlanCheck || 0) >= 500) {
+        // Late route/plan promotion is polled at a low rate. Do not rebuild route
+        // keys and geometry signatures on every animation frame.
+        const liveGeometry = getRoutedGeometry(activeEntry.leg, routedGeometriesRef.current);
+        const livePlan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
+        stats.lastPlanCheck = now;
+        if (livePlan) stats.playbackPlan = livePlan;
+        if (!stats.frozenEntry?.leg?.presentationGeometry && liveGeometry?.length > 1) {
+          stats.frozenEntry = freezeActiveEntryGeometry(activeEntry, routedGeometriesRef.current, livePlan);
+        }
       }
 
       const renderEntry = stats.frozenEntry || activeEntry;
-      // Playback plans must be keyed by the exact geometry being rendered. In
-      // v7.1 the plan was stored for the detailed route but looked up using a
-      // frozen stylized fallback, so the completed trail was correct while the
-      // moving vehicle followed the wrong path.
-      const renderGeometry = getRoutedGeometry(renderEntry.leg, routedGeometriesRef.current);
-      const plan = playbackPlansRef.current.get(playbackPlanKey(renderEntry.leg, renderGeometry)) || null;
+      const plan = stats.playbackPlan || null;
       const sceneState = getScene(
         renderEntry,
         Number(frame.rawProgress || 0),
@@ -986,15 +1048,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       );
       const color = colorForLeg(renderEntry, context.hopperVisuals);
 
-      if (now - stats.lastTrail >= trailInterval || sceneState.lineProgress >= 0.995) {
-        syncActiveRoute(map, renderEntry, sceneState.lineProgress, color, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig);
+      const trailMoved = stats.lastTrailProgress < 0 || Math.abs(sceneState.lineProgress - stats.lastTrailProgress) >= 1 / 240;
+      if ((trailMoved && now - stats.lastTrail >= trailInterval) || sceneState.lineProgress >= 0.995) {
+        const activeFeatures = syncActiveRoute(map, renderEntry, sceneState.lineProgress, color, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig);
         previousActiveRouteRef.current = {
           key: routeKey,
           active: renderEntry,
           progress: sceneState.lineProgress,
-          features: activeRouteFeaturesForFade(renderEntry, sceneState.lineProgress, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig)
+          features: activeRouteFeaturesForFadeFromFeatures(activeFeatures)
         };
         stats.lastTrail = now;
+        stats.lastTrailProgress = sceneState.lineProgress;
+        recordPlaybackEvent('activeTrailUpdates');
       }
 
       if (sceneState.pulseActive !== stats.lastPulse) {
@@ -1003,29 +1068,36 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       }
 
       const transitionAge = Math.max(0, now - Number(stats.transitionStartedAt || 0));
-      let smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
-      if (transitionAge < CONTINUOUS_HANDOFF_HOLD_MS) {
-        smoothing = stats.transitionKind === 'continuous'
-          ? Math.max(smoothing, 0.046)
-          : Math.min(smoothing, 0.018);
-      }
+      const cameraDue = now - Number(stats.lastCamera || 0) >= cameraInterval || stats.lastCamera === 0;
+      if (cameraDue) {
+        let smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
+        if (transitionAge < CONTINUOUS_HANDOFF_HOLD_MS) {
+          smoothing = stats.transitionKind === 'continuous'
+            ? Math.max(smoothing, 0.046)
+            : Math.min(smoothing, 0.018);
+        }
 
-      let targetCamera = sceneState.camera;
-      if (stats.transitionKind === 'continuous' && stats.transitionStartCamera && transitionAge < CONTINUOUS_HANDOFF_HOLD_MS + CONTINUOUS_HANDOFF_RELEASE_MS) {
-        const releaseProgress = Math.max(0, Math.min(1, (transitionAge - CONTINUOUS_HANDOFF_HOLD_MS) / CONTINUOUS_HANDOFF_RELEASE_MS));
-        const releaseEase = releaseProgress * releaseProgress * (3 - 2 * releaseProgress);
-        const preservedZoom = lerp(stats.transitionStartCamera.zoom, sceneState.camera.zoom, releaseEase);
-        targetCamera = { ...sceneState.camera, zoom: Math.max(sceneState.camera.zoom, preservedZoom) };
-      }
+        let targetCamera = sceneState.camera;
+        if (stats.transitionKind === 'continuous' && stats.transitionStartCamera && transitionAge < CONTINUOUS_HANDOFF_HOLD_MS + CONTINUOUS_HANDOFF_RELEASE_MS) {
+          const releaseProgress = Math.max(0, Math.min(1, (transitionAge - CONTINUOUS_HANDOFF_HOLD_MS) / CONTINUOUS_HANDOFF_RELEASE_MS));
+          const releaseEase = releaseProgress * releaseProgress * (3 - 2 * releaseProgress);
+          const preservedZoom = lerp(stats.transitionStartCamera.zoom, sceneState.camera.zoom, releaseEase);
+          targetCamera = { ...sceneState.camera, zoom: Math.max(sceneState.camera.zoom, preservedZoom) };
+        }
 
-      let camera = smoothCamera(lastCameraRef.current, targetCamera, smoothing);
-      camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
-      lastCameraRef.current = camera;
-      if (!userCameraOverrideRef.current) map.jumpTo({ ...camera, essential: true });
+        let camera = smoothCamera(lastCameraRef.current, targetCamera, smoothing);
+        camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
+        lastCameraRef.current = camera;
+        if (!userCameraOverrideRef.current) map.jumpTo({ ...camera, essential: true });
+        stats.lastCamera = now;
+        recordPlaybackEvent('cameraUpdates');
+      }
 
       currentOverlayStateRef.current = { active: renderEntry, scene: sceneState, color };
       updateOverlay(map, renderEntry, sceneState, color);
-      if (quality !== 'low' || Math.floor(now / 33) % 2 === 0) {
+      recordPlaybackEvent('overlayUpdates');
+      if ((renderEntry.leg.mode === 'plane' || renderEntry.leg.mode === 'move')
+        && (quality !== 'low' || Math.floor(now / 66) % 2 === 0)) {
         updateAirArcOverlay(map, airArcRef.current, renderEntry, sceneState, color);
       }
       stats.lastFrame = now;
@@ -1067,25 +1139,36 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // v2.22: all top-down PNG vessel icons are authored nose-up. Rotate the icon so
     // the nose points along the current projected route segment. This applies to
     // plane/car/boat/train; the route itself remains north-up.
-    const rotation = projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries);
-    primeRecoloredVesselIcon(iconMode, color);
-    const iconUrl = getCachedRecoloredVesselIconUrl(iconMode, color);
-    const nextMarkup = iconUrl ? `<img class="jl-vehicle-img" src="${escapeHtml(iconUrl)}" alt="" draggable="false" />` : vehicleSvg(iconMode);
-    if (vehicleRef.current.__jlVehicleMarkup !== nextMarkup) {
-      vehicleRef.current.innerHTML = nextMarkup;
-      vehicleRef.current.__jlVehicleMarkup = nextMarkup;
+    const rotation = Number.isFinite(Number(sceneState.screenHeading))
+      ? Number(sceneState.screenHeading)
+      : projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries);
+    const iconKey = `${iconMode}:${String(color || '#00e5ff')}`;
+    if (vehicleRef.current.__jlVehicleIconKey !== iconKey) {
+      primeRecoloredVesselIcon(iconMode, color);
+      const iconUrl = getCachedRecoloredVesselIconUrl(iconMode, color);
+      const nextMarkup = iconUrl ? `<img class="jl-vehicle-img" src="${escapeHtml(iconUrl)}" alt="" draggable="false" />` : vehicleSvg(iconMode);
+      if (vehicleRef.current.__jlVehicleMarkup !== nextMarkup) {
+        vehicleRef.current.innerHTML = nextMarkup;
+        vehicleRef.current.__jlVehicleMarkup = nextMarkup;
+      }
+      vehicleRef.current.__jlVehicleIconKey = iconKey;
+      vehicleRef.current.dataset.mode = iconMode;
+      vehicleRef.current.dataset.iconColor = String(color || '#00e5ff');
+      vehicleRef.current.style.setProperty('--vehicle-color', color);
     }
-    vehicleRef.current.dataset.mode = iconMode;
-    vehicleRef.current.dataset.iconColor = String(color || '#00e5ff');
-    vehicleRef.current.style.setProperty('--vehicle-color', color);
     vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) perspective(900px) rotateX(${sceneState.vehiclePitchDeg || 0}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
 
-    const destPt = map.project([leg.to.lon, leg.to.lat]);
-    updatePulseOverlay(pulseRef.current, destPt, color, sceneState.pulseActive);
+    if (sceneState.pulseActive) {
+      const destPt = map.project([leg.to.lon, leg.to.lat]);
+      updatePulseOverlay(pulseRef.current, destPt, color, true);
+    } else if (pulseRef.current) {
+      pulseRef.current.classList.remove('is-active');
+      pulseRef.current.style.opacity = '0';
+    }
   }
 
-  return <div className={`maplibre-shell terrain-mode space-mode ${isPlaying ? 'playback-active' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
+  return <div className={`maplibre-shell terrain-mode space-mode ${isPlaying ? 'playback-active is-playing' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
     <div className="zoom-readout" aria-label="Current map zoom">Zoom {Number(zoomReadout || 0).toFixed(2)}<span>Initial {INTRO_GLOBE_ZOOM.toFixed(2)} · Spin {IDLE_SPIN_GLOBE_ZOOM.toFixed(2)}</span></div>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
@@ -1099,21 +1182,29 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   </div>;
 }
 
-function addRouteSourcesAndLayers(map) {
-  const zoomScale = (low, mid, high) => ['interpolate', ['linear'], ['zoom'], 2, low, 4, mid, 7, high];
-  const widthExpr = (prop) => ['interpolate', ['linear'], ['zoom'],
+function routeWidthExpression(prop) {
+  return ['interpolate', ['linear'], ['zoom'],
     2, ['*', ['coalesce', ['get', prop], 1], 0.46],
     4, ['*', ['coalesce', ['get', prop], 1], 0.64],
     5.5, ['*', ['coalesce', ['get', prop], 1], 0.82],
     7, ['coalesce', ['get', prop], 1]
   ];
-  const opacityAtZoom = (prop, detailScale) => ['*', ['coalesce', ['get', prop], 1], detailScale];
-  const opacityExpr = (prop) => ['interpolate', ['linear'], ['zoom'],
-    2, opacityAtZoom(prop, ['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.26]], ['==', ['get', 'trailRole'], 'separator'], 0.26, ['==', ['get', 'trailRole'], 'detail'], 0.18, 0.42]),
-    4, opacityAtZoom(prop, ['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.44]], ['==', ['get', 'trailRole'], 'separator'], 0.44, ['==', ['get', 'trailRole'], 'detail'], 0.34, 0.66]),
-    5.5, opacityAtZoom(prop, ['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.72]], ['==', ['get', 'trailRole'], 'separator'], 0.72, ['==', ['get', 'trailRole'], 'detail'], 0.66, 0.86]),
-    7, ['*', ['coalesce', ['get', prop], 1], ['case', ['==', ['get', 'trailRole'], 'border'], 1, ['==', ['get', 'trailRole'], 'separator'], 1, ['==', ['get', 'trailRole'], 'detail'], 0.9, 1]]
+}
+
+function routeOpacityExpression(prop, multiplier = 1) {
+  const opacityAtZoom = (detailScale) => ['*', ['coalesce', ['get', prop], 1], detailScale, multiplier];
+  return ['interpolate', ['linear'], ['zoom'],
+    2, opacityAtZoom(['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.26]], ['==', ['get', 'trailRole'], 'separator'], 0.26, ['==', ['get', 'trailRole'], 'detail'], 0.18, 0.42]),
+    4, opacityAtZoom(['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.44]], ['==', ['get', 'trailRole'], 'separator'], 0.44, ['==', ['get', 'trailRole'], 'detail'], 0.34, 0.66]),
+    5.5, opacityAtZoom(['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.72]], ['==', ['get', 'trailRole'], 'separator'], 0.72, ['==', ['get', 'trailRole'], 'detail'], 0.66, 0.86]),
+    7, ['*', ['coalesce', ['get', prop], 1], ['case', ['==', ['get', 'trailRole'], 'border'], 1, ['==', ['get', 'trailRole'], 'separator'], 1, ['==', ['get', 'trailRole'], 'detail'], 0.9, 1], multiplier]
   ];
+}
+
+function addRouteSourcesAndLayers(map) {
+  const zoomScale = (low, mid, high) => ['interpolate', ['linear'], ['zoom'], 2, low, 4, mid, 7, high];
+  const widthExpr = routeWidthExpression;
+  const opacityExpr = routeOpacityExpression;
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
     map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('outerGlowWidth'), 'line-opacity': opacityExpr('outerGlowOpacity'), 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
@@ -1161,8 +1252,11 @@ function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opac
     }
     return cachedCompletedRouteFeatures(l, i, trail, Math.max(0.9, opacity), width, routedGeometries, trailTuning);
   }) : (fadeFeatures || []);
-  map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
-
+  measurePlaybackEvent('completedRouteSetData', () => {
+    map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
+  });
+  recordPlaybackEvent('completedRouteSetDataCalls', 0, { features: features.length });
+  return features;
 }
 
 function cachedCompletedRouteFeatures(entry, index, trail, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
@@ -1233,18 +1327,26 @@ function routeTuningCacheSignature(config = DEFAULT_TRAIL_TUNING) {
 }
 
 function syncActiveRoute(map, active, progress = 1, color = '#00e5ff', routedGeometries = {}, travelerData = null, trailTuning = DEFAULT_TRAIL_TUNING) {
-  if (!active) { map.getSource('active-route')?.setData(emptyCollection()); return; }
+  if (!active) {
+    map.getSource('active-route')?.setData(emptyCollection());
+    return [];
+  }
   const trail = travelerData ? trailVisualForLeg(active, travelerData) : { style: 'solid', colors: [color], baseColor: color };
   const featureList = routeFeaturesForTrail(active.leg, trail, active.trip.id, active.legIndex, 1, 2, true, progress, routedGeometries, trailTuning);
-  map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: featureList });
-
+  measurePlaybackEvent('activeRouteSetData', () => {
+    map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: featureList });
+  });
+  return featureList;
 }
 
 function activeRouteFeaturesForFade(active, progress = 1, routedGeometries = {}, travelerData = null, trailTuning = DEFAULT_TRAIL_TUNING) {
   if (!active) return [];
   const fallback = colorForLeg(active, travelerData || {});
   const trail = travelerData ? trailVisualForLeg(active, travelerData) : { style: 'solid', colors: [fallback], baseColor: fallback };
-  const features = routeFeaturesForTrail(active.leg, trail, active.trip.id, `fade-${active.legIndex}`, 1, 2, false, Math.max(0.01, Math.min(1, progress || 1)), routedGeometries, trailTuning);
+  return activeRouteFeaturesForFadeFromFeatures(routeFeaturesForTrail(active.leg, trail, active.trip.id, `fade-${active.legIndex}`, 1, 2, false, Math.max(0.01, Math.min(1, progress || 1)), routedGeometries, trailTuning));
+}
+
+function activeRouteFeaturesForFadeFromFeatures(features = []) {
   return features.map(f => ({
     ...f,
     properties: {
@@ -1295,49 +1397,61 @@ function mergeHeldRouteFeatures(...featureGroups) {
   return out;
 }
 
+function setCompletedRoutePaintState(map, { multiplier = 1, duration = 0, playback = false } = {}) {
+  if (!map) return;
+  const layers = [
+    ['completed-routes-glow-wide', 'outerGlowOpacity', playback ? 0 : multiplier],
+    ['completed-routes-glow', 'glowOpacity', multiplier * (playback ? 0.42 : 1)],
+    ['completed-routes', 'opacity', multiplier * (playback ? 0.88 : 1)]
+  ];
+  for (const [layer, property, value] of layers) {
+    if (!map.getLayer?.(layer)) continue;
+    try {
+      map.setPaintProperty(layer, 'line-opacity-transition', { duration: Math.max(0, duration), delay: 0 });
+      map.setPaintProperty(layer, 'line-opacity', routeOpacityExpression(property, value));
+      if (layer === 'completed-routes-glow') map.setPaintProperty(layer, 'line-blur', playback ? 4.5 : 8.5);
+    } catch {}
+  }
+}
+
 function startCompletedRouteFade(map, fadeRef, features = [], completedLegs = [], travelersById = {}, opacity = 0.28, width = 1.55, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
   if (!map || !fadeRef?.current || !features?.length) return;
   window.cancelAnimationFrame(fadeRef.current.raf || 0);
-  const started = performance.now();
-  const duration = fadeRef.current.duration || 650;
-  fadeRef.current = { ...fadeRef.current, active: true, features, started };
-  const step = () => {
-    const elapsed = performance.now() - started;
-    const t = Math.max(0, Math.min(1, elapsed / duration));
-    const eased = 1 - t;
-    syncCompletedRoutes(map, completedLegs, travelersById, false, opacity, width, routedGeometries, trailTuning, scaledRouteFeatures(features, eased));
-    if (t < 1 && fadeRef.current.active) {
-      fadeRef.current.raf = window.requestAnimationFrame(step);
-    } else {
-      fadeRef.current.active = false;
-      fadeRef.current.features = [];
-      fadeRef.current.key = '';
-      syncCompletedRoutes(map, completedLegs, travelersById, false, opacity, width, routedGeometries, trailTuning, []);
-    }
-  };
-  fadeRef.current.raf = window.requestAnimationFrame(step);
+  window.clearTimeout(fadeRef.current.timer || 0);
+  const duration = fadeRef.current.duration || 520;
+  fadeRef.current = { ...fadeRef.current, active: true, features, started: performance.now(), timer: 0 };
+  measurePlaybackEvent('completedRouteFadeSetData', () => {
+    map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
+  });
+  setCompletedRoutePaintState(map, { multiplier: 1, duration: 0, playback: true });
+  requestAnimationFrame(() => setCompletedRoutePaintState(map, { multiplier: 0, duration, playback: true }));
+  fadeRef.current.timer = window.setTimeout(() => {
+    if (!fadeRef.current.active) return;
+    fadeRef.current.active = false;
+    fadeRef.current.features = [];
+    fadeRef.current.key = '';
+    map.getSource('completed-routes')?.setData(emptyCollection());
+    setCompletedRoutePaintState(map, { multiplier: 1, duration: 0, playback: true });
+  }, duration + 50);
 }
 
 function startTrailProfileMorph(map, morphRef, morphTripId, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING, activeTripId = null) {
   if (!map || !morphRef?.current || !morphTripId || !showTrails) return;
   window.cancelAnimationFrame(morphRef.current.raf || 0);
-  const started = performance.now();
-  const duration = morphRef.current.duration || 3000;
-  morphRef.current = { ...morphRef.current, active: true, tripId: morphTripId, started, duration };
-  const step = () => {
-    const elapsed = performance.now() - started;
-    const raw = Math.max(0, Math.min(1, elapsed / duration));
-    const t = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
-    syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId, morphTripId, t);
-    if (raw < 1 && morphRef.current.active && morphRef.current.tripId === morphTripId) {
-      morphRef.current.raf = window.requestAnimationFrame(step);
-    } else {
-      morphRef.current.active = false;
-      morphRef.current.tripId = '';
-      syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId);
-    }
-  };
-  morphRef.current.raf = window.requestAnimationFrame(step);
+  window.clearTimeout(morphRef.current.timer || 0);
+  const duration = Math.min(900, morphRef.current.duration || 900);
+  morphRef.current = { ...morphRef.current, active: true, tripId: morphTripId, started: performance.now(), duration };
+  // Build the final feature collection once. MapLibre paint transitions provide
+  // the visual settling without serializing the entire route history every RAF.
+  syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId, morphTripId, 1);
+  setCompletedRoutePaintState(map, { multiplier: 0.82, duration: 0, playback: true });
+  requestAnimationFrame(() => setCompletedRoutePaintState(map, { multiplier: 1, duration, playback: true }));
+  morphRef.current.timer = window.setTimeout(() => {
+    if (morphRef.current.tripId !== morphTripId) return;
+    morphRef.current.active = false;
+    morphRef.current.tripId = '';
+    syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId);
+  }, duration + 40);
 }
 
 function syncPulse(map, loc, color) {
@@ -1927,10 +2041,14 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
   const { leg } = activeLeg;
   const isAir = leg.mode === 'plane' || leg.mode === 'move';
   if (!isAir || !sceneState.vehicleVisible) {
-    pathEl.style.opacity = '0';
-    pathEl.setAttribute('d', '');
+    if (pathEl.__jlArcVisible !== false) {
+      pathEl.style.opacity = '0';
+      pathEl.setAttribute('d', '');
+      pathEl.__jlArcVisible = false;
+    }
     return;
   }
+  pathEl.__jlArcVisible = true;
   const fromPt = map.project([leg.from.lon, leg.from.lat]);
   const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
   if (!isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) || !isCoordinateVisibleOnGlobe(map, leg.from.lon, leg.from.lat)) {
@@ -2605,6 +2723,15 @@ function getRoutedGeometry(leg, routedGeometries = {}) {
   const manual = getManualRoute(leg);
   if (manual?.length > 1) return manual;
 
+  // Surface routes are stored once per unordered endpoint pair. A matching
+  // return leg reads the same stable geometry in reverse instead of requesting,
+  // parsing, simplifying, and caching a duplicate route.
+  if (isSurfaceRouteMode(leg?.mode)) {
+    const canonical = routedGeometries[bidirectionalRouteKey(leg)];
+    const oriented = canonical?.length > 1 ? geometryForLegDirection(leg, canonical) : null;
+    if (oriented?.length > 1 && !isStraightEndpointPlaceholder(leg, oriented)) return oriented;
+  }
+
   // v6: saved routeDetails geometry is the primary runtime source. Detailed
   // vessel routes are no longer regenerated during page startup.
   if (Array.isArray(leg?.routeGeometry) && leg.routeGeometry.length > 1 && !isStraightEndpointPlaceholder(leg, leg.routeGeometry)) return leg.routeGeometry;
@@ -2619,9 +2746,21 @@ function getRoutedGeometry(leg, routedGeometries = {}) {
 }
 
 function getVisualRoutedGeometry(leg, routedGeometries = {}) {
+  if (Array.isArray(leg?.presentationGeometry) && leg.presentationGeometry.length > 1) return leg.presentationGeometry;
   const raw = getRoutedGeometry(leg, routedGeometries);
   if (!raw?.length || !isSurfaceRouteMode(leg?.mode)) return raw;
   return buildSurfacePresentationGeometry(raw, leg.mode, { profile: 'playback' });
+}
+
+function playbackPlanPresentationGeometry(plan) {
+  if (!plan?.presentation || plan.presentation.length < 4) return null;
+  if (plan.__presentationGeometry) return plan.__presentationGeometry;
+  const geometry = [];
+  for (let index = 0; index + 1 < plan.presentation.length; index += 2) {
+    geometry.push([Number(plan.presentation[index]), Number(plan.presentation[index + 1])]);
+  }
+  try { Object.defineProperty(plan, '__presentationGeometry', { value: geometry, configurable: true }); } catch {}
+  return geometry;
 }
 
 function isNaturalEarthVesselMode(mode) {
@@ -2731,25 +2870,24 @@ function preloadTilesForLeg(leg, map, cacheSet, label = 'leg', routedGeometries 
   if (!leg || !map || !cacheSet) return;
   const routePts = [
     { lon: leg.from.lon, lat: leg.from.lat },
-    pointAtRouteProgress(leg, 0.25, routedGeometries),
     pointAtRouteProgress(leg, 0.5, routedGeometries),
-    pointAtRouteProgress(leg, 0.75, routedGeometries),
     { lon: leg.to.lon, lat: leg.to.lat }
   ];
   const distance = milesBetween(leg.from, leg.to);
   const zBase = Math.max(2, Math.min(7, Math.round(distance > 4000 ? 3 : distance > 1500 ? 4 : distance > 450 ? 5 : 6)));
-  const zooms = [zBase, Math.max(2, zBase - 1), Math.min(8, zBase + 1)];
+  const zooms = [...new Set([zBase, Math.min(8, zBase + 1)])];
   for (const pt of routePts) {
-    for (const z of zooms) {
-      preloadTileNeighborhood(pt.lon, pt.lat, z, cacheSet, label);
-    }
+    for (const z of zooms) preloadTileNeighborhood(pt.lon, pt.lat, z, cacheSet, label);
   }
+  // Bound custom image-preload bookkeeping. MapLibre has its own cache; this set
+  // only prevents duplicate warm requests and must not grow for an entire year.
+  while (cacheSet.size > 900) cacheSet.delete(cacheSet.values().next().value);
 }
 
 function preloadTileNeighborhood(lon, lat, z, cacheSet, label = 'leg') {
   const t = lonLatToTile(lon, lat, z);
   if (!t) return;
-  const radius = z <= 3 ? 0 : 1;
+  const radius = z <= 5 ? 0 : 1;
   const max = Math.pow(2, z);
   for (let dx = -radius; dx <= radius; dx++) {
     for (let dy = -radius; dy <= radius; dy++) {
@@ -2886,22 +3024,26 @@ function legsConnect(previousLeg, nextLeg, tolerance = 0.12) {
   return Math.hypot(dx, dy) <= tolerance;
 }
 
-function freezeActiveEntryGeometry(entry, routedGeometries = {}) {
+function freezeActiveEntryGeometry(entry, routedGeometries = {}, playbackPlan = null) {
   if (!entry?.leg) return entry;
-  // Freeze only validated/manual/detailed geometry. Never freeze the temporary
-  // stylized fallback, because doing so prevents a late Valhalla result from
-  // taking ownership of the active vehicle path. If no detailed route is ready
-  // yet, keep the original entry live so routedGeometries can promote it as soon
-  // as the worker completes.
-  const frozenGeometry = getRoutedGeometry(entry.leg, routedGeometries);
-  if (!Array.isArray(frozenGeometry) || frozenGeometry.length < 2) return entry;
-  return {
-    ...entry,
-    leg: {
-      ...entry.leg,
-      routeGeometry: frozenGeometry.map(point => [Number(point[0]), Number(point[1])])
-    }
-  };
+  return measurePlaybackEvent('freezeActiveEntryGeometry', () => {
+    // Keep the validated geometry's stable reference. v7.1.3 copied tens of
+    // thousands of coordinate pairs here, invalidating WeakMap route caches and
+    // forcing simplification to run again on the main thread as playback began.
+    const frozenGeometry = getRoutedGeometry(entry.leg, routedGeometries);
+    if (!Array.isArray(frozenGeometry) || frozenGeometry.length < 2) return entry;
+    const presentationGeometry = isSurfaceRouteMode(entry.leg.mode)
+      ? playbackPlanPresentationGeometry(playbackPlan) || buildSurfacePresentationGeometry(frozenGeometry, entry.leg.mode, { profile: 'playback' })
+      : null;
+    return {
+      ...entry,
+      leg: {
+        ...entry.leg,
+        routeGeometry: frozenGeometry,
+        ...(presentationGeometry?.length > 1 ? { presentationGeometry } : {})
+      }
+    };
+  });
 }
 
 function adaptiveCameraSmoothing(phase, quality = 'high') {

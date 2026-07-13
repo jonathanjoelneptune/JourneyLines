@@ -1,6 +1,7 @@
 import generatedRoutes from '../data/generatedRoutes.json';
 import { flattenLegs } from './tripExpansion.js';
 import { ROUTING_VERSION, routingMemoryGeometry, routingMemoryResult } from './routingClient.js';
+import { bidirectionalRouteKey, canonicalGeometryForLeg } from './routeReuse.js';
 
 export const ROUTE_DETAILS_VERSION = '7.1';
 export const ROUTE_DETAILS_CACHE_VERSION = ROUTING_VERSION;
@@ -63,13 +64,51 @@ export function normalizeRouteDetails(details = {}) {
 export function routeDetailsGeometryCache(details = {}) {
   const normalized = normalizeRouteDetails(details);
   const out = {};
+  const pairScores = new Map();
   for (const detail of Object.values(normalized.routes || {})) {
     const geometry = Array.isArray(detail?.geometry) ? detail.geometry : null;
     if (!geometry || geometry.length < 2) continue;
     const key = detail.routeCacheKey || `${normalized.cacheVersion}:${detail.fromLocationId}->${detail.toLocationId}:${detail.mode}`;
     if (key) out[key] = geometry;
+    const first = geometry[0] || [];
+    const last = geometry[geometry.length - 1] || [];
+    // Canonical cache keys must use the requested location coordinates, not
+    // provider-snapped road coordinates, so the matching return leg resolves
+    // the same pair even when Valhalla snaps an endpoint to a nearby roadway.
+    const requestedFrom = Array.isArray(detail?.coordinates?.from) ? detail.coordinates.from : first;
+    const requestedTo = Array.isArray(detail?.coordinates?.to) ? detail.coordinates.to : last;
+    const pairLeg = {
+      mode: detail.mode,
+      from: { id: detail.fromLocationId, name: detail.fromName, lon: requestedFrom[0], lat: requestedFrom[1] },
+      to: { id: detail.toLocationId, name: detail.toName, lon: requestedTo[0], lat: requestedTo[1] }
+    };
+    const pairKey = bidirectionalRouteKey(pairLeg);
+    // A two-point surface entry is only an endpoint placeholder, not a route
+    // corridor. When both directions exist, retain the strongest provider
+    // geometry rather than whichever entry happened to appear first.
+    if (pairKey && geometry.length > 2) {
+      const score = routeGeometryQualityScore(detail, geometry);
+      if (score > Number(pairScores.get(pairKey) || -1)) {
+        out[pairKey] = canonicalGeometryForLeg(pairLeg, geometry);
+        pairScores.set(pairKey, score);
+      }
+    }
   }
   return out;
+}
+
+
+function routeGeometryQualityScore(detail = {}, geometry = []) {
+  const source = String(detail?.geometrySource || detail?.source || '').toLowerCase();
+  const rank = source.includes('manual') || source.includes('override') ? 100
+    : source.includes('valhalla') || source.includes('openstreetmap') ? 95
+      : source.includes('mapbox') ? 90
+        : source.includes('generatedroutes') ? 85
+          : source.includes('routingworker') ? 70
+            : source.includes('natural') ? 55
+              : source.includes('simplefallback') ? 10
+                : 40;
+  return rank * 1_000_000 + Math.min(999_999, Number(geometry?.length || 0));
 }
 
 export function applyRouteDetailsToEntries(entries = [], details = {}) {

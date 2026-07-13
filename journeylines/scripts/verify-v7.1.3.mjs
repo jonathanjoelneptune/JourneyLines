@@ -81,7 +81,7 @@ check(travelMap.includes('buildSurfacePresentationGeometry(raw, leg.mode'), 'Ren
 check(travelMap.includes('const polylineMetricCache = new WeakMap();'), 'TravelMap must cache polyline metrics.');
 check(travelMap.includes('pointOnPolylineWithMetrics'), 'Vehicle/trail sampling must share precomputed polyline metrics.');
 check(travelMap.includes('while (low < high)'), 'Polyline lookup must use bounded binary search rather than a full linear scan for every sample.');
-check(travelMap.includes("const trailInterval = quality === 'high' ? 50"), 'Active trail reconstruction must be throttled independently from vehicle animation.');
+check(/const trailInterval = quality === 'high' \? (?:50|84)/.test(travelMap), 'Active trail reconstruction must be throttled independently from vehicle animation.');
 check(!travelMap.includes('smoothSurfaceRouteGeometry(raw, leg.mode'), 'TravelMap must not invoke the old dense smoothing path.');
 
 check(worker.includes("from '../utils/routePresentation.js'"), 'Routing worker must use the same route-presentation utility as rendering.');
@@ -90,11 +90,11 @@ check(worker.includes('Math.min(320'), 'Worker playback plans must have a hard s
 check(worker.includes('Math.max(72'), 'Worker playback plans must retain enough samples for smooth interpolation.');
 check(routingClient.includes("export const ROUTING_VERSION = 'multimodal-v7.1';"), 'Provider route caches must remain reusable because v7.1.3 changes presentation, not routing source data.');
 
-assert.equal(packageJson.version, '7.1.3'); checks += 1;
+check(/^7\.1\.(?:3|[4-9]|[1-9]\d+)$/.test(packageJson.version), 'Package version must retain or supersede v7.1.3.');
 check(packageJson.scripts['verify:v7.1.3'], 'Package must expose v7.1.3 verification.');
 check(fs.existsSync(path.join(root, 'QA/QA-v7.1.3.md')), 'v7.1.3 QA must live under journeylines/QA/.');
 check(!fs.existsSync(path.resolve(root, '../QA-v7.1.3.md')), 'v7.1.3 QA must not be duplicated at repository root.');
-check(read('VERSION.md').startsWith('GlobeHoppers v7.1.3'), 'journeylines/VERSION.md must identify v7.1.3 first.');
+check(read('VERSION.md').startsWith(`GlobeHoppers v${packageJson.version}`), 'journeylines/VERSION.md must identify the current package version first.');
 
 if (process.env.SKIP_BUILD !== '1') {
   const build = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], {

@@ -12854,3 +12854,33 @@ svg text {
     flex: 1 1 100%;
   }
 }
+
+/* ========================================================================== */
+/* v7.1.4 Surface Playback Performance Recovery                               */
+/* ========================================================================== */
+/* The static map filter and animated space effects are attractive while the
+   globe is idle, but they force extra full-frame compositing while MapLibre is
+   already moving satellite tiles. During playback, let the WebGL canvas render
+   directly and pause decorative animation. */
+.maplibre-shell.playback-active .maplibre-map,
+.maplibre-shell.playback-active .maplibregl-canvas {
+  filter: none !important;
+}
+.maplibre-shell.playback-active .star-layer {
+  animation-play-state: paused !important;
+  will-change: auto !important;
+}
+.maplibre-shell.playback-active .star-layer-c {
+  filter: none !important;
+  opacity: 0.12 !important;
+}
+.maplibre-shell.playback-active.space-mode::before {
+  opacity: 0.34 !important;
+}
+.maplibre-shell.playback-active .cinema-vignette {
+  opacity: 0.72;
+}
+.maplibre-shell.playback-active .jl-vehicle-overlay,
+.maplibre-shell.playback-active .jl-vehicle-img {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.72)) !important;
+}

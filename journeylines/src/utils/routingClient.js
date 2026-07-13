@@ -1,8 +1,12 @@
 import generatedRoutes from '../data/generatedRoutes.json';
 import routingSettings from '../data/routingSettings.json';
-import { enforceRouteCacheLimit, getCachedRoute, putCachedRoute, pruneOldRoutingVersions, routeCacheKeyV6 } from './routeCacheIndexedDb.js';
+import { bidirectionalRouteCacheKey, enforceRouteCacheLimit, getCachedRoute, putCachedRoute, pruneOldRoutingVersions, routeCacheKeyV6 } from './routeCacheIndexedDb.js';
 import { assessMultimodalRoute, canonicalTravelMode, isSurfaceTravelMode, sanitizeRouteGeometry } from './multimodalRouting.js';
 import { DEFAULT_VALHALLA_ENDPOINTS, DEFAULT_VALHALLA_TIMEOUT_MS, normalizeValhallaEndpoints, requestValhallaDrivingRoute } from './valhallaRouting.js';
+import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection, isReusableSurfaceMode, routeDirectionIsCanonical } from './routeReuse.js';
+import { packGeometryForWorker, reversePlaybackPlan } from './playbackPlanTransfer.js';
+export { packGeometryForWorker, reversePlaybackPlan } from './playbackPlanTransfer.js';
+import { recordPlaybackEvent } from './playbackPerformance.js';
 
 export const ROUTING_VERSION = 'multimodal-v7.1';
 const listeners = new Set();
@@ -10,6 +14,9 @@ const pending = new Map();
 const memoryRoutes = new Map();
 const memoryRouteResults = new Map();
 const memoryPlans = new Map();
+const memoryBidirectionalRoutes = new Map();
+const memoryBidirectionalResults = new Map();
+const memoryBidirectionalPlans = new Map();
 const inFlightRoutes = new Map();
 const inFlightDiagnostics = new Map();
 const inFlightPlans = new Map();
@@ -377,8 +384,49 @@ export async function routeLegWithDiagnostics(leg, options = {}) {
 
 async function cachedRouteResult(leg) {
   const key = routeCacheKeyV6(leg, ROUTING_VERSION);
+  const reusable = isReusableSurfaceMode(leg?.mode);
+
+  // Prefer the canonical pair cache once it exists. Older directional entries
+  // may contain duplicate or lower-quality geometry from before v7.1.4.
+  if (reusable) {
+    const pairKey = bidirectionalRouteKey(leg);
+    const canonicalMemory = memoryBidirectionalRoutes.get(pairKey);
+    if (canonicalMemory?.length > 1) {
+      const geometry = geometryForLegDirection(leg, canonicalMemory);
+      const remembered = memoryBidirectionalResults.get(pairKey) || {};
+      const result = {
+        ...remembered,
+        geometry,
+        source: remembered.source || 'bidirectional-memory-cache',
+        provider: remembered.provider || 'GlobeHoppers bidirectional route cache',
+        validation: { ...(remembered.validation || {}), reversedRouteReuse: !routeDirectionIsCanonical(leg) }
+      };
+      memoryRoutes.set(key, geometry);
+      memoryRouteResults.set(key, result);
+      return result;
+    }
+  }
+
   if (memoryRouteResults.has(key)) return memoryRouteResults.get(key);
+
   try {
+    if (reusable) {
+      const pairCacheKey = bidirectionalRouteCacheKey(leg, ROUTING_VERSION);
+      const canonicalCached = sanitizeRouteGeometry(await getCachedRoute(pairCacheKey, ROUTING_VERSION));
+      if (canonicalCached) {
+        const result = {
+          geometry: geometryForLegDirection(leg, canonicalCached),
+          source: 'bidirectional-indexed-cache',
+          provider: 'Browser bidirectional route cache',
+          dataVersion: status.dataVersion,
+          routingVersion: ROUTING_VERSION,
+          validation: { reversedRouteReuse: !routeDirectionIsCanonical(leg) }
+        };
+        rememberRouteResult(leg, result);
+        return result;
+      }
+    }
+
     const cached = await getCachedRoute(key, ROUTING_VERSION);
     const geometry = sanitizeRouteGeometry(cached);
     if (geometry) {
@@ -425,12 +473,7 @@ async function routeLegResult(leg, options = {}) {
       const normalized = { ...result, geometry, provider: result?.provider || 'GlobeHoppers routing worker' };
       rememberRouteResult(leg, normalized);
       try {
-        await putCachedRoute(key, geometry, ROUTING_VERSION, {
-          mode: leg.mode,
-          source: result?.source || 'worker',
-          dataVersion: result?.dataVersion || status.dataVersion
-        });
-        enforceRouteCacheLimit(500).catch(() => {});
+        await cacheAssessedRoute(leg, normalized);
       } catch (error) {
         console.warn('[GlobeHoppers] Route cache write failed; continuing with in-memory geometry.', error);
       }
@@ -472,34 +515,132 @@ function playbackGeometrySignature(geometry) {
 
 export async function buildPlaybackPlanInWorker(leg, geometry, options = {}) {
   if (!leg?.from || !leg?.to) return null;
+  const sampleToken = options.samples || 'auto';
   const geometrySignature = playbackGeometrySignature(geometry);
-  const key = `${routeCacheKeyV6(leg, ROUTING_VERSION)}:plan:${options.samples || 'auto'}:${geometrySignature}`;
-  if (memoryPlans.has(key)) return memoryPlans.get(key);
-  if (inFlightPlans.has(key)) return inFlightPlans.get(key);
+  const directKey = `${routeCacheKeyV6(leg, ROUTING_VERSION)}:plan:${sampleToken}:${geometrySignature}`;
+  if (memoryPlans.has(directKey)) return memoryPlans.get(directKey);
 
-  const job = (async () => {
-    await prewarmRoutingEngine(options.reason || 'playback plan');
-    const result = await request('playbackPlan', {
-      leg: serializeLeg(leg),
-      geometry: Array.isArray(geometry) ? geometry : null,
-      samples: options.samples || 0
-    });
+  const reusable = isReusableSurfaceMode(leg?.mode) && Array.isArray(geometry) && geometry.length > 1;
+  const canonicalGeometry = reusable ? canonicalGeometryForLeg(leg, geometry) : geometry;
+  const pairKey = reusable
+    ? `${bidirectionalRouteKey(leg)}:plan:${sampleToken}:${playbackGeometrySignature(canonicalGeometry)}`
+    : directKey;
+
+  if (reusable && memoryBidirectionalPlans.has(pairKey)) {
+    const oriented = orientPlaybackPlanForLeg(leg, memoryBidirectionalPlans.get(pairKey));
+    memoryPlans.set(directKey, oriented);
+    recordPlaybackEvent('bidirectionalPlanReuse');
+    return oriented;
+  }
+
+  let job = inFlightPlans.get(pairKey);
+  if (!job) {
+    job = (async () => {
+      await prewarmRoutingEngine(options.reason || 'playback plan');
+      const packed = packGeometryForWorker(geometry);
+      const started = performance.now();
+      const result = await request('playbackPlan', {
+        leg: serializeLeg(leg),
+        geometryPacked: packed,
+        geometryPointCount: packed ? Math.floor(packed.length / 2) : 0,
+        samples: options.samples || 0
+      }, packed ? [packed.buffer] : []);
+      recordPlaybackEvent('workerPlaybackPlanRoundTrip', performance.now() - started, { points: geometry?.length || 0 });
+      if (!result) return null;
+      const canonicalPlan = reusable && !routeDirectionIsCanonical(leg)
+        ? reversePlaybackPlan(result, leg.mode)
+        : result;
+      if (reusable) memoryBidirectionalPlans.set(pairKey, canonicalPlan);
+      return canonicalPlan;
+    })();
+    inFlightPlans.set(pairKey, job);
+  }
+
+  try {
+    const canonicalPlan = await job;
+    const result = reusable ? orientPlaybackPlanForLeg(leg, canonicalPlan) : canonicalPlan;
     if (result) {
-      memoryPlans.set(key, result);
+      memoryPlans.set(directKey, result);
       if (memoryPlans.size > 120) {
         const oldestKey = memoryPlans.keys().next().value;
         memoryPlans.delete(oldestKey);
       }
+      while (memoryBidirectionalPlans.size > 80) {
+        const oldestKey = memoryBidirectionalPlans.keys().next().value;
+        memoryBidirectionalPlans.delete(oldestKey);
+      }
     }
     return result;
-  })();
-
-  inFlightPlans.set(key, job);
-  try {
-    return await job;
   } finally {
-    inFlightPlans.delete(key);
+    if (inFlightPlans.get(pairKey) === job) inFlightPlans.delete(pairKey);
   }
+}
+
+function orientPlaybackPlanForLeg(leg, canonicalPlan) {
+  if (!canonicalPlan || routeDirectionIsCanonical(leg)) return canonicalPlan;
+  return reversePlaybackPlan(canonicalPlan, leg?.mode);
+}
+
+function reversePairArray(value) {
+  if (!value || typeof value.length !== 'number') return value;
+  const Type = value.constructor === Array ? Array : value.constructor;
+  const output = Type === Array ? new Array(value.length) : new Type(value.length);
+  const count = Math.floor(value.length / 2);
+  for (let index = 0; index < count; index += 1) {
+    const source = (count - 1 - index) * 2;
+    output[index * 2] = value[source];
+    output[index * 2 + 1] = value[source + 1];
+  }
+  return output;
+}
+
+function reverseHeadingArray(value) {
+  if (!value || typeof value.length !== 'number') return value;
+  const Type = value.constructor === Array ? Array : value.constructor;
+  const output = Type === Array ? new Array(value.length) : new Type(value.length);
+  for (let index = 0; index < value.length; index += 1) {
+    output[index] = (Number(value[value.length - 1 - index]) + 180) % 360;
+  }
+  return output;
+}
+
+function reverseCumulativeArray(value, totalMiles = 0) {
+  if (!value || typeof value.length !== 'number') return value;
+  const Type = value.constructor === Array ? Array : value.constructor;
+  const output = Type === Array ? new Array(value.length) : new Type(value.length);
+  const total = Number(totalMiles || value[value.length - 1] || 0);
+  for (let index = 0; index < value.length; index += 1) {
+    output[index] = Math.max(0, total - Number(value[value.length - 1 - index] || 0));
+  }
+  return output;
+}
+
+function buildCameraLeadArray(positions, sampleCount, mode) {
+  const camera = new Float32Array(Math.max(0, sampleCount) * 2);
+  if (!positions?.length || sampleCount < 1) return camera;
+  const canonicalMode = canonicalTravelMode(mode);
+  const leadSamples = canonicalMode === 'boat' || canonicalMode === 'train'
+    ? Math.max(1, Math.round(sampleCount * 0.015))
+    : Math.max(1, Math.round(sampleCount * 0.025));
+  const bias = canonicalMode === 'boat' || canonicalMode === 'train' ? 0.18 : canonicalMode === 'drive' ? 0.25 : 0.28;
+  for (let index = 0; index < sampleCount; index += 1) {
+    const leadIndex = Math.min(sampleCount - 1, index + leadSamples);
+    const lon = Number(positions[index * 2]);
+    const lat = Number(positions[index * 2 + 1]);
+    const leadLon = Number(positions[leadIndex * 2]);
+    const leadLat = Number(positions[leadIndex * 2 + 1]);
+    camera[index * 2] = interpolateLongitude(lon, leadLon, bias);
+    camera[index * 2 + 1] = lat + (leadLat - lat) * bias;
+  }
+  return camera;
+}
+
+function interpolateLongitude(a, b, t) {
+  const delta = ((Number(b) - Number(a) + 540) % 360) - 180;
+  let value = Number(a) + delta * t;
+  while (value > 180) value -= 360;
+  while (value < -180) value += 360;
+  return value;
 }
 
 export async function prefetchRoutingForLegs(entries = [], count = 4) {
@@ -522,11 +663,24 @@ function optionsGeometry(entry) {
 }
 
 export function routingMemoryGeometry(leg) {
-  return memoryRoutes.get(routeCacheKeyV6(leg, ROUTING_VERSION)) || null;
+  const direct = memoryRoutes.get(routeCacheKeyV6(leg, ROUTING_VERSION));
+  if (direct?.length > 1) return direct;
+  if (!isReusableSurfaceMode(leg?.mode)) return null;
+  const canonical = memoryBidirectionalRoutes.get(bidirectionalRouteKey(leg));
+  return canonical?.length > 1 ? geometryForLegDirection(leg, canonical) : null;
 }
 
 export function routingMemoryResult(leg) {
-  return memoryRouteResults.get(routeCacheKeyV6(leg, ROUTING_VERSION)) || null;
+  const direct = memoryRouteResults.get(routeCacheKeyV6(leg, ROUTING_VERSION));
+  if (direct) return direct;
+  if (!isReusableSurfaceMode(leg?.mode)) return null;
+  const canonical = memoryBidirectionalResults.get(bidirectionalRouteKey(leg));
+  if (!canonical) return null;
+  return {
+    ...canonical,
+    geometry: geometryForLegDirection(leg, canonical.geometry),
+    validation: { ...(canonical.validation || {}), reversedRouteReuse: !routeDirectionIsCanonical(leg) }
+  };
 }
 
 export function prewarmWhenIdle() {
@@ -542,10 +696,27 @@ function rememberRouteResult(leg, result) {
   const key = routeCacheKeyV6(leg, ROUTING_VERSION);
   if (result?.geometry) memoryRoutes.set(key, result.geometry);
   memoryRouteResults.set(key, result);
+
+  if (result?.geometry?.length > 1 && isReusableSurfaceMode(leg?.mode)) {
+    const pairKey = bidirectionalRouteKey(leg);
+    const canonicalGeometry = canonicalGeometryForLeg(leg, result.geometry);
+    memoryBidirectionalRoutes.set(pairKey, canonicalGeometry);
+    memoryBidirectionalResults.set(pairKey, {
+      ...result,
+      geometry: canonicalGeometry,
+      validation: { ...(result.validation || {}), canonicalBidirectionalRoute: true }
+    });
+  }
+
   if (memoryRouteResults.size > 600) {
     const oldest = memoryRouteResults.keys().next().value;
     memoryRouteResults.delete(oldest);
     memoryRoutes.delete(oldest);
+  }
+  while (memoryBidirectionalResults.size > 300) {
+    const oldest = memoryBidirectionalResults.keys().next().value;
+    memoryBidirectionalResults.delete(oldest);
+    memoryBidirectionalRoutes.delete(oldest);
   }
 }
 
@@ -557,6 +728,16 @@ async function cacheAssessedRoute(leg, result) {
     source: result.source,
     dataVersion: status.dataVersion
   });
+  if (isReusableSurfaceMode(leg?.mode)) {
+    const canonicalGeometry = canonicalGeometryForLeg(leg, result.geometry);
+    const pairKey = bidirectionalRouteCacheKey(leg, ROUTING_VERSION);
+    await putCachedRoute(pairKey, canonicalGeometry, ROUTING_VERSION, {
+      mode: leg.mode,
+      source: result.source,
+      dataVersion: status.dataVersion,
+      bidirectional: true
+    });
+  }
   enforceRouteCacheLimit(500).catch(() => {});
 }
 

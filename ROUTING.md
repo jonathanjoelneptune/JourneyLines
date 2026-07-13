@@ -148,3 +148,7 @@ The tested boat routes avoided Natural Earth land polygons except for deliberate
 Provider geometry remains the routing source of truth, but it is no longer used at full turn-by-turn density during playback. Car, train, and boat routes are converted once into a cached presentation path made from original provider coordinates. The conversion removes minor street-level or track-level changes while retaining endpoints, major bends, and high-stretch detours that usually represent coastlines, bays, islands, peninsulas, bridges, tunnels, canals, or other constrained corridors.
 
 Normal presentation budgets are 220 points for cars, 190 for trains, and 160 for boats. Safety splits may exceed those budgets when simplifying a span would materially shortcut the original route. Rendering may downsample further for regional and globe overview views, but it may never increase presentation density during an active frame.
+
+## v7.1.4 bidirectional route reuse
+
+Surface routes are cached by a canonical unordered endpoint pair plus mode and normalized waypoint sequence. A matching return trip reuses the canonical route and reverses its prepared playback plan. This avoids a second provider request and duplicate geometry preparation. Manual directional overrides continue to win. Playback-plan coordinates are transferred to the worker in typed-array buffers.

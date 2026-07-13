@@ -35,8 +35,16 @@ check(!travelMap.includes('if (safeActiveIndex < 0 || !legs.length) return;'), '
 
 // Stored and retrieved playback plans must use the same explicit geometry.
 check(travelMap.includes('playbackPlansRef.current.set(playbackPlanKey(leg, geometry), plan)'), 'Playback plans must be stored using the routed geometry signature.');
-check(travelMap.includes('const renderGeometry = getRoutedGeometry(renderEntry.leg, routedGeometriesRef.current);'), 'Playback must resolve the geometry it is actually rendering.');
-check(travelMap.includes('playbackPlansRef.current.get(playbackPlanKey(renderEntry.leg, renderGeometry))'), 'Playback plans must be retrieved using the rendered geometry signature.');
+check(
+  travelMap.includes('const liveGeometry = getRoutedGeometry(activeEntry.leg, routedGeometriesRef.current);') ||
+    travelMap.includes('const renderGeometry = getRoutedGeometry(renderEntry.leg, routedGeometriesRef.current);'),
+  'Playback must resolve the geometry it is actually rendering.'
+);
+check(
+  travelMap.includes('playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry))') ||
+    travelMap.includes('playbackPlansRef.current.get(playbackPlanKey(renderEntry.leg, renderGeometry))'),
+  'Playback plans must be retrieved using the rendered geometry signature.'
+);
 check(travelMap.includes('function playbackPlanKey(leg, geometryOverride = null)'), 'Playback plan keys must accept an explicit geometry override.');
 check(travelMap.includes('Math.floor((geometry.length - 1) * 0.5)'), 'Playback plan keys must sample the route midpoint.');
 check(travelMap.includes('Math.floor((geometry.length - 1) * 0.75)'), 'Playback plan keys must sample the three-quarter route point.');
