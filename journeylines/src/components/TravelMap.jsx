@@ -1417,19 +1417,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         if ((sceneState.legMode === 'plane' || sceneState.legMode === 'move') && sceneState.distance > 1500 && Number(frame.rawProgress || 0) < 0.28) {
           smoothing = Math.min(smoothing, quality === 'low' ? 0.008 : 0.012);
         }
-        if (transitionAge < CONTINUOUS_HANDOFF_HOLD_MS) {
-          smoothing = stats.transitionKind === 'continuous'
-            ? Math.max(smoothing, 0.046)
-            : Math.min(smoothing, 0.018);
+        if (transitionAge < CONTINUOUS_HANDOFF_HOLD_MS && stats.transitionKind !== 'continuous') {
+          smoothing = Math.min(smoothing, 0.018);
         }
 
-        let targetCamera = sceneState.camera;
-        if (stats.transitionKind === 'continuous' && stats.transitionStartCamera && transitionAge < CONTINUOUS_HANDOFF_HOLD_MS + CONTINUOUS_HANDOFF_RELEASE_MS) {
-          const releaseProgress = Math.max(0, Math.min(1, (transitionAge - CONTINUOUS_HANDOFF_HOLD_MS) / CONTINUOUS_HANDOFF_RELEASE_MS));
-          const releaseEase = releaseProgress * releaseProgress * (3 - 2 * releaseProgress);
-          const preservedZoom = lerp(stats.transitionStartCamera.zoom, sceneState.camera.zoom, releaseEase);
-          targetCamera = { ...sceneState.camera, zoom: Math.max(sceneState.camera.zoom, preservedZoom) };
-        }
+        // Connected legs use the same continuous follow target. Do not hold or
+        // release a second zoom target across the handoff; that produced the
+        // repeated accelerate/brake sensation when selecting a new pin.
+        const targetCamera = sceneState.camera;
 
         const returnState = playbackCameraReturnRef.current;
         const desiredPrevious = returnState.active ? latestDesiredCameraRef.current : lastCameraRef.current;
@@ -3732,13 +3727,15 @@ function stagedPlaybackReturnCamera(state, latestTarget, now) {
     };
   } else {
     const target = latestTarget || state.target;
-    // Orientation is already correct. The final phase changes only zoom, which
-    // prevents the camera from cutting through the globe while turning.
+    // Orientation is already correct. During the zoom-in phase, continue
+    // following the live vessel center instead of freezing the center at the
+    // end of the orientation phase. Freezing it created a visible stop/start
+    // when control returned to the normal follow loop.
     endpoint = {
-      center: [...state.stageFrom.center],
+      center: [...target.center],
       zoom: Number(target.zoom),
-      pitch: state.stageFrom.pitch,
-      bearing: state.stageFrom.bearing
+      pitch: Number(target.pitch),
+      bearing: Number(target.bearing)
     };
   }
 
@@ -3764,7 +3761,9 @@ function stagedPlaybackReturnCamera(state, latestTarget, now) {
 
   state.active = false;
   const finalTarget = latestTarget || state.target || endpoint;
-  return { ...finalTarget, center: [...finalTarget.center] };
+  // Return the already-interpolated endpoint. The frame loop will continue
+  // toward the live target on the next frame, avoiding a one-frame jump.
+  return { ...endpoint, center: [...endpoint.center], zoom: Number(finalTarget.zoom), pitch: Number(finalTarget.pitch), bearing: Number(finalTarget.bearing) };
 }
 
 function cameraChangedEnough(current, next) {

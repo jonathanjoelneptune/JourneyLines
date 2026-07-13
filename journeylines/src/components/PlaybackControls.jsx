@@ -24,6 +24,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const timelineAnimationTimerRef = useRef(null);
   const timelineViewportRef = useRef(null);
   const timelineDragRef = useRef(null);
+  const [floatingTooltipPosition, setFloatingTooltipPosition] = useState(null);
   const destinationMatchSet = useMemo(() => new Set(destinationMatchIds || []), [destinationMatchIds]);
   const displayMarkers = useMemo(() => clusterTimelineMarkers(tripMarkers, timelineZoom, destinationMatchSet), [tripMarkers, timelineZoom, destinationMatchSet]);
   const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
@@ -216,6 +217,30 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   };
 
   const tooltipMarker = hoverMarker || activeMarker;
+
+  useEffect(() => {
+    const viewport = timelineViewportRef.current;
+    if (!viewport || !tooltipMarker) {
+      setFloatingTooltipPosition(null);
+      return;
+    }
+    const update = () => {
+      const rect = viewport.getBoundingClientRect();
+      const contentWidth = Math.max(rect.width, viewport.scrollWidth || rect.width);
+      const x = rect.left + Number(tooltipMarker.progress || 0) * contentWidth - viewport.scrollLeft;
+      setFloatingTooltipPosition({
+        left: Math.max(rect.left + 44, Math.min(rect.right - 44, x)),
+        bottom: Math.max(12, window.innerHeight - rect.top + 8)
+      });
+    };
+    update();
+    viewport.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      viewport.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [tooltipMarker, timelineZoom]);
   const playbackActionLabel = isRelocating ? 'Moving…' : timelineComplete ? 'Complete' : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume' : 'Play'));
   const playbackActionAriaLabel = isRelocating
     ? 'Moving the camera to the next Hop. Playback will resume automatically.'
@@ -293,9 +318,6 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
                   ></button>;
                 })}
-                {tooltipMarker && <span className={`timeline-marker__tooltip is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`} style={{ '--marker-left': `${tooltipMarker.progress * 100}%`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}>
-                  <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
-                </span>}
               </div>
               <input
                 aria-label="Travel timeline"
@@ -323,6 +345,12 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
         </div>
       </div>
     </div>
+    {tooltipMarker && floatingTooltipPosition && <span
+      className={`timeline-marker__tooltip timeline-marker__tooltip--floating is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`}
+      style={{ left: `${floatingTooltipPosition.left}px`, bottom: `${floatingTooltipPosition.bottom}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
+    >
+      <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
+    </span>}
     {globeControlsVisible && <div className="globe-playback-controls" aria-label="Globe controls">
       <button type="button" onClick={() => onGlobeZoom(-0.5)} aria-label="Zoom globe out">−</button>
       <button type="button" onClick={() => onGlobeZoom(0.5)} aria-label="Zoom globe in">+</button>

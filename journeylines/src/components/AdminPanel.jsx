@@ -2003,8 +2003,9 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityMatchesFor(draft.fromLocationText), true, cityLoadingFor(draft.fromLocationText));
   const batchMode = mode === 'batch';
   const automaticTitle = automaticHopTitle(draft, locById, locs);
-  const staleAutoTitle = /choose\s+month/i.test(String(draft.label || ''));
-  const title = (!draft.month && staleAutoTitle ? automaticTitle : draft.label) || automaticTitle || (mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : 'Edit Hop');
+  const title = (draft._titleMode === 'custom' ? String(draft.label || '').trim() : automaticTitle)
+    || automaticTitle
+    || (mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : 'Edit Hop');
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
   const currentDraftVisual = resolveTripVisual(draft, normalizedHoppers || {});
@@ -3136,7 +3137,11 @@ function automaticHopTitle(draft = {}, locById = {}, locs = []) {
   const year = String(draft.year || new Date().getFullYear());
   if (!names.length) return `New Trip ${year}`;
   const date = [monthLabel(draft.month), year].filter(Boolean).join(' ');
-  return [names.join(' + '), date].filter(Boolean).join(' ').trim();
+  return [names.join(' + '), date]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function monthLabel(month) {
