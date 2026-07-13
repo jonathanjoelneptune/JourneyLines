@@ -3137,10 +3137,8 @@ function automaticHopTitle(draft = {}, locById = {}, locs = []) {
   const year = String(draft.year || new Date().getFullYear());
   if (!names.length) return `New Trip ${year}`;
   const month = monthLabel(draft.month);
-  const destinationText = names.join(' + ');
-  // Build the title explicitly rather than relying on adjacent conditional
-  // fragments. This guarantees readable separators in every rendered path.
-  return `${destinationText}${month ? ` ${month}` : ''} ${year}`
+  const destinationTitle = names.join(' + ').trim();
+  return `${destinationTitle}${month ? ` ${month}` : ''} ${year}`
     .replace(/\s+/g, ' ')
     .trim();
 }

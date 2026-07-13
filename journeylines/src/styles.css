@@ -14541,78 +14541,129 @@ svg text {
 }
 
 /* ========================================================================== */
-/* GlobeHoppers v7.5.8 — camera reacquisition + timeline clipping correction  */
+/* GlobeHoppers v7.5.9 — camera/timeline root-cause reimplementation          */
 /* ========================================================================== */
+
+/* The control bar is the sole non-clipping coordinate system for the active
+   marker and its callout. The horizontally scrolling rail remains independent. */
 .controls {
-  min-height: 48px !important;
-  padding-top: 2px !important;
-  padding-bottom: 2px !important;
+  position: fixed !important;
+  overflow: visible !important;
+  min-height: 50px !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+.timeline-scrubber,
+.timeline-scrubber__body,
+.timeline-scrubber-stack,
+.timeline-marker-layer {
   overflow: visible !important;
 }
 .timeline-scroll-viewport,
 .timeline-scroll-viewport.is-zoomed {
-  height: 34px !important;
-  min-height: 34px !important;
-  max-height: 34px !important;
-  padding: 8px 1px 0 !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 7px 1px 0 !important;
   margin-top: -5px !important;
   overflow-x: auto !important;
-  overflow-y: clip !important;
-  overflow-clip-margin-block: 44px !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+  scrollbar-gutter: auto !important;
 }
+.timeline-scroll-viewport::-webkit-scrollbar { display: none !important; }
 .timeline-scroll-content,
 .timeline-scrubber-stack {
-  height: 32px !important;
-  min-height: 32px !important;
+  height: 40px !important;
+  min-height: 40px !important;
   overflow: visible !important;
-}
-.timeline-marker-layer,
-.progress--scrubbable {
-  overflow: visible !important;
-  overflow-clip-margin: 44px !important;
 }
 .timeline-year-scale {
-  bottom: -1px !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 1px !important;
   height: 9px !important;
   overflow: visible !important;
+  transform: none !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
 }
 .timeline-year-scale__segment,
 .timeline-year-scale__segment b {
   overflow: visible !important;
-  clip: auto !important;
+  transform: none !important;
   clip-path: none !important;
   mask: none !important;
   -webkit-mask: none !important;
 }
 .timeline-year-scale__segment b {
   top: 0 !important;
-  font-size: .49rem !important;
+  bottom: auto !important;
+  font-size: .50rem !important;
   line-height: 1 !important;
+  white-space: nowrap !important;
 }
 .timeline-month-scale {
-  bottom: 7px !important;
-  height: 7px !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 10px !important;
+  height: 8px !important;
+  overflow: visible !important;
+}
+.timeline-month-scale__tick b {
+  font-size: .43rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+/* Active/hover state is duplicated in this overlay, so it can rise above the
+   rail without depending on overflow behavior of the scroll viewport. */
+.timeline-floating-marker {
+  position: absolute !important;
+  z-index: 2147482998 !important;
+  bottom: 30px !important;
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 50% !important;
+  transform: translateX(-50%) !important;
+  background: var(--marker-background) !important;
+  border: 2px solid color-mix(in srgb, var(--marker-color) 78%, white) !important;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--marker-color) 20%, transparent), 0 0 12px var(--marker-color) !important;
+  pointer-events: none !important;
+}
+.timeline-floating-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: 13px;
+  transform: translateX(-50%);
+  background: var(--marker-color);
 }
 .timeline-marker__tooltip--floating {
-  max-width: 210px !important;
+  position: absolute !important;
+  z-index: 2147483000 !important;
+  bottom: 48px !important;
+  transform: translateX(-50%) !important;
+  width: max-content !important;
+  max-width: min(190px, calc(100vw - 28px)) !important;
+  pointer-events: none !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
 }
-/* Narrower search and destination surfaces while retaining the 75/25 card. */
-.destination-trip-queue {
-  width: min(340px, calc(100vw - 20px)) !important;
-  max-width: min(340px, calc(100vw - 20px)) !important;
-}
-.timeline-search-panel {
-  width: min(360px, calc(100vw - 20px)) !important;
-  max-width: min(360px, calc(100vw - 20px)) !important;
-}
+.timeline-marker__tooltip--floating .timeline-marker__tooltip-title { font-size: .56rem !important; }
+.timeline-marker__tooltip--floating .timeline-marker__tooltip-date { font-size: .47rem !important; }
+
+/* Give route/date details a little more room without widening the cards. */
 .destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
-  grid-template-columns: minmax(0, 3fr) minmax(88px, 1fr) !important;
-  gap: 6px !important;
+  grid-template-columns: minmax(0, 2.45fr) minmax(112px, 1fr) !important;
+  gap: 5px !important;
 }
-@media (max-width: 700px) {
-  .destination-trip-queue,
-  .timeline-search-panel {
-    width: min(88vw, 330px) !important;
-    max-width: min(88vw, 330px) !important;
-  }
+.hop-result-card__details {
+  padding-left: 8px !important;
 }

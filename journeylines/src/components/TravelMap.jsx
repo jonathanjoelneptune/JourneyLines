@@ -590,12 +590,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         }
         const target = { ...latestDesiredCameraRef.current, center: [...latestDesiredCameraRef.current.center] };
         const safeZoom = Math.min(Number(from.zoom), Number(target.zoom));
-        const needsZoomOut = Number(from.zoom) > safeZoom + 0.035;
         playbackCameraReturnRef.current = {
           active: true,
           stage: 'reacquire',
           stageStart: performance.now(),
-          stageDuration: 2400,
+          stageDuration: 1500,
           from,
           stageFrom: from,
           target,
@@ -1436,9 +1435,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         if (!returnState.active) camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
         latestDesiredCameraRef.current = camera;
         if (returnState.active && returnState.stageFrom) {
-          const currentMapCamera = captureCameraState(map);
-          const returnCamera = stagedPlaybackReturnCamera(returnState, camera, now, currentMapCamera);
-          if (returnCamera && cameraChangedEnough(currentMapCamera, returnCamera)) {
+          const returnCamera = stagedPlaybackReturnCamera(returnState, camera, now);
+          if (returnCamera && cameraChangedEnough(captureCameraState(map), returnCamera)) {
             map.jumpTo({ ...returnCamera, essential: true });
           }
           lastCameraRef.current = returnCamera || lastCameraRef.current;
@@ -3708,41 +3706,65 @@ function createPlaybackReturnState() {
   };
 }
 
-function stagedPlaybackReturnCamera(state, latestTarget, now, currentCamera = null) {
-  if (!state?.active || !latestTarget) return null;
-  const current = currentCamera || state.stageFrom || state.from;
-  if (!current?.center) return latestTarget;
+function stagedPlaybackReturnCamera(state, latestTarget, now) {
+  if (!state?.active || !state.from || !latestTarget) return null;
+  const elapsed = Math.max(0, Number(now) - Number(state.stageStart || now));
+  const duration = Math.max(600, Number(state.stageDuration || 1500));
+  const t = clamp(elapsed / duration, 0, 1);
+  const orientT = smoothStep(clamp(t / 0.72, 0, 1));
+  const zoomT = smoothStep(clamp((t - 0.48) / 0.52, 0, 1));
+  const startCamera = state.from;
+  const safeZoom = Number.isFinite(Number(state.safeZoom))
+    ? Number(state.safeZoom)
+    : Math.min(Number(startCamera.zoom), Number(latestTarget.zoom));
 
-  const age = Math.max(0, Number(now) - Number(state.stageStart || now));
-  const centerDelta = Math.hypot(
-    shortestLonDelta(Number(latestTarget.center?.[0]) - Number(current.center?.[0])),
-    Number(latestTarget.center?.[1]) - Number(current.center?.[1])
-  );
-  const bearingDelta = Math.abs(shortestLonDelta(Number(latestTarget.bearing || 0) - Number(current.bearing || 0)));
-  const pitchDelta = Math.abs(Number(latestTarget.pitch || 0) - Number(current.pitch || 0));
-  const oriented = centerDelta < 0.75 && bearingDelta < 8 && pitchDelta < 5;
-
-  // Reacquisition is one continuous controller. Keep a safe outside-globe zoom
-  // until orientation is nearly complete, then blend toward the live route zoom.
-  // There are no discrete stop/start stages for the camera to fight through.
-  const endpoint = {
+  // One owner, one continuous path: first rotate/translate at a globe-safe zoom,
+  // then blend zoom only after most orientation error is gone. The live target
+  // remains authoritative, so the vessel keeps moving while the camera returns.
+  const orientedCamera = smoothCamera(startCamera, {
     center: [...latestTarget.center],
-    zoom: oriented ? Number(latestTarget.zoom) : Math.min(Number(current.zoom), Number(state.safeZoom)),
+    zoom: safeZoom,
     pitch: Number(latestTarget.pitch),
     bearing: Number(latestTarget.bearing)
+  }, orientT);
+  const camera = {
+    ...orientedCamera,
+    center: [...orientedCamera.center],
+    zoom: safeZoom + (Number(latestTarget.zoom) - safeZoom) * zoomT
   };
-  const alpha = oriented ? 0.115 : 0.14;
-  const camera = smoothCamera(current, endpoint, alpha);
-  // Bound zoom movement per camera tick so the final approach cannot lurch.
-  camera.zoom = current.zoom + clamp(camera.zoom - current.zoom, -0.055, 0.055);
 
-  const zoomDelta = Math.abs(Number(latestTarget.zoom) - Number(camera.zoom));
-  const closeEnough = centerDelta < 0.10 && bearingDelta < 1.2 && pitchDelta < 1.2 && zoomDelta < 0.045;
-  state.settledFrames = closeEnough ? Number(state.settledFrames || 0) + 1 : 0;
-  state.stageFrom = camera;
   state.target = { ...latestTarget, center: [...latestTarget.center] };
-  if (state.settledFrames >= 5 || age >= Number(state.stageDuration || 2400)) state.active = false;
+  state.stageFrom = camera;
+  if (t >= 1) {
+    const centerError = Math.hypot(
+      shortestLonDelta(Number(latestTarget.center?.[0]) - Number(camera.center?.[0])),
+      Number(latestTarget.center?.[1]) - Number(camera.center?.[1])
+    );
+    const zoomError = Math.abs(Number(latestTarget.zoom) - Number(camera.zoom));
+    const bearingError = Math.abs(shortestLonDelta(Number(latestTarget.bearing || 0) - Number(camera.bearing || 0)));
+    const pitchError = Math.abs(Number(latestTarget.pitch || 0) - Number(camera.pitch || 0));
+    const settled = centerError < 0.12 && zoomError < 0.05 && bearingError < 1.25 && pitchError < 1.25;
+    state.settledFrames = settled ? Number(state.settledFrames || 0) + 1 : 0;
+    if (state.settledFrames >= 3 || elapsed >= duration + 500) state.active = false;
+  }
   return camera;
+}
+
+function smoothStep(value) {
+  const t = clamp(Number(value) || 0, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function cameraChangedEnough(current, next) {
+  if (!current || !next) return true;
+  const centerDelta = Math.hypot(
+    shortestLonDelta(Number(next.center?.[0]) - Number(current.center?.[0])),
+    Number(next.center?.[1]) - Number(current.center?.[1])
+  );
+  return centerDelta > 0.00008
+    || Math.abs(Number(next.zoom) - Number(current.zoom)) > 0.00035
+    || Math.abs(Number(next.pitch) - Number(current.pitch)) > 0.015
+    || Math.abs(shortestLonDelta(Number(next.bearing) - Number(current.bearing))) > 0.015;
 }
 
 function smoothCamera(prev, next, amount) {

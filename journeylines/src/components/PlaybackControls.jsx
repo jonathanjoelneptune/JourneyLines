@@ -22,7 +22,9 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [timelineAnimating, setTimelineAnimating] = useState(false);
   const timelineAnimationTimerRef = useRef(null);
+  const controlsRef = useRef(null);
   const timelineViewportRef = useRef(null);
+  const floatingTooltipRef = useRef(null);
   const timelineDragRef = useRef(null);
   const [floatingTooltipPosition, setFloatingTooltipPosition] = useState(null);
   const destinationMatchSet = useMemo(() => new Set(destinationMatchIds || []), [destinationMatchIds]);
@@ -219,27 +221,38 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const tooltipMarker = hoverMarker || activeMarker;
 
   useEffect(() => {
+    const controls = controlsRef.current;
     const viewport = timelineViewportRef.current;
-    if (!viewport || !tooltipMarker) {
+    if (!controls || !viewport || !tooltipMarker) {
       setFloatingTooltipPosition(null);
       return;
     }
+    let frame = 0;
     const update = () => {
-      const rect = viewport.getBoundingClientRect();
-      const contentWidth = Math.max(rect.width, viewport.scrollWidth || rect.width);
-      const x = rect.left + Number(tooltipMarker.progress || 0) * contentWidth - viewport.scrollLeft;
-      setFloatingTooltipPosition({
-        // Clamp by half of the pill's practical width, not merely by the pin
-        // diameter. The old 44px clamp allowed the first active pill to render
-        // mostly off-screen after translateX(-50%).
-        left: Math.max(118, Math.min(window.innerWidth - 118, x)),
-        bottom: Math.max(12, window.innerHeight - rect.top + 8)
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const controlsRect = controls.getBoundingClientRect();
+        const viewportRect = viewport.getBoundingClientRect();
+        const contentWidth = Math.max(viewportRect.width, viewport.scrollWidth || viewportRect.width);
+        const screenX = viewportRect.left + Number(tooltipMarker.progress || 0) * contentWidth - viewport.scrollLeft;
+        const tooltipWidth = Math.max(96, floatingTooltipRef.current?.getBoundingClientRect?.().width || 150);
+        const halfWidth = tooltipWidth / 2 + 6;
+        const localX = screenX - controlsRect.left;
+        setFloatingTooltipPosition({
+          left: Math.max(halfWidth, Math.min(controlsRect.width - halfWidth, localX)),
+          markerLeft: Math.max(8, Math.min(controlsRect.width - 8, localX))
+        });
       });
     };
     update();
     viewport.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    observer?.observe(controls);
+    observer?.observe(viewport);
     return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
       viewport.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
@@ -251,7 +264,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       ? 'Timeline complete. Use Restart Journey to begin again.'
       : (isPlaying ? 'Pause travel timeline' : (hasPlaybackStarted ? 'Resume travel timeline' : 'Play travel timeline'));
 
-  return <div className="controls glass" style={timelineStyle}>
+  return <div ref={controlsRef} className="controls glass" style={timelineStyle}>
     <button type="button" className="controls-play-pill" disabled={isRelocating} onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete || isRelocating} aria-label={playbackActionAriaLabel} title={isRelocating ? 'Moving to the next Hop' : timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{playbackActionLabel}</button>
     <div className="timeline-scrubber">
       <div className="timeline-scrubber__header timeline-scrubber__header--controls-only">
@@ -348,12 +361,20 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
         </div>
       </div>
     </div>
-    {tooltipMarker && floatingTooltipPosition && <span
-      className={`timeline-marker__tooltip timeline-marker__tooltip--floating is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`}
-      style={{ left: `${floatingTooltipPosition.left}px`, bottom: `${floatingTooltipPosition.bottom}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
-    >
-      <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
-    </span>}
+    {tooltipMarker && floatingTooltipPosition && <>
+      <span
+        className={`timeline-floating-marker ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`}
+        style={{ left: `${floatingTooltipPosition.markerLeft}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
+        aria-hidden="true"
+      />
+      <span
+        ref={floatingTooltipRef}
+        className={`timeline-marker__tooltip timeline-marker__tooltip--floating is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`}
+        style={{ left: `${floatingTooltipPosition.left}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
+      >
+        <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
+      </span>
+    </>}
     {globeControlsVisible && <div className="globe-playback-controls" aria-label="Globe controls">
       <button type="button" onClick={() => onGlobeZoom(-0.5)} aria-label="Zoom globe out">−</button>
       <button type="button" onClick={() => onGlobeZoom(0.5)} aria-label="Zoom globe in">+</button>
