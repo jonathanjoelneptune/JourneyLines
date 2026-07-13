@@ -1,3 +1,16 @@
+GlobeHoppers v7.2.0 — Batch Add Hops and Camera Transition Polish
+
+- Added Batch Add Hops from the normal Add Hop dialog, using the streamlined Hop editor without Hop Preview.
+- Each completed Hop is routed and validated when staged, then displayed as one chronological table row with dates, Hoppers, home-base-derived start, all legs/vessels, trail type, Edit, and Delete.
+- Editing a different staged Hop, starting another Hop, saving the batch, or closing Batch Add protects unsaved editor changes with Save, Discard, and Cancel choices.
+- Batch Save applies all staged Hops to in-memory data once and queues one atomic repository update for trips.json, locations.json, and routeDetails.json.
+- New staged Hops derive their start location independently from the active home base for their date rather than chaining from another staged Hop.
+- Disconnected trips now pause playback and use zoom out, low-zoom reposition, then zoom in instead of a long cross-map center glide.
+- Plane icons now use the projected screen-space route tangent with shortest-angle smoothing so the nose stays aligned to the visible flight path.
+- Added v7.2 batch workflow, atomic-save, chronological-order, relocation-stage, plane-alignment, regression, and production-build verification.
+
+---
+
 GlobeHoppers v7.1.4 — Surface Playback Performance Recovery
 
 - Replaced active-leg raw geometry copying with stable references and a single prepared presentation path, preventing cache invalidation and main-thread route re-simplification at leg start.

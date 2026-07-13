@@ -133,9 +133,9 @@ check(performanceModule.includes("window.__GLOBEHOPPERS_PERFORMANCE__"), 'Develo
 check(performanceModule.includes("observer.observe({ type: 'longtask'"), 'Long tasks must be captured when diagnostics are enabled.');
 check(fs.existsSync(path.join(root, 'PERFORMANCE-v7.1.4.md')), 'Performance architecture documentation must be included.');
 
-check(packageJson.version === '7.1.4', 'Package version must be 7.1.4.');
+check(/^7\.(?:1\.(?:4|[5-9]|[1-9]\d+)|[2-9](?:\.\d+)*)$/.test(packageJson.version), 'Package version must retain or supersede v7.1.4.');
 check(Boolean(packageJson.scripts['verify:v7.1.4']), 'Package must expose v7.1.4 verification.');
-check(read('VERSION.md').startsWith('GlobeHoppers v7.1.4'), 'journeylines/VERSION.md must identify v7.1.4 first.');
+check(read('VERSION.md').startsWith(`GlobeHoppers v${packageJson.version}`), 'journeylines/VERSION.md must identify the current package version first.');
 check(fs.existsSync(path.join(root, 'QA/QA-v7.1.4.md')), 'v7.1.4 QA must live under journeylines/QA/.');
 check(!fs.existsSync(path.resolve(root, '../QA-v7.1.4.md')), 'v7.1.4 QA must not be duplicated at repository root.');
 

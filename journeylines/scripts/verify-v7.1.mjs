@@ -164,7 +164,7 @@ check(!travelMap.includes('api.mapbox.com/directions'), 'TravelMap must not cont
 check(runtimeConfig.includes('...existingJourneyLinesConfig'), 'Runtime configuration must preserve deployment overrides.');
 check(runtimeConfig.includes('...existingValhallaConfig'), 'Runtime Valhalla configuration must merge deployment overrides.');
 check(runtimeConfig.includes('valhalla1.openstreetmap.de'), 'Default Valhalla endpoint must be configured.');
-check(/^7\.1\.\d+$/.test(packageJson.version), 'Package version must remain within the v7.1 release line.');
+check(/^7\.(?:1\.\d+|[2-9](?:\.\d+)*)$/.test(packageJson.version), 'Package version must retain or supersede the v7.1 release line.');
 check(packageJson.scripts['verify:v7.1'], 'Package must expose the v7.1 verification command.');
 check(worker.includes("multimodal-v7.1"), 'Routing worker must report v7.1.');
 check(routeDetails.includes("ROUTE_DETAILS_VERSION = '7.1'"), 'Route-details metadata must report v7.1.');

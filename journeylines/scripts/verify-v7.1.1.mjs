@@ -63,7 +63,7 @@ check(waypointBlock.includes('return stylizedFallbackRoute(leg);'), 'The lightwe
 check(travelMap.includes('const routed = getVisualRoutedGeometry(leg, routedGeometries);') || travelMap.includes('const routed = getRoutedGeometry(leg, routedGeometries);'), 'Vehicle position must prefer routed geometry.');
 
 // Release metadata and QA placement.
-check(/^7\.1\.(?:1|[2-9]|\d{2,})$/.test(packageJson.version), 'Package version must be v7.1.1 or a later v7.1 patch.');
+check(/^7\.(?:1\.(?:1|[2-9]|\d{2,})|[2-9](?:\.\d+)*)$/.test(packageJson.version), 'Package version must be v7.1.1 or a later v7.1 patch.');
 check(packageJson.scripts['verify:v7.1.1'], 'Package must expose the v7.1.1 verification command.');
 check(fs.existsSync(path.join(root, 'QA/QA-v7.1.1.md')), 'v7.1.1 QA record must live under journeylines/QA/.');
 check(!fs.existsSync(path.resolve(root, '../QA-v7.1.1.md')), 'v7.1.1 QA record must not be duplicated at repository root.');

@@ -4,6 +4,12 @@
 
 GlobeHoppers is a living travel-history map that replays trips across a cinematic globe, with alternate flat projections, traveler-specific colors, custom vehicle icons, route trails, and editable trip data stored in the repository.
 
+## v7.2.0: Batch Add Hops and Camera Polish
+
+Batch Add Hops is available from the normal Add Hop dialog. The streamlined batch editor omits Hop Preview, calculates surface routes when each Hop is staged, and displays staged Hops chronologically in a spreadsheet-like table. All staged Hops are saved in one repository update, while unsaved edits are protected when switching rows, starting another Hop, saving, or closing.
+
+Disconnected trips now pause and transition with a stable zoom-out, low-zoom reposition, and zoom-in sequence. Airplane icons follow the visible screen-space route tangent so they remain centered and aligned on pitched globe views.
+
 ## v7.1.4: Surface Playback Performance Recovery
 
 Surface travel now prepares one lightweight route and reuses it throughout playback. Large provider routes are transferred to the routing worker as typed arrays, matching return legs reuse the outbound route in reverse, and active playback no longer deep-copies or re-simplifies raw geometry as a leg begins.

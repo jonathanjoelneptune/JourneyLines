@@ -67,10 +67,10 @@ check(controls.includes('disabled={isRelocating}'), 'Playback control must be di
 const glideStart = travelMap.indexOf('const request = relocationTransition;');
 const glideEnd = travelMap.indexOf('}, [mapReady, relocationTransition?.id', glideStart);
 const glideBlock = travelMap.slice(glideStart, glideEnd);
-check(glideBlock.includes('map.flyTo({'), 'Disconnected trips must glide with MapLibre flyTo.');
+check(glideBlock.includes('zoomInAtDestination') && glideBlock.includes('overviewZoom'), 'Disconnected trips must use a bounded overview transition.');
 check(glideBlock.includes("map.once?.('moveend', handleMoveEnd)"), 'Playback must wait for the camera move to settle.');
-check(glideBlock.includes("finish('timeout-fallback')"), 'Relocation must include a bounded timeout fallback.');
-check(glideBlock.includes("finish('jump-fallback')"), 'Relocation must fail safely if flyTo throws.');
+check(glideBlock.includes('window.setTimeout(completeStage') && glideBlock.includes('timeoutMs + 500'), 'Relocation must include a bounded timeout fallback.');
+check(glideBlock.includes("finish('jump-fallback')"), 'Relocation must fail safely if staged camera movement throws.');
 check(glideBlock.includes('try { map.stop(); } catch {}'), 'Relocation cleanup must stop a canceled camera animation.');
 check(glideBlock.includes("status: 'invalid-target'"), 'Invalid relocation targets must be handled explicitly.');
 check(travelMap.includes('if (relocationTransition?.id) {'), 'The normal scene camera must yield while relocation is active.');
@@ -97,7 +97,7 @@ check(admin.includes('initialAddRequestRef.current === initialAddRequestId'), 'A
 check(admin.includes('openAdd();'), 'AdminPanel must open Add Hop after consuming the request.');
 
 // Release metadata and QA placement.
-check(/^7\.1\.(?:2|[3-9]|[1-9]\d+)$/.test(packageJson.version), 'Package version must retain or supersede v7.1.2.');
+check(/^7\.(?:1\.(?:2|[3-9]|[1-9]\d+)|[2-9](?:\.\d+)*)$/.test(packageJson.version), 'Package version must retain or supersede v7.1.2.');
 check(packageJson.scripts['verify:v7.1.2'], 'Package must expose v7.1.2 verification.');
 check(fs.existsSync(path.join(root, 'QA/QA-v7.1.2.md')), 'v7.1.2 QA must live under journeylines/QA/.');
 check(!fs.existsSync(path.resolve(root, '../QA-v7.1.2.md')), 'v7.1.2 QA must not be duplicated at repository root.');

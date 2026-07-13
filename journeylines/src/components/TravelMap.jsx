@@ -738,14 +738,24 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     map.stop();
 
     const distance = Math.max(0, Number(request.distanceMiles) || milesBetween(request.from || destination, destination));
-    const duration = Math.round(clamp(1800 + Math.sqrt(Math.max(1, distance)) * 78, RELOCATION_GLIDE_MIN_MS, RELOCATION_GLIDE_MAX_MS));
     const targetZoom = relocationTargetZoom(distance, request.nextMode, cameraMode);
+    const overviewZoom = relocationOverviewZoom(distance);
+    const zoomOutDuration = Math.round(clamp(760 + Math.sqrt(Math.max(1, distance)) * 10, 850, 1450));
+    const zoomInDuration = Math.round(clamp(860 + Math.sqrt(Math.max(1, distance)) * 11, 950, 1650));
+    const totalDuration = zoomOutDuration + zoomInDuration;
     let finished = false;
+    let stageCleanup = null;
+
+    const clearStage = () => {
+      stageCleanup?.();
+      stageCleanup = null;
+      window.clearTimeout(relocationGlideRef.current.timer);
+      relocationGlideRef.current.timer = null;
+    };
     const finish = (status = 'complete') => {
       if (finished) return;
       finished = true;
-      map.off?.('moveend', handleMoveEnd);
-      window.clearTimeout(relocationGlideRef.current.timer);
+      clearStage();
       relocationGlideRef.current = { id: null, timer: null, finish: null };
       resetAnimatingRef.current = false;
       manualSpinPauseRef.current = false;
@@ -756,34 +766,53 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         bearing: Number(map.getBearing?.() || 0),
         pitch: Number(map.getPitch?.() || 0)
       };
-      onRelocationComplete?.(request.id, { status, duration });
+      onRelocationComplete?.(request.id, { status, duration: totalDuration });
     };
-    const handleMoveEnd = () => finish('complete');
-    relocationGlideRef.current = { id: request.id, timer: null, finish };
-    map.once?.('moveend', handleMoveEnd);
-    relocationGlideRef.current.timer = window.setTimeout(() => finish('timeout-fallback'), duration + 650);
 
+    const runEaseStage = (options, timeoutMs, next) => {
+      clearStage();
+      let completed = false;
+      const completeStage = () => {
+        if (completed || finished || relocationGlideRef.current.id !== request.id) return;
+        completed = true;
+        clearStage();
+        next?.();
+      };
+      const handleMoveEnd = () => completeStage();
+      map.once?.('moveend', handleMoveEnd);
+      stageCleanup = () => map.off?.('moveend', handleMoveEnd);
+      relocationGlideRef.current.timer = window.setTimeout(completeStage, timeoutMs + 500);
+      map.easeTo({ ...options, duration: timeoutMs, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+    };
+
+    const zoomInAtDestination = () => {
+      if (finished || relocationGlideRef.current.id !== request.id) return;
+      try {
+        // Reposition only after the camera is already at overview altitude. A
+        // low-zoom center jump is visually stable and avoids MapLibre trying to
+        // interpolate center, pitch, bearing, and zoom across a continent.
+        map.jumpTo({ center: [lon, lat], zoom: overviewZoom, pitch: 18, bearing: 0, essential: true });
+        window.requestAnimationFrame(() => runEaseStage({ center: [lon, lat], zoom: targetZoom, pitch: 52, bearing: 0 }, zoomInDuration, () => finish('complete')));
+      } catch {
+        try { map.jumpTo({ center: [lon, lat], zoom: targetZoom, pitch: 52, bearing: 0, essential: true }); } catch {}
+        finish('jump-fallback');
+      }
+    };
+
+    relocationGlideRef.current = { id: request.id, timer: null, finish };
     try {
-      map.flyTo({
-        center: [lon, lat],
-        zoom: targetZoom,
-        pitch: 52,
-        bearing: 0,
-        duration,
-        curve: distance > 1200 ? 1.65 : distance > 300 ? 1.48 : 1.35,
-        speed: 0.82,
-        essential: true,
-        easing: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-      });
+      const currentCenter = map.getCenter?.();
+      const center = Number.isFinite(currentCenter?.lng) && Number.isFinite(currentCenter?.lat)
+        ? [currentCenter.lng, currentCenter.lat]
+        : [Number(request.from?.lon) || lon, Number(request.from?.lat) || lat];
+      runEaseStage({ center, zoom: overviewZoom, pitch: 18, bearing: 0 }, zoomOutDuration, zoomInAtDestination);
     } catch {
-      try { map.jumpTo({ center: [lon, lat], zoom: targetZoom, pitch: 52, bearing: 0, essential: true }); } catch {}
-      finish('jump-fallback');
+      zoomInAtDestination();
     }
 
     return () => {
       if (relocationGlideRef.current.id !== request.id) return;
-      map.off?.('moveend', handleMoveEnd);
-      window.clearTimeout(relocationGlideRef.current.timer);
+      clearStage();
       try { map.stop(); } catch {}
       relocationGlideRef.current = { id: null, timer: null, finish: null };
       resetAnimatingRef.current = false;
@@ -1139,9 +1168,23 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // v2.22: all top-down PNG vessel icons are authored nose-up. Rotate the icon so
     // the nose points along the current projected route segment. This applies to
     // plane/car/boat/train; the route itself remains north-up.
-    const rotation = Number.isFinite(Number(sceneState.screenHeading))
-      ? Number(sceneState.screenHeading)
-      : projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries);
+    const projectedRotation = projectedScreenHeading(
+      map,
+      leg,
+      sceneState.routeProgress,
+      sceneState.routedGeometries,
+      iconMode === 'plane' ? 0.026 : 0.012
+    );
+    const rawRotation = iconMode === 'plane'
+      ? projectedRotation
+      : Number.isFinite(Number(sceneState.screenHeading))
+        ? Number(sceneState.screenHeading)
+        : projectedRotation;
+    const previousRotation = Number(vehicleRef.current.__jlVehicleRotation);
+    const rotation = Number.isFinite(previousRotation)
+      ? lerpAngle(previousRotation, rawRotation, iconMode === 'plane' ? 0.32 : 0.48)
+      : rawRotation;
+    vehicleRef.current.__jlVehicleRotation = rotation;
     const iconKey = `${iconMode}:${String(color || '#00e5ff')}`;
     if (vehicleRef.current.__jlVehicleIconKey !== iconKey) {
       primeRecoloredVesselIcon(iconMode, color);
@@ -2683,9 +2726,10 @@ function headingAlongRoute(leg, t, routedGeometries = {}) {
   return bearingBetween(a, b);
 }
 
-function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
-  const a = pointAtRouteProgress(leg, Math.max(0, t - 0.01), routedGeometries);
-  const b = pointAtRouteProgress(leg, Math.min(1, t + 0.01), routedGeometries);
+function projectedScreenHeading(map, leg, t, routedGeometries = {}, sampleWindow = 0.01) {
+  const windowSize = Math.max(0.004, Math.min(0.08, Number(sampleWindow) || 0.01));
+  const a = pointAtRouteProgress(leg, Math.max(0, t - windowSize), routedGeometries);
+  const b = pointAtRouteProgress(leg, Math.min(1, t + windowSize), routedGeometries);
   const pa = map.project([a.lon, a.lat]);
   const pb = map.project([b.lon, b.lat]);
   return Math.atan2(pb.x - pa.x, -(pb.y - pa.y)) * 180 / Math.PI;
@@ -2994,6 +3038,16 @@ function unwrapAntimeridianLine(coords) {
 function shortestLonDelta(delta) { return ((delta + 540) % 360) - 180; }
 function blendGeo(a, b, amount) { return interpolateGeo(a, b, amount); }
 function emptyCollection() { return { type: 'FeatureCollection', features: [] }; }
+function relocationOverviewZoom(distanceMiles = 0) {
+  const distance = Math.max(0, Number(distanceMiles) || 0);
+  if (distance > 3200) return 2.25;
+  if (distance > 1600) return 2.65;
+  if (distance > 700) return 3.05;
+  if (distance > 260) return 3.55;
+  if (distance > 90) return 4.15;
+  return 4.75;
+}
+
 function relocationTargetZoom(distanceMiles = 0, mode = 'plane', cameraMode = 'follow') {
   if (cameraMode === 'global') return 4.2;
   const distance = Math.max(0, Number(distanceMiles) || 0);

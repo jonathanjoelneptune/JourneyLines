@@ -90,7 +90,7 @@ check(worker.includes('Math.min(320'), 'Worker playback plans must have a hard s
 check(worker.includes('Math.max(72'), 'Worker playback plans must retain enough samples for smooth interpolation.');
 check(routingClient.includes("export const ROUTING_VERSION = 'multimodal-v7.1';"), 'Provider route caches must remain reusable because v7.1.3 changes presentation, not routing source data.');
 
-check(/^7\.1\.(?:3|[4-9]|[1-9]\d+)$/.test(packageJson.version), 'Package version must retain or supersede v7.1.3.');
+check(/^7\.(?:1\.(?:3|[4-9]|[1-9]\d+)|[2-9](?:\.\d+)*)$/.test(packageJson.version), 'Package version must retain or supersede v7.1.3.');
 check(packageJson.scripts['verify:v7.1.3'], 'Package must expose v7.1.3 verification.');
 check(fs.existsSync(path.join(root, 'QA/QA-v7.1.3.md')), 'v7.1.3 QA must live under journeylines/QA/.');
 check(!fs.existsSync(path.resolve(root, '../QA-v7.1.3.md')), 'v7.1.3 QA must not be duplicated at repository root.');

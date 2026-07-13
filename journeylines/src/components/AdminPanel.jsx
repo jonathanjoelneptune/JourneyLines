@@ -47,6 +47,57 @@ const emptyRouteReview = () => ({
   error: null,
   startedAt: null
 });
+
+function createNewHopDraft() {
+  return {
+    ...empty,
+    travelers: [],
+    year: new Date().getFullYear(),
+    month: null,
+    fromCity: null,
+    toCity: null,
+    toLocationText: '',
+    startPointId: createStableId('point'),
+    mainPointId: createStableId('point'),
+    mainLegId: createStableId('leg'),
+    returnPointId: createStableId('point'),
+    returnLegId: createStableId('leg')
+  };
+}
+
+function isDraftMeaningfullyBlank(value = {}) {
+  return !String(value.label || '').trim()
+    && !value.month
+    && !value.day
+    && !value.endMonth
+    && !value.endDay
+    && !(value.travelers || []).length
+    && !(value.guestHoppers || []).length
+    && !String(value.toLocationText || '').trim()
+    && !value.toLocationId
+    && !value.toCity
+    && !String(value.toCustomName || '').trim()
+    && !(value.extraLegs || []).some(leg => leg?.locationId || leg?.city || String(leg?.locationText || '').trim())
+    && !String(value.notes || '').trim();
+}
+
+function mergeLocationsById(...groups) {
+  const merged = new Map();
+  for (const group of groups) {
+    for (const location of group || []) {
+      if (location?.id) merged.set(location.id, location);
+    }
+  }
+  return [...merged.values()];
+}
+
+function sortBatchRows(rows = []) {
+  return [...rows].sort((a, b) => {
+    const dateOrder = compareDateParts(a?.trip || {}, b?.trip || {});
+    if (dateOrder) return dateOrder;
+    return Number(a?.entryOrder || 0) - Number(b?.entryOrder || 0);
+  });
+}
 let cityDbPromise = null;
 let cityDbCache = [];
 function loadCityDatabase() {
@@ -199,6 +250,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [citySearchResults, setCitySearchResults] = useState({});
   const [citySearchLoading, setCitySearchLoading] = useState({});
   const [routeReview, setRouteReview] = useState(() => emptyRouteReview());
+  const [batchRows, setBatchRows] = useState([]);
+  const [batchEditingStageId, setBatchEditingStageId] = useState(null);
+  const batchSequenceRef = useRef(0);
   const routeReviewGenerationRef = useRef(0);
   const tripsRef = useRef(trips);
   const locationsRef = useRef(locations);
@@ -482,25 +536,30 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     setFormError('');
     setModalClosing(false);
     setEditingId(null);
-    const nextDraft = {
-      ...empty,
-      travelers: [],
-      year: new Date().getFullYear(),
-      month: null,
-      fromCity: null,
-      toCity: null,
-      toLocationText: '',
-      startPointId: createStableId('point'),
-      mainPointId: createStableId('point'),
-      mainLegId: createStableId('leg'),
-      returnPointId: createStableId('point'),
-      returnLegId: createStableId('leg')
-    };
+    setBatchRows([]);
+    setBatchEditingStageId(null);
+    const nextDraft = createNewHopDraft();
     routeReviewGenerationRef.current += 1;
     setRouteReview(emptyRouteReview());
     initialDraftSignatureRef.current = draftSignature(nextDraft);
     setDraft(nextDraft);
     setModal('add');
+  }
+
+  function openBatchAdd() {
+    window.clearTimeout(modalCloseTimerRef.current);
+    setFormError('');
+    setModalClosing(false);
+    setEditingId(null);
+    setBatchRows([]);
+    setBatchEditingStageId(null);
+    batchSequenceRef.current = 0;
+    const nextDraft = createNewHopDraft();
+    routeReviewGenerationRef.current += 1;
+    setRouteReview(emptyRouteReview());
+    initialDraftSignatureRef.current = draftSignature(nextDraft);
+    setDraft(nextDraft);
+    setModal('batch');
   }
   function openEdit(trip) {
     modalTriggerRef.current = document.activeElement;
@@ -579,6 +638,27 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   function closeModal(force = false) {
     setFormError('');
     if (!modal) return;
+    if (!force && modal === 'batch' && (batchDraftIsDirty() || batchRows.length)) {
+      setConfirmRequest({
+        title: 'Leave Batch Add?',
+        message: batchRows.length
+          ? `You have ${batchRows.length} staged Hop${batchRows.length === 1 ? '' : 's'}${batchDraftIsDirty() ? ' and unsaved editor changes' : ''}. Save the batch before closing?`
+          : 'The Hop in the editor has not been staged. Save it before closing?',
+        confirmLabel: 'Save Batch',
+        confirmClass: 'primary',
+        discardLabel: 'Discard Batch',
+        onConfirm: async () => {
+          if (batchDraftIsDirty()) {
+            const staged = await stageCurrentBatchHop();
+            if (staged) await commitBatchRows(staged.rows);
+          } else {
+            await commitBatchRows(batchRows);
+          }
+        },
+        onDiscard: () => closeModal(true)
+      });
+      return;
+    }
     if (!force && draftSignature(draft) !== initialDraftSignatureRef.current) {
       setConfirmRequest({
         title: 'Discard unsaved changes?',
@@ -594,6 +674,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       setModal(null);
       setModalClosing(false);
       setEditingId(null);
+      setBatchRows([]);
+      setBatchEditingStageId(null);
       setDraft(empty);
       routeReviewGenerationRef.current += 1;
       setRouteReview(emptyRouteReview());
@@ -673,6 +755,218 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     if (target === 'main') setDraft(d => ({ ...d, mode, returnMode: d.returnMode || mode }));
     else if (target === 'return') setDraft(d => ({ ...d, returnMode: mode }));
     else if (typeof target === 'number') setExtraLeg(target, { modeFromPrevious: mode });
+  }
+
+  function batchDraftIsDirty() {
+    return draftSignature(draft) !== initialDraftSignatureRef.current && !isDraftMeaningfullyBlank(draft);
+  }
+
+  function batchLocationsExcluding(stageId = null) {
+    const stagedLocations = batchRows
+      .filter(row => row.stageId !== stageId)
+      .flatMap(row => row.addedLocations || []);
+    return mergeLocationsById(locationsRef.current || locations, stagedLocations);
+  }
+
+  function cloneBatchDraft(value = {}) {
+    return {
+      ...value,
+      travelers: [...(value.travelers || [])],
+      guestHoppers: (value.guestHoppers || []).map(guest => ({ ...guest })),
+      extraLegs: (value.extraLegs || []).map(leg => ({ ...leg })),
+      route: (value.route || []).map(point => ({ ...point }))
+    };
+  }
+
+  async function stageCurrentBatchHop() {
+    if (busy) return null;
+    setBusy(true);
+    setFormError('');
+    try {
+      validateHopDraftForSave(draft);
+      const resolvedRouteReview = await ensureDraftRoutesForSave();
+      const existingRow = batchEditingStageId ? batchRows.find(row => row.stageId === batchEditingStageId) : null;
+      const otherRows = batchRows.filter(row => row.stageId !== batchEditingStageId);
+      const workingTrips = [...(tripsRef.current || trips), ...otherRows.map(row => row.trip)];
+      const workingLocations = batchLocationsExcluding(batchEditingStageId);
+      const draftForNormalization = {
+        ...draft,
+        id: existingRow?.trip?.id || draft.id || undefined
+      };
+      const { trip, nextLocations } = normalizeTrip(draftForNormalization, workingTrips, workingLocations, homeBases, normalizedHoppers);
+      const nextLocationMap = Object.fromEntries((nextLocations || []).map(location => [location.id, location]));
+      const persistedSurfaceLegs = flattenLegs([trip], nextLocationMap, homeBases)
+        .map(entry => entry.leg)
+        .filter(leg => isSurfaceTravelMode(leg.mode));
+      const persistedReview = persistedSurfaceLegs.length
+        ? createRouteReviewSnapshot(resolvedRouteReview, routeReviewSignature(persistedSurfaceLegs))
+        : null;
+      const normalizedTrip = normalizeTripForV61({ ...trip, routeReview: persistedReview }, homeBases);
+      validateTripLocationReferences(normalizedTrip, nextLocations);
+      if (tripNeedsDetailedVesselRouting(normalizedTrip, nextLocations)) {
+        await prepareTripRoutesForPlayback(normalizedTrip, nextLocations);
+      }
+
+      const workingIds = new Set(workingLocations.map(location => location.id));
+      const addedLocations = (nextLocations || []).filter(location => !workingIds.has(location.id));
+      const stageId = existingRow?.stageId || createStableId('batch-hop');
+      const entryOrder = existingRow?.entryOrder || ++batchSequenceRef.current;
+      const stagedDraft = cloneBatchDraft({ ...draftForNormalization, id: normalizedTrip.id, routeReview: persistedReview });
+      const row = {
+        stageId,
+        entryOrder,
+        draft: stagedDraft,
+        trip: normalizedTrip,
+        addedLocations,
+        routeReview: resolvedRouteReview,
+        stagedAt: Date.now()
+      };
+      const nextRows = sortBatchRows([...otherRows, row]);
+      setBatchRows(nextRows);
+      setBatchEditingStageId(stageId);
+      setDraft(stagedDraft);
+      setRouteReview(resolvedRouteReview || emptyRouteReview());
+      initialDraftSignatureRef.current = draftSignature(stagedDraft);
+      return { row, rows: nextRows };
+    } catch (error) {
+      setFormError(error?.message || String(error));
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function loadBatchRow(row) {
+    if (!row) return;
+    const nextDraft = cloneBatchDraft(row.draft);
+    routeReviewGenerationRef.current += 1;
+    setBatchEditingStageId(row.stageId);
+    setDraft(nextDraft);
+    setRouteReview(row.routeReview || emptyRouteReview());
+    initialDraftSignatureRef.current = draftSignature(nextDraft);
+    setFormError('');
+  }
+
+  function resetBatchDraft() {
+    const nextDraft = createNewHopDraft();
+    routeReviewGenerationRef.current += 1;
+    setBatchEditingStageId(null);
+    setDraft(nextDraft);
+    setRouteReview(emptyRouteReview());
+    initialDraftSignatureRef.current = draftSignature(nextDraft);
+    setFormError('');
+  }
+
+  function requestBatchEdit(stageId) {
+    const target = batchRows.find(row => row.stageId === stageId);
+    if (!target || target.stageId === batchEditingStageId && !batchDraftIsDirty()) return;
+    if (!batchDraftIsDirty()) {
+      loadBatchRow(target);
+      return;
+    }
+    setConfirmRequest({
+      title: 'Save the current Hop?',
+      message: 'You have unsaved changes in the batch editor. Save them to the batch before editing another Hop?',
+      confirmLabel: 'Save Hop to Batch',
+      confirmClass: 'primary',
+      discardLabel: 'Discard changes',
+      onConfirm: async () => {
+        const staged = await stageCurrentBatchHop();
+        if (staged) loadBatchRow(target);
+      },
+      onDiscard: () => loadBatchRow(target)
+    });
+  }
+
+  function requestNewBatchDraft() {
+    if (!batchDraftIsDirty()) {
+      resetBatchDraft();
+      return;
+    }
+    setConfirmRequest({
+      title: 'Save the current Hop?',
+      message: 'Save these changes to the batch before starting another Hop?',
+      confirmLabel: 'Save Hop to Batch',
+      confirmClass: 'primary',
+      discardLabel: 'Discard changes',
+      onConfirm: async () => {
+        const staged = await stageCurrentBatchHop();
+        if (staged) resetBatchDraft();
+      },
+      onDiscard: resetBatchDraft
+    });
+  }
+
+  function requestDeleteBatchRow(stageId) {
+    const row = batchRows.find(item => item.stageId === stageId);
+    if (!row) return;
+    setConfirmRequest({
+      title: 'Delete staged Hop?',
+      message: `Remove ${row.trip?.label || 'this Hop'} from the batch?`,
+      confirmLabel: 'Delete staged Hop',
+      onConfirm: async () => {
+        const nextRows = batchRows.filter(item => item.stageId !== stageId);
+        setBatchRows(nextRows);
+        if (batchEditingStageId === stageId) resetBatchDraft();
+      }
+    });
+  }
+
+  async function commitBatchRows(rowsToCommit = batchRows) {
+    const rows = sortBatchRows(rowsToCommit);
+    if (!rows.length) {
+      setFormError('Add at least one Hop to the batch before saving.');
+      return false;
+    }
+    if (busy) return false;
+    setBusy(true);
+    try {
+      const currentTrips = tripsRef.current || trips;
+      const currentLocations = locationsRef.current || locations;
+      const nextLocations = mergeLocationsById(currentLocations, rows.flatMap(row => row.addedLocations || []));
+      const stagedTrips = rows.map(row => row.trip);
+      stagedTrips.forEach(trip => validateTripLocationReferences(trip, nextLocations));
+      const nextTrips = insertChronologically([...currentTrips, ...stagedTrips]);
+      tripsRef.current = nextTrips;
+      locationsRef.current = nextLocations;
+      setTrips(nextTrips);
+      if (nextLocations !== currentLocations) setLocations(nextLocations);
+      const items = rows.map(row => ({
+        action: 'add',
+        tripId: row.trip.id,
+        label: row.trip.label || row.trip.toLocationName || row.trip.id,
+        message: `Add Hop: ${row.trip.label || row.trip.toLocationName || row.trip.id} (${row.trip.id})`
+      }));
+      initialDraftSignatureRef.current = draftSignature(draft);
+      closeModal(true);
+      onTripSaved({ action: 'batch-add', tripIds: stagedTrips.map(trip => trip.id), shouldAutoPlay: false });
+      saveDataInBackground(nextTrips, nextLocations, `Batch Add Hops: ${rows.length} Hops`, items);
+      return true;
+    } catch (error) {
+      setFormError(error?.message || String(error));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function requestSaveBatch() {
+    if (!batchDraftIsDirty()) {
+      commitBatchRows(batchRows);
+      return;
+    }
+    setConfirmRequest({
+      title: 'Save the current Hop?',
+      message: 'The Hop in the editor has changes that are not staged. Save it to the batch before saving all Hops?',
+      confirmLabel: 'Save Hop and Batch',
+      confirmClass: 'primary',
+      discardLabel: batchRows.length ? 'Discard current changes' : null,
+      onConfirm: async () => {
+        const staged = await stageCurrentBatchHop();
+        if (staged) await commitBatchRows(staged.rows);
+      },
+      onDiscard: batchRows.length ? () => commitBatchRows(batchRows) : null
+    });
   }
 
   async function saveTripFromModal() {
@@ -802,14 +1096,16 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   function saveDataInBackground(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers', item = {}) {
     const queuedAt = Date.now();
     const queue = repoSaveQueue;
-    const nextItem = normalizeRepoSaveItem(item, message);
+    const incomingItems = (Array.isArray(item) ? item : [item])
+      .map(entry => normalizeRepoSaveItem(entry, entry?.message || message))
+      .filter(Boolean);
     const previousItems = Array.isArray(queue.pending?.items) ? queue.pending.items : [];
     queue.pending = {
       trips: nextTrips,
       locations: nextLocations,
       message,
       queuedAt,
-      items: [...previousItems, nextItem].filter(Boolean)
+      items: [...previousItems, ...incomingItems]
     };
 
     if (queue.timer) clearTimeout(queue.timer);
@@ -1290,7 +1586,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       </details>
     </aside>
 
-    {confirmRequest && <ThemedConfirmPopup request={confirmRequest} busy={busy} onCancel={() => setConfirmRequest(null)} onConfirm={async () => { const action = confirmRequest.onConfirm; setConfirmRequest(null); await action?.(); }} />}
+    {confirmRequest && <ThemedConfirmPopup
+      request={confirmRequest}
+      busy={busy}
+      onCancel={() => setConfirmRequest(null)}
+      onDiscard={async () => { const action = confirmRequest.onDiscard; setConfirmRequest(null); await action?.(); }}
+      onConfirm={async () => { const action = confirmRequest.onConfirm; setConfirmRequest(null); await action?.(); }}
+    />}
 
     {modal && <TripModal
       mode={modal}
@@ -1301,7 +1603,14 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       locs={locs}
       locById={locById}
       onClose={closeModal}
-      onSave={saveTripFromModal}
+      onSave={modal === 'batch' ? stageCurrentBatchHop : saveTripFromModal}
+      onOpenBatch={openBatchAdd}
+      onSaveBatch={requestSaveBatch}
+      onAddAnotherBatchHop={requestNewBatchDraft}
+      onEditBatchHop={requestBatchEdit}
+      onDeleteBatchHop={requestDeleteBatchRow}
+      batchRows={batchRows}
+      batchEditingStageId={batchEditingStageId}
       onTravelerToggle={updateTraveler}
       onChooseDestination={chooseDestination}
       onChooseFrom={chooseFrom}
@@ -1544,8 +1853,9 @@ function formatHumanList(items = []) {
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
 }
 
-function ThemedConfirmPopup({ request, busy, onCancel, onConfirm }) {
+function ThemedConfirmPopup({ request, busy, onCancel, onConfirm, onDiscard }) {
   const stopConfirmEvent = (event) => event.stopPropagation();
+  const confirmClass = request.confirmClass || 'danger';
   return <div className="studio-confirm-backdrop" role="presentation" onPointerDown={stopConfirmEvent} onClick={onCancel}>
     <div className="studio-confirm-popup glass" role="dialog" aria-modal="true" aria-labelledby="studio-confirm-title" onPointerDown={stopConfirmEvent} onClick={stopConfirmEvent}>
       <p className="eyebrow">Please confirm</p>
@@ -1553,7 +1863,8 @@ function ThemedConfirmPopup({ request, busy, onCancel, onConfirm }) {
       <p>{request.message}</p>
       <div className="studio-confirm-actions">
         <button type="button" className="secondary" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onCancel}>Cancel</button>
-        <button type="button" className="danger" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
+        {request.discardLabel && request.onDiscard && <button type="button" className="secondary studio-confirm-discard" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onDiscard}>{request.discardLabel}</button>}
+        <button type="button" className={confirmClass} disabled={busy} onPointerDown={stopConfirmEvent} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
       </div>
     </div>
   </div>;
@@ -1676,12 +1987,13 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, citySearchResults = {}, citySearchLoading = {}, onRequestCitySuggestions = () => {}, routeReview = emptyRouteReview(), routeReviewLegs = [], routeReviewSignature: currentReviewSignature = '', onReviewRoutes = () => {}}) {
+function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, onOpenBatch = () => {}, onSaveBatch = () => {}, onAddAnotherBatchHop = () => {}, onEditBatchHop = () => {}, onDeleteBatchHop = () => {}, batchRows = [], batchEditingStageId = null, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, citySearchResults = {}, citySearchLoading = {}, onRequestCitySuggestions = () => {}, routeReview = emptyRouteReview(), routeReviewLegs = [], routeReviewSignature: currentReviewSignature = '', onReviewRoutes = () => {}}) {
   const cityMatchesFor = query => citySearchResults[normalizeSearchText(query)] || [];
   const cityLoadingFor = query => Boolean(citySearchLoading[normalizeSearchText(query)]);
   const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityMatchesFor(draft.toLocationText), true, cityLoadingFor(draft.toLocationText));
   const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityMatchesFor(draft.fromLocationText), true, cityLoadingFor(draft.fromLocationText));
-  const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toCustomName || draft.toLocationText || 'Edit Hop';
+  const batchMode = mode === 'batch';
+  const title = mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : draft.label || draft.toCustomName || draft.toLocationText || 'Edit Hop';
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
   const currentDraftVisual = resolveTripVisual(draft, normalizedHoppers || {});
@@ -1692,7 +2004,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const effectiveTrailColorMode = draft.trailColorMode || defaultTrailColorMode;
   const effectiveTrailStyle = draft.trailStyle || 'solid';
   useEffect(() => {
-    if (mode !== 'add') return;
+    if (mode !== 'add' && mode !== 'batch') return;
     if (draft._trailStyleTouched) return;
     if (selectedTravelerCount >= 2 && (draft.trailStyle || 'solid') === 'solid') {
       setDraft(d => ({ ...d, trailStyle: 'ribbon', trailColorMode: 'members' }));
@@ -1832,18 +2144,22 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
       <span>{formError}</span>
       <button type="button" className="primary" onClick={() => setFormError('')}>OK</button>
     </div>}
-    <div ref={dialogRef} className={`studio-modal glass studio-modal--wide ${closing ? 'is-closing' : ''}`} role="dialog" aria-modal="true" aria-labelledby="studio-modal-title">
+    <div ref={dialogRef} className={`studio-modal glass studio-modal--wide ${batchMode ? 'studio-modal--batch' : ''} ${closing ? 'is-closing' : ''}`} role="dialog" aria-modal="true" aria-labelledby="studio-modal-title">
       <div className="studio-modal-sticky">
         <div className="studio-modal-header studio-modal-header--with-actions">
           <div className="studio-title-block">
-            <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : 'Edit Hop'}</p>
+            <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : 'Edit Hop'}</p>
             <h2 id="studio-modal-title" title={title}>{title}</h2>
-            <small className="studio-modal-trip-id">Trip ID: {draft.id || (mode === 'add' ? 'new-unsaved-hop' : 'unknown')}</small>
+            <small className="studio-modal-trip-id">Trip ID: {draft.id || ((mode === 'add' || batchMode) ? 'new-unsaved-hop' : 'unknown')}</small>
           </div>
           <div className="studio-modal-top-actions">
             {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete hop</button>}
+            {mode === 'add' && <button className="secondary" type="button" onClick={onOpenBatch}>Batch Add Hops</button>}
             <button onClick={onClose}>Cancel</button>
-            <button className="primary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Saving…' : routeReview.status === 'working' ? 'Checking routes…' : 'Save Hop'}</button>
+            {batchMode ? <>
+              <button className="secondary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Staging…' : batchEditingStageId ? 'Update Staged Hop' : 'Done with Hop'}</button>
+              <button className="primary" disabled={busy || !batchRows.length && isDraftMeaningfullyBlank(draft)} onClick={onSaveBatch}>{busy ? 'Saving…' : `Save Batch${batchRows.length ? ` (${batchRows.length})` : ''}`}</button>
+            </> : <button className="primary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Saving…' : routeReview.status === 'working' ? 'Checking routes…' : 'Save Hop'}</button>}
           </div>
         </div>
 
@@ -1869,7 +2185,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
         </div>
       </div>
 
-      <div className="studio-modal-scroll-content studio-modal-layout">
+      <div className={`studio-modal-scroll-content studio-modal-layout ${batchMode ? 'studio-modal-layout--batch' : ''}`}>
         <div className="studio-modal-maincol">
           <section className="studio-pick-section compact-section travelers-section">
             <div className="section-heading-inline">
@@ -1976,29 +2292,76 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
           </div>
         </div>
 
-        <div className="studio-modal-sidecol">
+        {!batchMode && <div className="studio-modal-sidecol">
           <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} hopperData={normalizedHoppers} />
-          {!!routeReviewLegs.length && <RouteReviewPanel
-            review={routeReview}
-            legs={routeReviewLegs}
-            currentSignature={currentReviewSignature}
-            onReview={onReviewRoutes}
-          />}
-          <TrailStylePanel
-            draft={draft}
-            currentHopSquad={currentHopSquad}
-            currentDraftVisual={currentDraftVisual}
-            selectedTravelerCount={selectedTravelerCount}
-            effectiveTrailColorMode={effectiveTrailColorMode}
-            effectiveTrailStyle={effectiveTrailStyle}
-            onSetTrailStyle={setTrailStyle}
-            onSetTrailColorMode={setTrailColorMode}
-          />
-        </div>
+          {!!routeReviewLegs.length && <RouteReviewPanel review={routeReview} legs={routeReviewLegs} currentSignature={currentReviewSignature} onReview={onReviewRoutes} />}
+          <TrailStylePanel draft={draft} currentHopSquad={currentHopSquad} currentDraftVisual={currentDraftVisual} selectedTravelerCount={selectedTravelerCount} effectiveTrailColorMode={effectiveTrailColorMode} effectiveTrailStyle={effectiveTrailStyle} onSetTrailStyle={setTrailStyle} onSetTrailColorMode={setTrailColorMode} />
+        </div>}
+        {batchMode && <>
+          <div className="batch-inline-panels">
+            {!!routeReviewLegs.length && <RouteReviewPanel review={routeReview} legs={routeReviewLegs} currentSignature={currentReviewSignature} onReview={onReviewRoutes} />}
+            <TrailStylePanel draft={draft} currentHopSquad={currentHopSquad} currentDraftVisual={currentDraftVisual} selectedTravelerCount={selectedTravelerCount} effectiveTrailColorMode={effectiveTrailColorMode} effectiveTrailStyle={effectiveTrailStyle} onSetTrailStyle={setTrailStyle} onSetTrailColorMode={setTrailColorMode} />
+          </div>
+          <BatchHopTable rows={batchRows} activeStageId={batchEditingStageId} baseLocations={locs} hopperData={normalizedHoppers} onAddAnother={onAddAnotherBatchHop} onEdit={onEditBatchHop} onDelete={onDeleteBatchHop} />
+        </>}
 
       </div>
     </div>
   </div>;
+}
+
+
+function BatchHopTable({ rows = [], activeStageId = null, baseLocations = [], hopperData = {}, onAddAnother = () => {}, onEdit = () => {}, onDelete = () => {} }) {
+  const sortedRows = sortBatchRows(rows);
+  return <section className="batch-hop-section compact-section">
+    <div className="batch-hop-heading">
+      <div>
+        <p className="eyebrow">Staged Hops</p>
+        <h3>{sortedRows.length ? `${sortedRows.length} Hop${sortedRows.length === 1 ? '' : 's'} ready` : 'No Hops staged yet'}</h3>
+      </div>
+      <button type="button" className="primary" onClick={onAddAnother}>＋ Add Another Hop</button>
+    </div>
+    <p className="batch-hop-help">Hops are shown chronologically. Routes are calculated when each Hop is staged, and the entire batch is saved in one repository update.</p>
+    <div className="batch-hop-table-wrap" role="region" aria-label="Staged Hops" tabIndex="0">
+      <table className="batch-hop-table">
+        <thead><tr>
+          <th>Hop title</th><th>Year</th><th>Month</th><th>Dates</th><th>Hopper</th><th>Start location</th><th>Legs & vessels</th><th>Trail type</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          {sortedRows.map(row => {
+            const locations = mergeLocationsById(baseLocations, row.addedLocations || []);
+            const byId = Object.fromEntries(locations.map(location => [location.id, location]));
+            const route = Array.isArray(row.trip?.route) ? row.trip.route : [];
+            const start = byId[route[0]?.locationId];
+            const visual = resolveTripVisual(row.trip || {}, hopperData || {});
+            return <tr key={row.stageId} className={row.stageId === activeStageId ? 'is-active' : ''}>
+              <td><strong>{row.trip?.label || 'Untitled Hop'}</strong></td>
+              <td>{row.trip?.year || ''}</td>
+              <td>{monthLabel(row.trip?.month)}</td>
+              <td>{formatDateRangeLabel(row.trip || {}) || row.trip?.displayDate || ''}</td>
+              <td><span className="batch-hopper-dot" style={{ '--accent': visual.color || '#00e5ff' }}></span>{visual.name}</td>
+              <td>{displayLocation(start) || start?.name || 'Home base'}</td>
+              <td className="batch-route-cell">{route.slice(1).map((point, index) => {
+                const destination = byId[point.locationId];
+                const mode = point.modeFromPrevious || row.trip?.mode || 'plane';
+                const isReturn = index === route.length - 2 && row.trip?.roundTrip && point.locationId === route[0]?.locationId;
+                return <span className="batch-route-line" key={point.legId || point.pointId || `${point.locationId}-${index}`}>
+                  <b>{isReturn ? 'Return' : `Leg ${index + 1}`}:</b> {displayLocation(destination) || destination?.name || point.locationId}<small>{modeIcon(mode)} {MODE_OPTIONS.find(option => option.id === mode)?.label || mode}</small>
+                </span>;
+              })}</td>
+              <td>{trailStyleLabel(row.trip?.trailStyle)}</td>
+              <td><div className="batch-row-actions"><button type="button" className="secondary" onClick={() => onEdit(row.stageId)}>Edit</button><button type="button" className="danger" onClick={() => onDelete(row.stageId)}>Delete</button></div></td>
+            </tr>;
+          })}
+          {!sortedRows.length && <tr><td colSpan="9" className="batch-empty-row">Complete the Hop above and select <strong>Done with Hop</strong>.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  </section>;
+}
+
+function trailStyleLabel(style = 'solid') {
+  return ({ solid: 'Solid Trail', stripe: 'Stripe Trail', ribbon: 'Ribbon Trail', spiral: 'Spiral Trail' })[style] || style;
 }
 
 function activeDraftSquad(draft = {}, hopperData = {}) {
