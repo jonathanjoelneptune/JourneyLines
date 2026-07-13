@@ -593,13 +593,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         const needsZoomOut = Number(from.zoom) > safeZoom + 0.035;
         playbackCameraReturnRef.current = {
           active: true,
-          stage: needsZoomOut ? 'zoom-out' : 'orient',
+          stage: 'reacquire',
           stageStart: performance.now(),
-          stageDuration: needsZoomOut ? 300 : 900,
+          stageDuration: 2400,
           from,
           stageFrom: from,
           target,
           safeZoom,
+          settledFrames: 0,
           timer: null
         };
       }, 500);
@@ -1435,8 +1436,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         if (!returnState.active) camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
         latestDesiredCameraRef.current = camera;
         if (returnState.active && returnState.stageFrom) {
-          const returnCamera = stagedPlaybackReturnCamera(returnState, camera, now);
-          if (returnCamera && cameraChangedEnough(captureCameraState(map), returnCamera)) {
+          const currentMapCamera = captureCameraState(map);
+          const returnCamera = stagedPlaybackReturnCamera(returnState, camera, now, currentMapCamera);
+          if (returnCamera && cameraChangedEnough(currentMapCamera, returnCamera)) {
             map.jumpTo({ ...returnCamera, essential: true });
           }
           lastCameraRef.current = returnCamera || lastCameraRef.current;
@@ -3706,76 +3708,41 @@ function createPlaybackReturnState() {
   };
 }
 
-function stagedPlaybackReturnCamera(state, latestTarget, now) {
-  if (!state?.active || !state.stageFrom) return null;
-  const elapsed = Math.max(0, Number(now) - Number(state.stageStart || now));
-  const duration = Math.max(1, Number(state.stageDuration || 1));
-  const t = clamp(elapsed / duration, 0, 1);
-  const eased = t * t * (3 - 2 * t);
-  const safeZoom = Number.isFinite(Number(state.safeZoom)) ? Number(state.safeZoom) : Math.min(Number(state.stageFrom?.zoom) || INTRO_GLOBE_ZOOM, Number((latestTarget || state.target)?.zoom) || INTRO_GLOBE_ZOOM);
-  let endpoint;
+function stagedPlaybackReturnCamera(state, latestTarget, now, currentCamera = null) {
+  if (!state?.active || !latestTarget) return null;
+  const current = currentCamera || state.stageFrom || state.from;
+  if (!current?.center) return latestTarget;
 
-  if (state.stage === 'zoom-out') {
-    endpoint = { ...state.stageFrom, center: [...state.stageFrom.center], zoom: safeZoom };
-  } else if (state.stage === 'orient') {
-    const target = latestTarget || state.target;
-    endpoint = {
-      center: [...target.center],
-      zoom: safeZoom,
-      pitch: target.pitch,
-      bearing: target.bearing
-    };
-  } else {
-    const target = latestTarget || state.target;
-    // Orientation is already correct. During the zoom-in phase, continue
-    // following the live vessel center instead of freezing the center at the
-    // end of the orientation phase. Freezing it created a visible stop/start
-    // when control returned to the normal follow loop.
-    endpoint = {
-      center: [...target.center],
-      zoom: Number(target.zoom),
-      pitch: Number(target.pitch),
-      bearing: Number(target.bearing)
-    };
-  }
-
-  const camera = smoothCamera(state.stageFrom, endpoint, eased);
-  if (t < 1) return camera;
-
-  if (state.stage === 'zoom-out') {
-    state.stage = 'orient';
-    state.stageStart = now;
-    state.stageDuration = 900;
-    state.stageFrom = endpoint;
-    state.target = { ...(latestTarget || state.target), center: [...(latestTarget || state.target).center] };
-    return endpoint;
-  }
-  if (state.stage === 'orient') {
-    state.stage = 'zoom-in';
-    state.stageStart = now;
-    state.stageDuration = 580;
-    state.stageFrom = endpoint;
-    state.target = { ...(latestTarget || state.target), center: [...endpoint.center] };
-    return endpoint;
-  }
-
-  state.active = false;
-  const finalTarget = latestTarget || state.target || endpoint;
-  // Return the already-interpolated endpoint. The frame loop will continue
-  // toward the live target on the next frame, avoiding a one-frame jump.
-  return { ...endpoint, center: [...endpoint.center], zoom: Number(finalTarget.zoom), pitch: Number(finalTarget.pitch), bearing: Number(finalTarget.bearing) };
-}
-
-function cameraChangedEnough(current, next) {
-  if (!current || !next) return true;
+  const age = Math.max(0, Number(now) - Number(state.stageStart || now));
   const centerDelta = Math.hypot(
-    shortestLonDelta(Number(next.center?.[0]) - Number(current.center?.[0])),
-    Number(next.center?.[1]) - Number(current.center?.[1])
+    shortestLonDelta(Number(latestTarget.center?.[0]) - Number(current.center?.[0])),
+    Number(latestTarget.center?.[1]) - Number(current.center?.[1])
   );
-  return centerDelta > 0.00008
-    || Math.abs(Number(next.zoom) - Number(current.zoom)) > 0.00035
-    || Math.abs(Number(next.pitch) - Number(current.pitch)) > 0.015
-    || Math.abs(shortestLonDelta(Number(next.bearing) - Number(current.bearing))) > 0.015;
+  const bearingDelta = Math.abs(shortestLonDelta(Number(latestTarget.bearing || 0) - Number(current.bearing || 0)));
+  const pitchDelta = Math.abs(Number(latestTarget.pitch || 0) - Number(current.pitch || 0));
+  const oriented = centerDelta < 0.75 && bearingDelta < 8 && pitchDelta < 5;
+
+  // Reacquisition is one continuous controller. Keep a safe outside-globe zoom
+  // until orientation is nearly complete, then blend toward the live route zoom.
+  // There are no discrete stop/start stages for the camera to fight through.
+  const endpoint = {
+    center: [...latestTarget.center],
+    zoom: oriented ? Number(latestTarget.zoom) : Math.min(Number(current.zoom), Number(state.safeZoom)),
+    pitch: Number(latestTarget.pitch),
+    bearing: Number(latestTarget.bearing)
+  };
+  const alpha = oriented ? 0.115 : 0.14;
+  const camera = smoothCamera(current, endpoint, alpha);
+  // Bound zoom movement per camera tick so the final approach cannot lurch.
+  camera.zoom = current.zoom + clamp(camera.zoom - current.zoom, -0.055, 0.055);
+
+  const zoomDelta = Math.abs(Number(latestTarget.zoom) - Number(camera.zoom));
+  const closeEnough = centerDelta < 0.10 && bearingDelta < 1.2 && pitchDelta < 1.2 && zoomDelta < 0.045;
+  state.settledFrames = closeEnough ? Number(state.settledFrames || 0) + 1 : 0;
+  state.stageFrom = camera;
+  state.target = { ...latestTarget, center: [...latestTarget.center] };
+  if (state.settledFrames >= 5 || age >= Number(state.stageDuration || 2400)) state.active = false;
+  return camera;
 }
 
 function smoothCamera(prev, next, amount) {

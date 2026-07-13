@@ -14450,3 +14450,169 @@ svg text {
   .hop-result-card__details .destination-trip-queue__route { font-size: .62rem !important; }
   .hop-result-card__details .destination-trip-queue__date { font-size: .56rem !important; }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.7 — continuous camera handoff and slim timeline rail     */
+/* ========================================================================== */
+
+/* Keep the rail compact. Vertical callouts are rendered as a fixed overlay,
+   so horizontal timeline scrolling can no longer clip them. */
+.controls {
+  min-height: 54px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+.timeline-scroll-viewport,
+.timeline-scroll-viewport.is-zoomed {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  padding: 11px 2px 0 !important;
+  margin-top: -8px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+.timeline-scroll-content,
+.timeline-scrubber-stack {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+.timeline-year-scale {
+  bottom: 0 !important;
+  height: 9px !important;
+  line-height: 1 !important;
+}
+.timeline-year-scale__segment b {
+  font-size: .48rem !important;
+  line-height: 1 !important;
+  transform: none !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+.timeline-month-scale {
+  bottom: 8px !important;
+  height: 8px !important;
+}
+.timeline-month-scale__tick b {
+  font-size: .44rem !important;
+  line-height: 1 !important;
+}
+.timeline-marker__tooltip--floating {
+  position: fixed !important;
+  z-index: 2147483000 !important;
+  transform: translateX(-50%) !important;
+  width: max-content !important;
+  max-width: min(220px, calc(100vw - 24px)) !important;
+  pointer-events: none !important;
+  font-size: .54rem !important;
+  line-height: 1.02 !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+.timeline-marker__tooltip--floating .timeline-marker__tooltip-title { font-size: .56rem !important; }
+.timeline-marker__tooltip--floating .timeline-marker__tooltip-date { font-size: .47rem !important; }
+
+/* Results stay compact while preserving the approved 75/25 information split. */
+.destination-trip-queue {
+  width: min(420px, calc(100vw - 24px)) !important;
+  max-width: min(420px, calc(100vw - 24px)) !important;
+}
+.timeline-search-panel {
+  width: min(440px, calc(100vw - 24px)) !important;
+  max-width: min(440px, calc(100vw - 24px)) !important;
+}
+.destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+  grid-template-columns: minmax(0, 3fr) minmax(108px, 1fr) !important;
+  gap: 8px !important;
+}
+.hop-result-card__identity strong { font-size: 1.04rem !important; }
+.hop-result-card__identity em { font-size: .68rem !important; }
+.hop-result-card__details .destination-trip-queue__route { font-size: .64rem !important; }
+.hop-result-card__details .destination-trip-queue__date { font-size: .58rem !important; }
+
+@media (max-width: 700px) {
+  .destination-trip-queue,
+  .timeline-search-panel {
+    width: min(92vw, 390px) !important;
+    max-width: min(92vw, 390px) !important;
+  }
+}
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.8 — camera reacquisition + timeline clipping correction  */
+/* ========================================================================== */
+.controls {
+  min-height: 48px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  overflow: visible !important;
+}
+.timeline-scroll-viewport,
+.timeline-scroll-viewport.is-zoomed {
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  padding: 8px 1px 0 !important;
+  margin-top: -5px !important;
+  overflow-x: auto !important;
+  overflow-y: clip !important;
+  overflow-clip-margin-block: 44px !important;
+}
+.timeline-scroll-content,
+.timeline-scrubber-stack {
+  height: 32px !important;
+  min-height: 32px !important;
+  overflow: visible !important;
+}
+.timeline-marker-layer,
+.progress--scrubbable {
+  overflow: visible !important;
+  overflow-clip-margin: 44px !important;
+}
+.timeline-year-scale {
+  bottom: -1px !important;
+  height: 9px !important;
+  overflow: visible !important;
+}
+.timeline-year-scale__segment,
+.timeline-year-scale__segment b {
+  overflow: visible !important;
+  clip: auto !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+.timeline-year-scale__segment b {
+  top: 0 !important;
+  font-size: .49rem !important;
+  line-height: 1 !important;
+}
+.timeline-month-scale {
+  bottom: 7px !important;
+  height: 7px !important;
+}
+.timeline-marker__tooltip--floating {
+  max-width: 210px !important;
+}
+/* Narrower search and destination surfaces while retaining the 75/25 card. */
+.destination-trip-queue {
+  width: min(340px, calc(100vw - 20px)) !important;
+  max-width: min(340px, calc(100vw - 20px)) !important;
+}
+.timeline-search-panel {
+  width: min(360px, calc(100vw - 20px)) !important;
+  max-width: min(360px, calc(100vw - 20px)) !important;
+}
+.destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+  grid-template-columns: minmax(0, 3fr) minmax(88px, 1fr) !important;
+  gap: 6px !important;
+}
+@media (max-width: 700px) {
+  .destination-trip-queue,
+  .timeline-search-panel {
+    width: min(88vw, 330px) !important;
+    max-width: min(88vw, 330px) !important;
+  }
+}

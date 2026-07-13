@@ -229,7 +229,10 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       const contentWidth = Math.max(rect.width, viewport.scrollWidth || rect.width);
       const x = rect.left + Number(tooltipMarker.progress || 0) * contentWidth - viewport.scrollLeft;
       setFloatingTooltipPosition({
-        left: Math.max(rect.left + 44, Math.min(rect.right - 44, x)),
+        // Clamp by half of the pill's practical width, not merely by the pin
+        // diameter. The old 44px clamp allowed the first active pill to render
+        // mostly off-screen after translateX(-50%).
+        left: Math.max(118, Math.min(window.innerWidth - 118, x)),
         bottom: Math.max(12, window.innerHeight - rect.top + 8)
       });
     };
