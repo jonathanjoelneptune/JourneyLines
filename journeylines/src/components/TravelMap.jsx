@@ -172,7 +172,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -589,7 +589,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           return;
         }
         const target = { ...latestDesiredCameraRef.current, center: [...latestDesiredCameraRef.current.center] };
-        const safeZoom = Math.min(Number(from.zoom), Number(target.zoom), INTRO_GLOBE_ZOOM);
+        const safeZoom = Math.min(Number(from.zoom), Number(target.zoom));
         const needsZoomOut = Number(from.zoom) > safeZoom + 0.035;
         playbackCameraReturnRef.current = {
           active: true,
@@ -1576,7 +1576,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
   }
 
-  return <div className={`maplibre-shell terrain-mode space-mode ${isPlaying ? 'playback-active is-playing' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (!e.target?.closest?.('.jl-map-pin, .destination-trip-queue, .timeline-search-panel, button, input, textarea, select')) onMapClick?.(); }}>
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+    const hideRoutes = globeDisplayMode === 'locations';
+    const hideLocations = globeDisplayMode === 'routes';
+    const routeLayers = ['completed-routes-glow-wide','completed-routes-glow','completed-routes','active-route-glow-wide','active-route-glow','active-route'];
+    const locationLayers = ['visited-points-glow','visited-points-halo','visited-points'];
+    for (const id of routeLayers) { try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', hideRoutes ? 'none' : 'visible'); } catch {} }
+    for (const id of locationLayers) { try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', hideLocations ? 'none' : 'visible'); } catch {} }
+  }, [mapReady, globeDisplayMode]);
+
+  return <div className={`maplibre-shell terrain-mode space-mode globe-display-${globeDisplayMode} ${isPlaying ? 'playback-active is-playing' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (!e.target?.closest?.('.jl-map-pin, .destination-trip-queue, .timeline-search-panel, button, input, textarea, select')) onMapClick?.(); }}>
     <div className="zoom-readout" aria-label="Current map zoom">Zoom {Number(zoomReadout || 0).toFixed(2)}<span>Initial {INTRO_GLOBE_ZOOM.toFixed(2)} · Spin {IDLE_SPIN_GLOBE_ZOOM.toFixed(2)}</span></div>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
@@ -3706,7 +3717,7 @@ function stagedPlaybackReturnCamera(state, latestTarget, now) {
   const duration = Math.max(1, Number(state.stageDuration || 1));
   const t = clamp(elapsed / duration, 0, 1);
   const eased = t * t * (3 - 2 * t);
-  const safeZoom = Math.min(Number(state.safeZoom) || INTRO_GLOBE_ZOOM, INTRO_GLOBE_ZOOM);
+  const safeZoom = Number.isFinite(Number(state.safeZoom)) ? Number(state.safeZoom) : Math.min(Number(state.stageFrom?.zoom) || INTRO_GLOBE_ZOOM, Number((latestTarget || state.target)?.zoom) || INTRO_GLOBE_ZOOM);
   let endpoint;
 
   if (state.stage === 'zoom-out') {

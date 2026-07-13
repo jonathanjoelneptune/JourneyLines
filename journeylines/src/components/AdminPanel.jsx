@@ -2003,7 +2003,8 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityMatchesFor(draft.fromLocationText), true, cityLoadingFor(draft.fromLocationText));
   const batchMode = mode === 'batch';
   const automaticTitle = automaticHopTitle(draft, locById, locs);
-  const title = draft.label || automaticTitle || (mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : 'Edit Hop');
+  const staleAutoTitle = /choose\s+month/i.test(String(draft.label || ''));
+  const title = (!draft.month && staleAutoTitle ? automaticTitle : draft.label) || automaticTitle || (mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : 'Edit Hop');
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
   const currentDraftVisual = resolveTripVisual(draft, normalizedHoppers || {});
@@ -2281,7 +2282,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
             <h3>Additional Legs</h3>
             <div className="legs-block">
               <div className="legs-header">
-                <div className="legs-header-actions">
+                <div className="legs-header-actions legs-header-actions--left">
                   {!!(draft.extraLegs || []).length && <button type="button" className="secondary compact" onClick={() => setDraft(current => ({
                     ...current,
                     extraLegs: (current.extraLegs || []).map(leg => ({ ...leg, modeFromPrevious: current.mode || 'plane' })),

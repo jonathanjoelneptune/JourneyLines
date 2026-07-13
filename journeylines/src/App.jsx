@@ -280,6 +280,7 @@ export default function App() {
   const [timelineView, setTimelineView] = useState(() => localStorage.getItem('globehoppers.timelineView') || 'expanded');
   const [showHero, setShowHero] = useState(true);
   const [globeOverview, setGlobeOverview] = useState(false);
+  const [globeDisplayMode, setGlobeDisplayMode] = useState('both');
   const [globeSpinSpeed, setGlobeSpinSpeed] = useState(() => clampGlobeSpinSpeed(localStorage.getItem('globehoppers.globeSpinSpeed.v7.3') || DEFAULT_GLOBE_SPIN_SPEED));
   const [globeSpinPaused, setGlobeSpinPaused] = useState(false);
   const [idleMode, setIdleMode] = useState(false);
@@ -1161,12 +1162,18 @@ export default function App() {
       <button className="topbar-pill topbar-old-timeline" aria-hidden="true" tabIndex={-1} onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Old Timeline</button>
       <button className="topbar-pill topbar-hoppers" onClick={() => { if (destinationSelectionRef.current) cancelDestinationSelection('hoppers'); setStudioAddRequestId(0); setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}><span className="topbar-hoppers-icon" aria-hidden="true">👤</span><span>Hoppers</span></button>
       <button className="topbar-pill" onClick={editTravelHistory}>GlobeHopper Timeline</button>
+      <div className="topbar-globe-menu">
+        <button className="topbar-pill topbar-icon-pill topbar-globe-button" title="View Globe" onClick={() => { setGlobeDisplayMode('both'); viewGlobe(); }}>🌐</button>
+        <div className="topbar-globe-menu__panel" role="menu" aria-label="Globe view options">
+          <button type="button" role="menuitem" onClick={() => { setGlobeDisplayMode('routes'); viewGlobe(); }}>Routes only</button>
+          <button type="button" role="menuitem" onClick={() => { setGlobeDisplayMode('locations'); viewGlobe(); }}>Locations only</button>
+        </div>
+      </div>
       <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
-      <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
       <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} disabled={isRelocating} onClick={isPlaying ? pause : play}>{isRelocating ? '…' : isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -1175,7 +1182,7 @@ export default function App() {
       <div className="hero-actions">
         <button className="primary big" onClick={play}>Start the Journey</button>
         <button className="primary big hero-add-hop" onClick={addTravelTimelineEntry}>Add Hop</button>
-        <button className="secondary big" onClick={viewGlobe}>Explore the Globe</button>
+        <button className="secondary big" onClick={() => { setGlobeDisplayMode('both'); viewGlobe(); }}>Explore the Globe</button>
       </div>
     </section>}
     {destinationSelection && <DestinationTripQueue selection={destinationSelection} onSelect={(row) => { destinationSelectionRef.current = null; setDestinationSelection(null); setGlobeSpinPaused(Boolean(destinationSelection.snapshot?.globeSpinPaused)); jumpToLeg(row.firstIndex || 0, 0, true); }} onCancel={() => cancelDestinationSelection('queue-cancel')} />}

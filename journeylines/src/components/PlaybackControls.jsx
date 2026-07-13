@@ -306,11 +306,11 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
                 onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
               />
             </div>
-            {visibleMonthTicks.length === 0 && <div className="timeline-year-scale" aria-hidden="true">
+            <div className="timeline-year-scale" aria-hidden="true">
               {yearSegments.map(segment => <span key={segment.year} className="timeline-year-scale__segment" style={{ left: `${segment.start * 100}%`, width: `${Math.max(0, segment.end - segment.start) * 100}%` }}>
                 <b>{segment.year}</b>
               </span>)}
-            </div>}
+            </div>
             {visibleMonthTicks.length > 0 && <div className="timeline-month-scale" aria-hidden="true">
               {visibleMonthTicks.map(tick => <span key={tick.id} className="timeline-month-scale__tick" style={{ left: `${tick.progress * 100}%` }}>
                 <i></i><b>{tick.displayLabel || tick.label}</b>

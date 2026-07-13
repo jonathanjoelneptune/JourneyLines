@@ -1,8 +1,8 @@
-# GlobeHoppers v7.5.3
+# GlobeHoppers v7.5.4
 
 Released: July 13, 2026
 
-## v7.5.3 — Playback Camera and Timeline Stabilization
+## v7.5.4 — Playback Camera and Timeline Stabilization
 
 - Establishes active playback as the authoritative camera owner and prevents stale relocation, idle, or overview zoom state from taking control after a leg begins.
 - Finishes manual camera reacquisition on the continuously updated live route target.

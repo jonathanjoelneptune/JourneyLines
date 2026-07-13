@@ -14194,3 +14194,159 @@ svg text {
     gap: 8px !important;
   }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.4 — authoritative camera, timeline labels, globe modes   */
+/* ========================================================================== */
+
+/* Manual camera reacquisition never falls back to the global 4.20 overview.
+   The JS controller rotates at the nearer of the current/route zooms, then
+   performs the final zoom only after orientation is complete. */
+
+/* Keep the timeline's outer frame fixed while allowing the active marker and
+   its pill to rise above the rail. Years remain visible at every scale; months
+   share the same rail when the visible range is close enough. */
+.controls,
+.playback-controls,
+.timeline-shell,
+.timeline-scrubber,
+.timeline-scrubber__body,
+.timeline-scroll-viewport,
+.timeline-scroll-content,
+.timeline-scrubber-stack,
+.timeline-marker-layer {
+  overflow: visible !important;
+}
+.timeline-scroll-viewport,
+.timeline-scroll-viewport.is-zoomed {
+  height: 62px !important;
+  min-height: 62px !important;
+  max-height: 62px !important;
+  padding: 36px 10px 0 !important;
+  margin-top: -34px !important;
+}
+.timeline-year-scale {
+  bottom: 0 !important;
+  height: 12px !important;
+  z-index: 6 !important;
+}
+.timeline-month-scale {
+  bottom: 11px !important;
+  height: 12px !important;
+  z-index: 7 !important;
+}
+.timeline-year-scale__segment b,
+.timeline-month-scale__tick b {
+  font-size: .54rem !important;
+  line-height: 1 !important;
+}
+.timeline-marker-layer { z-index: 40 !important; }
+.timeline-marker.is-current,
+.timeline-marker.is-active { z-index: 70 !important; }
+.timeline-marker__tooltip {
+  z-index: 100 !important;
+  font-size: .62rem !important;
+  line-height: 1.05 !important;
+  transform: translate(-50%, -100%) translateY(-10px) !important;
+}
+.timeline-marker__tooltip-title { font-size: .64rem !important; }
+.timeline-marker__tooltip-date { font-size: .55rem !important; }
+
+/* Reference-card layout: substantial trip identity on the left, concise route
+   and date panel on the right. */
+.destination-trip-queue__card.hop-result-card {
+  min-height: 104px !important;
+  padding: 12px 14px 12px 10px !important;
+  border-radius: 22px !important;
+}
+.destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+  grid-template-columns: minmax(0, 1.58fr) minmax(180px, .86fr) !important;
+  gap: 16px !important;
+}
+.hop-result-card__identity {
+  justify-content: space-between !important;
+  padding: 6px 8px !important;
+}
+.hop-result-card__identity strong {
+  font-size: 1.55rem !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.025em !important;
+}
+.hop-result-card__identity em {
+  font-size: .88rem !important;
+  line-height: 1.1 !important;
+}
+.hop-result-card__details {
+  padding: 8px 4px 8px 16px !important;
+  border-left: 1px solid rgba(255,255,255,.035) !important;
+}
+.hop-result-card__details .destination-trip-queue__route {
+  font-size: .98rem !important;
+  line-height: 1.14 !important;
+  font-weight: 760 !important;
+}
+.hop-result-card__details .destination-trip-queue__date {
+  font-size: .88rem !important;
+  line-height: 1.1 !important;
+}
+@media (max-width: 700px) {
+  .destination-trip-queue__card.hop-result-card { min-height: 84px !important; }
+  .destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+    grid-template-columns: minmax(0, 1.2fr) minmax(112px, .8fr) !important;
+    gap: 8px !important;
+  }
+  .hop-result-card__identity strong { font-size: 1rem !important; }
+  .hop-result-card__identity em,
+  .hop-result-card__details .destination-trip-queue__date { font-size: .65rem !important; }
+  .hop-result-card__details .destination-trip-queue__route { font-size: .72rem !important; }
+}
+
+/* Add Leg belongs at the left edge of its section. */
+.legs-header-actions--left {
+  width: 100% !important;
+  justify-content: flex-start !important;
+  flex-direction: row-reverse !important;
+}
+.legs-header-actions--left .add-leg-button { margin-left: 0 !important; margin-right: auto !important; }
+
+/* Hover menu for the globe button. */
+.topbar-globe-menu { position: relative; display: inline-flex; }
+.topbar-globe-menu__panel {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  display: grid;
+  min-width: 150px;
+  padding: 7px;
+  border: 1px solid rgba(110,226,245,.22);
+  border-radius: 14px;
+  background: rgba(4,14,25,.94);
+  box-shadow: 0 18px 42px rgba(0,0,0,.42);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity .14s ease, transform .14s ease, visibility .14s;
+  z-index: 10000;
+}
+.topbar-globe-menu:hover .topbar-globe-menu__panel,
+.topbar-globe-menu:focus-within .topbar-globe-menu__panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.topbar-globe-menu__panel button {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 10px;
+  color: #f2fbff;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.topbar-globe-menu__panel button:hover,
+.topbar-globe-menu__panel button:focus-visible { background: rgba(0,229,255,.12); }
+
+/* Globe display filters. Route-only removes DOM placards; locations-only hides
+   map route layers through MapLibre layout properties. */
+.maplibre-shell.globe-display-routes .jl-map-pin { display: none !important; }
