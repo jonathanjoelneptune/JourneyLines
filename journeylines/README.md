@@ -4,6 +4,12 @@
 
 GlobeHoppers is a living travel-history map that replays trips across a cinematic globe, with alternate flat projections, traveler-specific colors, custom vehicle icons, route trails, and editable trip data stored in the repository.
 
+## v7.1.3: Lightweight Surface Playback
+
+Detailed road, rail, and water geometry now acts as a route corridor rather than turn-by-turn animation geometry. GlobeHoppers selects a bounded set of original provider points for vehicle movement and trail drawing, preserving major bends and detours without carrying thousands of coordinates through every active-frame update.
+
+The lightweight route is cached, cannot be re-densified by the renderer, and uses cached cumulative distances with binary-search sampling. Cars, trains, and boats therefore retain believable provider-shaped paths while the vehicle and camera remain smooth on long trips.
+
 ## v7.1.2: Smoother Surface Travel and Reliable Transitions
 
 Car, train, and boat routes now receive conservative visual smoothing before they are rendered or sampled for playback. The detailed routed path remains the source of truth, exact endpoints are preserved, and the vehicle, camera lead, active line, and completed trail all use the same smoothed geometry.

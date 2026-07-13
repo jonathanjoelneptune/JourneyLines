@@ -23,27 +23,26 @@ const admin = read('src/components/AdminPanel.jsx');
 const worker = read('src/workers/routingWorker.js');
 const packageJson = JSON.parse(read('package.json'));
 
-// Surface route smoothing must preserve endpoints, densify the line, and reduce hard turns.
+// Surface presentation must preserve endpoints and remain shared between renderer and worker.
 const sharpCorner = [[-97, 35], [-96, 35], [-96, 36]];
 for (const mode of ['car', 'train', 'boat']) {
-  const smoothed = smoothSurfaceRouteGeometry(sharpCorner, mode, { profile: 'playback' });
-  check(smoothed.length >= 180, `${mode} routes must be densified for smooth playback.`);
-  equal(smoothed[0], sharpCorner[0], `${mode} smoothing must preserve the origin exactly.`);
-  equal(smoothed.at(-1), sharpCorner.at(-1), `${mode} smoothing must preserve the destination exactly.`);
-  check(maxTurnDegrees(smoothed) < 55, `${mode} smoothing must reduce a 90-degree hard corner.`);
-  check(surfaceRouteRenderSamples(smoothed, mode, 64, 'active') > 64, `${mode} active rendering must use increased surface-route sampling.`);
+  const presented = smoothSurfaceRouteGeometry(sharpCorner, mode, { profile: 'playback' });
+  check(presented.length >= 3, `${mode} presentation must retain a meaningful route.`);
+  equal(presented[0], sharpCorner[0], `${mode} presentation must preserve the origin exactly.`);
+  equal(presented.at(-1), sharpCorner.at(-1), `${mode} presentation must preserve the destination exactly.`);
+  check(surfaceRouteRenderSamples(presented, mode, 64, 'active') <= Math.max(2, presented.length - 1), `${mode} rendering must not exceed presentation geometry density.`);
 }
 const plane = smoothSurfaceRouteGeometry(sharpCorner, 'plane', { profile: 'playback' });
-equal(plane, sharpCorner, 'Plane geometry must not receive surface-route smoothing.');
+equal(plane, sharpCorner, 'Plane geometry must not receive surface-route presentation processing.');
 const sanitized = smoothSurfaceRouteGeometry([[0, 0], [0, 0], ['bad', 2], [1, 1]], 'car');
-equal(sanitized, [[0, 0], [1, 1]], 'Smoothing must remove invalid and duplicate coordinates safely.');
+equal(sanitized, [[0, 0], [1, 1]], 'Surface presentation must remove invalid and duplicate coordinates safely.');
 
-// Renderer and worker must share the smoothing implementation.
-check(travelMap.includes("from '../utils/routeSmoothing.js'"), 'TravelMap must import the shared smoothing utility.');
-check(travelMap.includes("smoothSurfaceRouteGeometry(raw, leg.mode, { profile: 'playback' })"), 'Rendered surface routes must use shared smoothing.');
-check(travelMap.includes('surfaceRouteRenderSamples(routed, leg.mode, n, profile)'), 'Surface route drawing must increase sampling density.');
-check(worker.includes("from '../utils/routeSmoothing.js'"), 'Routing worker must import shared smoothing.');
-check(worker.includes("smoothSurfaceRouteGeometry(route, mode, { profile: 'playback' })"), 'Worker playback plans must use the same smoothed route as rendering.');
+// Renderer and worker must share one surface presentation implementation.
+check(travelMap.includes("from '../utils/routePresentation.js'") || travelMap.includes("from '../utils/routeSmoothing.js'"), 'TravelMap must import the shared surface-route utility.');
+check(travelMap.includes('buildSurfacePresentationGeometry(raw, leg.mode') || travelMap.includes('smoothSurfaceRouteGeometry(raw, leg.mode'), 'Rendered surface routes must use shared presentation geometry.');
+check(travelMap.includes('surfaceRouteRenderSamples(routed, leg.mode, n, profile)'), 'Surface route drawing must use the shared render-sample policy.');
+check(worker.includes("from '../utils/routePresentation.js'") || worker.includes("from '../utils/routeSmoothing.js'"), 'Routing worker must import the shared surface-route utility.');
+check(worker.includes('buildSurfacePresentationGeometry(route, mode') || worker.includes('smoothSurfaceRouteGeometry(route, mode'), 'Worker playback plans must use the same presentation route as rendering.');
 
 // Disconnected timeline entries must pause and transfer ownership to a camera relocation.
 const advanceStart = app.indexOf('advancePlaybackRef.current = () => {');
@@ -98,11 +97,11 @@ check(admin.includes('initialAddRequestRef.current === initialAddRequestId'), 'A
 check(admin.includes('openAdd();'), 'AdminPanel must open Add Hop after consuming the request.');
 
 // Release metadata and QA placement.
-assert.equal(packageJson.version, '7.1.2'); checks += 1;
+check(/^7\.1\.(?:2|[3-9]|[1-9]\d+)$/.test(packageJson.version), 'Package version must retain or supersede v7.1.2.');
 check(packageJson.scripts['verify:v7.1.2'], 'Package must expose v7.1.2 verification.');
 check(fs.existsSync(path.join(root, 'QA/QA-v7.1.2.md')), 'v7.1.2 QA must live under journeylines/QA/.');
 check(!fs.existsSync(path.resolve(root, '../QA-v7.1.2.md')), 'v7.1.2 QA must not be duplicated at repository root.');
-check(read('VERSION.md').startsWith('GlobeHoppers v7.1.2'), 'journeylines/VERSION.md must identify v7.1.2 first.');
+check(read('VERSION.md').includes('GlobeHoppers v7.1.2'), 'journeylines/VERSION.md must retain the v7.1.2 release record.');
 
 if (process.env.SKIP_BUILD !== '1') {
   const build = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], {

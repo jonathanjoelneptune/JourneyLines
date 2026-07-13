@@ -1,3 +1,18 @@
+GlobeHoppers v7.1.3 — Lightweight Surface Playback
+
+- Replaced dense equal-distance surface-route smoothing with bounded corridor-preserving presentation geometry.
+- Car, train, and boat playback now follows a lightweight selection of original provider route points instead of turn-by-turn-density geometry.
+- Exact endpoints and major route detours remain preserved; route spans that would create large shortcuts are split back onto the original corridor.
+- Normal point budgets are capped at 220 for cars, 190 for trains, and 160 for boats, with additional safety anchors retained only when needed.
+- Surface drawing no longer re-densifies routes during animation.
+- Worker playback plans are capped at 320 samples.
+- Added cached cumulative polyline metrics and binary-search point lookup to remove repeated per-frame route scans.
+- Active trail reconstruction now runs independently at a lower visual frequency while vehicle and camera animation remain display-rate.
+- Retained the v7.1 provider cache version because valid Valhalla/OpenStreetMap geometry remains unchanged.
+- Added route-budget, cache, repository stress, synthetic water/land-detour, worker parity, and production-build verification.
+
+---
+
 GlobeHoppers v7.1.2 — Surface Route Smoothing, Relocation Glide, and Add Hop Launch Reliability
 
 - Added conservative equal-distance smoothing for car, train, and boat geometry so active vehicles and completed trails follow the same detailed route with fewer visually sharp corners.

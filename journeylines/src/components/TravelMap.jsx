@@ -15,7 +15,7 @@ import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseV
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
-import { isSurfaceRouteMode, smoothSurfaceRouteGeometry, surfaceRouteRenderSamples } from '../utils/routeSmoothing.js';
+import { buildSurfacePresentationGeometry, isSurfaceRouteMode, surfaceRouteRenderSamples } from '../utils/routePresentation.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
@@ -952,7 +952,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
       const now = Number(frame.timestamp || performance.now());
       const quality = frame.quality || 'high';
-      const trailInterval = quality === 'high' ? 42 : quality === 'medium' ? 66 : 96;
+      const trailInterval = quality === 'high' ? 50 : quality === 'medium' ? 76 : 110;
       const stats = frameRenderStatsRef.current;
 
       if (stats.lastRouteKey !== routeKey) {
@@ -2621,7 +2621,7 @@ function getRoutedGeometry(leg, routedGeometries = {}) {
 function getVisualRoutedGeometry(leg, routedGeometries = {}) {
   const raw = getRoutedGeometry(leg, routedGeometries);
   if (!raw?.length || !isSurfaceRouteMode(leg?.mode)) return raw;
-  return smoothSurfaceRouteGeometry(raw, leg.mode, { profile: 'playback' });
+  return buildSurfacePresentationGeometry(raw, leg.mode, { profile: 'playback' });
 }
 
 function isNaturalEarthVesselMode(mode) {
@@ -2776,33 +2776,54 @@ function lonLatToTile(lon, lat, z) {
   return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)) };
 }
 
+const polylineMetricCache = new WeakMap();
+
 function samplePolyline(coords, progress = 1, n = 64) {
   const maxT = Math.max(0, Math.min(1, progress));
+  if (!Array.isArray(coords) || !coords.length) return [[0, 0], [0, 0]];
   if (maxT <= 0.001) return [coords[0], coords[0]];
   const steps = Math.max(2, Math.ceil(n * Math.max(0.05, maxT)));
-  return Array.from({ length: steps + 1 }, (_, i) => pointOnPolyline(coords, (i / steps) * maxT));
+  const metrics = polylineMetrics(coords);
+  return Array.from({ length: steps + 1 }, (_, i) => pointOnPolylineWithMetrics(coords, (i / steps) * maxT, metrics));
 }
 
 function pointOnPolyline(coords, t) {
-  if (coords.length < 2) return coords[0] || [0, 0];
-  const lengths = [];
+  if (!Array.isArray(coords) || coords.length < 2) return coords?.[0] || [0, 0];
+  return pointOnPolylineWithMetrics(coords, t, polylineMetrics(coords));
+}
+
+function polylineMetrics(coords) {
+  const cached = polylineMetricCache.get(coords);
+  if (cached) return cached;
+  const cumulative = new Float64Array(Math.max(1, coords.length));
   let total = 0;
-  for (let i = 1; i < coords.length; i++) {
-    const d = Math.hypot(coords[i][0] - coords[i-1][0], coords[i][1] - coords[i-1][1]);
-    lengths.push(d);
-    total += d;
+  for (let index = 1; index < coords.length; index += 1) {
+    total += Math.hypot(coords[index][0] - coords[index - 1][0], coords[index][1] - coords[index - 1][1]);
+    cumulative[index] = total;
   }
-  if (!total) return coords[0];
-  let target = Math.max(0, Math.min(1, t)) * total;
-  for (let i = 1; i < coords.length; i++) {
-    const seg = lengths[i-1];
-    if (target <= seg || i === coords.length - 1) {
-      const u = seg ? target / seg : 0;
-      return [lerp(coords[i-1][0], coords[i][0], u), lerp(coords[i-1][1], coords[i][1], u)];
-    }
-    target -= seg;
+  const metrics = { cumulative, total };
+  polylineMetricCache.set(coords, metrics);
+  return metrics;
+}
+
+function pointOnPolylineWithMetrics(coords, t, metrics) {
+  if (coords.length < 2 || !metrics?.total) return coords[0] || [0, 0];
+  const target = Math.max(0, Math.min(1, t)) * metrics.total;
+  let low = 1;
+  let high = coords.length - 1;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (metrics.cumulative[middle] < target) low = middle + 1;
+    else high = middle;
   }
-  return coords[coords.length - 1];
+  const index = Math.max(1, low);
+  const startDistance = metrics.cumulative[index - 1] || 0;
+  const segmentDistance = Math.max(1e-12, metrics.cumulative[index] - startDistance);
+  const u = Math.max(0, Math.min(1, (target - startDistance) / segmentDistance));
+  return [
+    lerp(coords[index - 1][0], coords[index][0], u),
+    lerp(coords[index - 1][1], coords[index][1], u)
+  ];
 }
 
 function interpolateGeo(a, b, t) {

@@ -19,7 +19,7 @@ GlobeHoppers v7.1 automatically calculates and validates surface routes without 
 
 Route calculation is automatic. The Add/Edit Hop interface exposes optional diagnostics and recalculation controls, but no approval gate. Saving is blocked only when endpoint data is incomplete or all routing paths fail validation.
 
-See [`journeylines/VALHALLA-v7.1.md`](journeylines/VALHALLA-v7.1.md) and [`journeylines/MULTIMODAL-v7.md`](journeylines/MULTIMODAL-v7.md) for implementation details.
+See [`VALHALLA-v7.1.md`](VALHALLA-v7.1.md) and [`MULTIMODAL-v7.md`](MULTIMODAL-v7.md) for implementation details.
 
 ## Legacy routing implementation notes
 
@@ -142,3 +142,9 @@ Worker routing was exercised against:
 - San Diego → Los Angeles by car
 
 The tested boat routes avoided Natural Earth land polygons except for deliberate Panama Canal corridor edges.
+
+## v7.1.3 lightweight presentation geometry
+
+Provider geometry remains the routing source of truth, but it is no longer used at full turn-by-turn density during playback. Car, train, and boat routes are converted once into a cached presentation path made from original provider coordinates. The conversion removes minor street-level or track-level changes while retaining endpoints, major bends, and high-stretch detours that usually represent coastlines, bays, islands, peninsulas, bridges, tunnels, canals, or other constrained corridors.
+
+Normal presentation budgets are 220 points for cars, 190 for trains, and 160 for boats. Safety splits may exceed those budgets when simplifying a span would materially shortcut the original route. Rendering may downsample further for regional and globe overview views, but it may never increase presentation density during an active frame.
