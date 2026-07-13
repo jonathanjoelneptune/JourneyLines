@@ -1,3 +1,14 @@
+GlobeHoppers v7.1.1 — Detailed Surface Route Playback
+
+- Fixed a playback-only geometry mismatch where the completed car/train/boat trail used the detailed routed geometry but the moving vehicle remained locked to a temporary stylized fallback.
+- Active surface legs now freeze only validated manual, saved, or routed geometry; temporary fallback curves are never frozen into the playback snapshot.
+- Playback-plan cache keys now include sampled points from the actual rendered geometry, preventing a plan for one route shape from being reused for another.
+- The first four routes begin prefetching while the globe is idle, reducing the chance that playback starts before detailed surface geometry is ready.
+- If a detailed route finishes after a leg has started, the live geometry remains eligible to take ownership instead of being blocked by the initial fallback snapshot.
+- Added v7.1.1 regression checks for routed-geometry ownership, prefetch timing, playback-plan key symmetry, and production build output.
+
+---
+
 GlobeHoppers v7.1 — Automatic Surface Routing with Valhalla and OpenStreetMap
 
 - Removed the required route-approval step for car, train, and boat Hops.

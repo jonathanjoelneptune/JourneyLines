@@ -260,10 +260,15 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => { routedGeometriesRef.current = routedGeometries; }, [routedGeometries]);
 
 
+  const routePrefetchIndex = safeActiveIndex >= 0 ? safeActiveIndex : 0;
+
   useEffect(() => {
-    if (safeActiveIndex < 0 || !legs.length) return;
+    if (!legs.length) return;
     let cancelled = false;
-    const queue = legs.slice(safeActiveIndex, safeActiveIndex + 4);
+    // Begin resolving the first surface routes while the globe is still idle so
+    // a user who presses Play does not outrun the routing worker. Continue to
+    // keep the current leg and the next few legs warm during playback.
+    const queue = legs.slice(routePrefetchIndex, routePrefetchIndex + 4);
     (async () => {
       for (const entry of queue) {
         if (cancelled) break;
@@ -280,12 +285,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         }
         try {
           const plan = await buildPlaybackPlanInWorker(leg, geometry, { reason: 'current/next playback plan' });
-          if (!cancelled && plan) playbackPlansRef.current.set(playbackPlanKey(leg), plan);
+          if (!cancelled && plan) playbackPlansRef.current.set(playbackPlanKey(leg, geometry), plan);
         } catch {}
       }
     })();
     return () => { cancelled = true; };
-  }, [safeActiveIndex, legs, active?.trip?.id, active?.legIndex]);
+  }, [routePrefetchIndex, legs, active?.trip?.id, active?.legIndex]);
 
   useEffect(() => {
     const ids = new Set();
@@ -874,7 +879,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       }
 
       const renderEntry = stats.frozenEntry || activeEntry;
-      const plan = playbackPlansRef.current.get(playbackPlanKey(renderEntry.leg)) || null;
+      // Playback plans must be keyed by the exact geometry being rendered. In
+      // v7.1 the plan was stored for the detailed route but looked up using a
+      // frozen stylized fallback, so the completed trail was correct while the
+      // moving vehicle followed the wrong path.
+      const renderGeometry = getRoutedGeometry(renderEntry.leg, routedGeometriesRef.current);
+      const plan = playbackPlansRef.current.get(playbackPlanKey(renderEntry.leg, renderGeometry)) || null;
       const sceneState = getScene(
         renderEntry,
         Number(frame.rawProgress || 0),
@@ -2479,12 +2489,20 @@ function legacyGeneratedRouteKey(leg) {
   const version = routingSettings?.mapbox?.cacheVersion || generatedRoutes?.version || 'v2.16';
   return `${version}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }
-function playbackPlanKey(leg) {
-  const geometry = Array.isArray(leg?.routeGeometry) ? leg.routeGeometry : [];
-  const first = geometry[0] || [];
-  const last = geometry[geometry.length - 1] || [];
-  const geometryKey = geometry.length > 1
-    ? `${geometry.length}:${Number(first[0]).toFixed(3)},${Number(first[1]).toFixed(3)}:${Number(last[0]).toFixed(3)},${Number(last[1]).toFixed(3)}`
+function playbackPlanKey(leg, geometryOverride = null) {
+  const geometry = Array.isArray(geometryOverride) && geometryOverride.length > 1
+    ? geometryOverride
+    : Array.isArray(leg?.routeGeometry)
+      ? leg.routeGeometry
+      : [];
+  const sampleIndexes = geometry.length > 1
+    ? [...new Set([0, Math.floor((geometry.length - 1) * 0.25), Math.floor((geometry.length - 1) * 0.5), Math.floor((geometry.length - 1) * 0.75), geometry.length - 1])]
+    : [];
+  const geometryKey = sampleIndexes.length
+    ? `${geometry.length}:${sampleIndexes.map(index => {
+      const point = geometry[index] || [];
+      return `${Number(point[0]).toFixed(4)},${Number(point[1]).toFixed(4)}`;
+    }).join(':')}`
     : 'no-geometry';
   return `${leg?.legId || leg?.id || 'legacy'}:${leg?.from?.id || leg?.from?.lon}->${leg?.to?.id || leg?.to?.lon}:${leg?.mode || 'plane'}:${geometryKey}`;
 }
@@ -2738,7 +2756,12 @@ function legsConnect(previousLeg, nextLeg, tolerance = 0.12) {
 
 function freezeActiveEntryGeometry(entry, routedGeometries = {}) {
   if (!entry?.leg) return entry;
-  const frozenGeometry = waypointPathForLeg(entry.leg, routedGeometries);
+  // Freeze only validated/manual/detailed geometry. Never freeze the temporary
+  // stylized fallback, because doing so prevents a late Valhalla result from
+  // taking ownership of the active vehicle path. If no detailed route is ready
+  // yet, keep the original entry live so routedGeometries can promote it as soon
+  // as the worker completes.
+  const frozenGeometry = getRoutedGeometry(entry.leg, routedGeometries);
   if (!Array.isArray(frozenGeometry) || frozenGeometry.length < 2) return entry;
   return {
     ...entry,

@@ -4,6 +4,10 @@
 
 GlobeHoppers is a living travel-history map that replays trips across a cinematic globe, with alternate flat projections, traveler-specific colors, custom vehicle icons, route trails, and editable trip data stored in the repository.
 
+## v7.1.1: Detailed Route Playback
+
+Surface vehicles now travel along the same validated route geometry that is displayed after the leg completes. The active playback snapshot no longer locks in the temporary stylized fallback, and playback plans are keyed to the exact route geometry they animate. The first routes also prefetch while the globe is idle so detailed car, train, and boat paths are usually ready before Play is selected.
+
 ## v7.1: Automatic Surface Routing
 
 Car, train, and boat Hops are now checked automatically. Users no longer need to approve a generated route before saving.

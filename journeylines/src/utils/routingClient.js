@@ -455,11 +455,24 @@ async function routeLegResult(leg, options = {}) {
   }
 }
 
+function playbackGeometrySignature(geometry) {
+  if (!Array.isArray(geometry) || geometry.length < 2) return 'no-geometry';
+  const sampleIndexes = [...new Set([
+    0,
+    Math.floor((geometry.length - 1) * 0.25),
+    Math.floor((geometry.length - 1) * 0.5),
+    Math.floor((geometry.length - 1) * 0.75),
+    geometry.length - 1
+  ])];
+  return `${geometry.length}:${sampleIndexes.map(index => {
+    const point = geometry[index] || [];
+    return `${Number(point[0]).toFixed(5)},${Number(point[1]).toFixed(5)}`;
+  }).join(':')}`;
+}
+
 export async function buildPlaybackPlanInWorker(leg, geometry, options = {}) {
   if (!leg?.from || !leg?.to) return null;
-  const geometrySignature = Array.isArray(geometry) && geometry.length > 1
-    ? `${geometry.length}:${geometry[0]?.join(',')}:${geometry[geometry.length - 1]?.join(',')}`
-    : 'no-geometry';
+  const geometrySignature = playbackGeometrySignature(geometry);
   const key = `${routeCacheKeyV6(leg, ROUTING_VERSION)}:plan:${options.samples || 'auto'}:${geometrySignature}`;
   if (memoryPlans.has(key)) return memoryPlans.get(key);
   if (inFlightPlans.has(key)) return inFlightPlans.get(key);
