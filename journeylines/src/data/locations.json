@@ -734,5 +734,31 @@
     "geonameId": 264371,
     "population": 664046,
     "timezone": "Europe/Athens"
+  },
+  {
+    "id": "hartford-ct",
+    "name": "Hartford",
+    "region": "CT",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 41.76371,
+    "lon": -72.68509,
+    "geonameId": 4835797,
+    "population": 124775,
+    "timezone": "America/New_York"
+  },
+  {
+    "id": "boise-id",
+    "name": "Boise",
+    "region": "ID",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 43.6135,
+    "lon": -116.20345,
+    "geonameId": 5586437,
+    "population": 145987,
+    "timezone": "America/Boise"
   }
 ]
