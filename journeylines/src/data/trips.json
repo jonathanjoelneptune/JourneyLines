@@ -6579,6 +6579,100 @@
     "routeReview": null
   },
   {
+    "id": "gssg33",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-09-99-2022-09-99-112",
+    "label": "Waco September 2022",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "waco-tx",
+    "route": [
+      {
+        "pointId": "point-63c4c1e2b721",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-45103eae0282",
+        "legId": "leg-49b3c4e1544e",
+        "locationId": "waco-tx",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-88d35687094c",
+        "legId": "leg-1551bea8b746",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "pj352v",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-10-99-2022-10-99-113",
+    "label": "Cocoa October 2022",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cocoa-fl",
+    "route": [
+      {
+        "pointId": "point-4a398c222054",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-1b3d170b836e",
+        "legId": "leg-a9352d6806e7",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-1d573c09e002",
+        "legId": "leg-9e33942cbdee",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "m4e6iw",
     "routeModelVersion": 2,
     "year": 2026,
@@ -6589,7 +6683,7 @@
     "endDay": null,
     "displayDate": "July 2026",
     "displayEndDate": "",
-    "sortKey": "2026-07-99-2026-07-99-112",
+    "sortKey": "2026-07-99-2026-07-99-114",
     "label": "Rome July 2026",
     "travelers": [
       "joey"
