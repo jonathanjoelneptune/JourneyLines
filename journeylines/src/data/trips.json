@@ -604,5 +604,92 @@
         }
       ]
     }
+  },
+  {
+    "id": "a9rk7t",
+    "routeModelVersion": 2,
+    "year": 2013,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2013",
+    "displayEndDate": "",
+    "sortKey": "2013-03-99-2013-03-99-008",
+    "label": "Nassau March 2013",
+    "travelers": [
+      "bonnie",
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "boat",
+    "roundTrip": true,
+    "returnMode": "boat",
+    "fromLocationId": null,
+    "toLocationId": "nassau-23",
+    "route": [
+      {
+        "pointId": "point-3c2bc83131d4",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-e7f8e61d74aa",
+        "legId": "leg-6970094c8ca1",
+        "locationId": "nassau-23",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-d92a7c5d9b07",
+        "legId": "leg-e053f7d2342f",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-6970094c8ca1\",\"mode\":\"boat\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"nassau-23@-77.34306@25.05823\"},{\"id\":\"leg-e053f7d2342f\",\"mode\":\"boat\",\"from\":\"nassau-23@-77.34306@25.05823\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:03:01.550Z",
+      "legs": [
+        {
+          "legId": "leg-6970094c8ca1",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 290.49,
+          "routeMiles": 407.78,
+          "estimatedMinutes": 1189,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 23,
+          "reviewedAt": "2026-07-16T19:03:01.550Z"
+        },
+        {
+          "legId": "leg-e053f7d2342f",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 290.49,
+          "routeMiles": 407.78,
+          "estimatedMinutes": 1189,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 23,
+          "reviewedAt": "2026-07-16T19:03:01.550Z"
+        }
+      ]
+    }
   }
 ]

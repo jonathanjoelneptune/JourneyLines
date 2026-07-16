@@ -1,6 +1,6 @@
 {
   "version": "7.1",
-  "updatedAt": "2026-07-16T19:02:33.573Z",
+  "updatedAt": "2026-07-16T19:03:15.334Z",
   "source": "globe-hoppers-website",
   "cacheVersion": "multimodal-v7.1",
   "routingVersion": "multimodal-v7.1",
@@ -55,7 +55,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.569Z"
+      "updatedAt": "2026-07-16T19:03:15.330Z"
     },
     "k32oci::leg-1adad6643aba": {
       "id": "k32oci::leg-1adad6643aba",
@@ -106,7 +106,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.569Z"
+      "updatedAt": "2026-07-16T19:03:15.330Z"
     },
     "puogfw::leg-2b1ed3890a6f": {
       "id": "puogfw::leg-2b1ed3890a6f",
@@ -7722,7 +7722,7 @@
         "reversedRouteReuse": false
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.570Z"
+      "updatedAt": "2026-07-16T19:03:15.330Z"
     },
     "puogfw::leg-62f4c7e844c7": {
       "id": "puogfw::leg-62f4c7e844c7",
@@ -7792,7 +7792,7 @@
         "reversedRouteReuse": false
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.570Z"
+      "updatedAt": "2026-07-16T19:03:15.330Z"
     },
     "puogfw::leg-49e3bd85da54": {
       "id": "puogfw::leg-49e3bd85da54",
@@ -7862,7 +7862,7 @@
         "reversedRouteReuse": true
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.570Z"
+      "updatedAt": "2026-07-16T19:03:15.330Z"
     },
     "puogfw::leg-c8f9537960c9": {
       "id": "puogfw::leg-c8f9537960c9",
@@ -15478,7 +15478,7 @@
         "reversedRouteReuse": true
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.570Z"
+      "updatedAt": "2026-07-16T19:03:15.331Z"
     },
     "k3m37j::leg-9971fcfac22e": {
       "id": "k3m37j::leg-9971fcfac22e",
@@ -15529,7 +15529,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.570Z"
+      "updatedAt": "2026-07-16T19:03:15.331Z"
     },
     "k3m37j::leg-d4a8284c96bc": {
       "id": "k3m37j::leg-d4a8284c96bc",
@@ -39705,7 +39705,7 @@
         "reversedRouteReuse": false
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.571Z"
+      "updatedAt": "2026-07-16T19:03:15.331Z"
     },
     "k3m37j::leg-e3d5600689ba": {
       "id": "k3m37j::leg-e3d5600689ba",
@@ -63881,7 +63881,7 @@
         "reversedRouteReuse": true
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.571Z"
+      "updatedAt": "2026-07-16T19:03:15.332Z"
     },
     "k3m37j::leg-29e1e897353d": {
       "id": "k3m37j::leg-29e1e897353d",
@@ -63932,7 +63932,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.571Z"
+      "updatedAt": "2026-07-16T19:03:15.332Z"
     },
     "5bsiu9::leg-532ee19acb41": {
       "id": "5bsiu9::leg-532ee19acb41",
@@ -84300,7 +84300,7 @@
         "reversedRouteReuse": true
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.571Z"
+      "updatedAt": "2026-07-16T19:03:15.333Z"
     },
     "5bsiu9::leg-ae845de431b8": {
       "id": "5bsiu9::leg-ae845de431b8",
@@ -104668,7 +104668,7 @@
         "reversedRouteReuse": false
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.571Z"
+      "updatedAt": "2026-07-16T19:03:15.333Z"
     },
     "nb429o::leg-c589d8b09818": {
       "id": "nb429o::leg-c589d8b09818",
@@ -104719,7 +104719,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.571Z"
+      "updatedAt": "2026-07-16T19:03:15.333Z"
     },
     "nb429o::leg-0e8a7a9d75d9": {
       "id": "nb429o::leg-0e8a7a9d75d9",
@@ -104770,7 +104770,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.572Z"
+      "updatedAt": "2026-07-16T19:03:15.333Z"
     },
     "t0r0b4::leg-697d5b4073e8": {
       "id": "t0r0b4::leg-697d5b4073e8",
@@ -112726,7 +112726,7 @@
         "reversedRouteReuse": true
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.572Z"
+      "updatedAt": "2026-07-16T19:03:15.333Z"
     },
     "t0r0b4::leg-00168f1c323f": {
       "id": "t0r0b4::leg-00168f1c323f",
@@ -120682,7 +120682,7 @@
         "reversedRouteReuse": false
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.572Z"
+      "updatedAt": "2026-07-16T19:03:15.333Z"
     },
     "rjylx5::leg-fe4ce5553c03": {
       "id": "rjylx5::leg-fe4ce5553c03",
@@ -128298,7 +128298,7 @@
         "reversedRouteReuse": false
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.572Z"
+      "updatedAt": "2026-07-16T19:03:15.334Z"
     },
     "rjylx5::leg-f29798431ba2": {
       "id": "rjylx5::leg-f29798431ba2",
@@ -128368,7 +128368,7 @@
         "reversedRouteReuse": false
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.572Z"
+      "updatedAt": "2026-07-16T19:03:15.334Z"
     },
     "rjylx5::leg-41937fd8a9e0": {
       "id": "rjylx5::leg-41937fd8a9e0",
@@ -128438,7 +128438,7 @@
         "reversedRouteReuse": true
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.573Z"
+      "updatedAt": "2026-07-16T19:03:15.334Z"
     },
     "rjylx5::leg-b79d0cb61874": {
       "id": "rjylx5::leg-b79d0cb61874",
@@ -136054,7 +136054,307 @@
         "reversedRouteReuse": true
       },
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:02:33.573Z"
+      "updatedAt": "2026-07-16T19:03:15.334Z"
+    },
+    "a9rk7t::leg-6970094c8ca1": {
+      "id": "a9rk7t::leg-6970094c8ca1",
+      "tripId": "a9rk7t",
+      "legId": "leg-6970094c8ca1",
+      "legIndex": 0,
+      "fromLocationId": "melbourne-fl",
+      "toLocationId": "nassau-23",
+      "fromName": "Melbourne",
+      "toName": "Nassau",
+      "mode": "boat",
+      "miles": 290.4948540132068,
+      "routeCacheKey": "multimodal-v7.1:leg-6970094c8ca1:melbourne-fl@-80.60810,28.08360->nassau-23@-77.34306,25.05823:boat",
+      "reverseRouteCacheKey": "multimodal-v7.1:leg-6970094c8ca1-reverse:nassau-23@-77.34306,25.05823->melbourne-fl@-80.60810,28.08360:boat",
+      "endpointPairKey": "melbourne-fl↔nassau-23",
+      "routeStackOffset": 0,
+      "routeStackBaseOffset": 0,
+      "routeStackDirectionSign": 1,
+      "routeStackCount": 1,
+      "routeStackIndex": 0,
+      "coordinates": {
+        "from": [
+          -80.6081,
+          28.0836
+        ],
+        "to": [
+          -77.34306,
+          25.05823
+        ]
+      },
+      "geometry": [
+        [
+          -80.443,
+          28.16
+        ],
+        [
+          -80.4,
+          28.1
+        ],
+        [
+          -80.4,
+          28
+        ],
+        [
+          -80.4,
+          27.9
+        ],
+        [
+          -80.4,
+          27.8
+        ],
+        [
+          -80.4,
+          27.7
+        ],
+        [
+          -80.3,
+          27.6
+        ],
+        [
+          -80.3,
+          27.5
+        ],
+        [
+          -80.2,
+          27.4
+        ],
+        [
+          -80.2,
+          27.3
+        ],
+        [
+          -80.2,
+          27.2
+        ],
+        [
+          -80.1,
+          27.1
+        ],
+        [
+          -80.1,
+          27
+        ],
+        [
+          -80,
+          26.9
+        ],
+        [
+          -80,
+          26.8
+        ],
+        [
+          -80,
+          26.6
+        ],
+        [
+          -80.1,
+          26.5
+        ],
+        [
+          -80.1,
+          26.1
+        ],
+        [
+          -80.2,
+          26
+        ],
+        [
+          -80.2,
+          25.5
+        ],
+        [
+          -80.3,
+          25.3
+        ],
+        [
+          -78,
+          25.6
+        ],
+        [
+          -77.413,
+          25.129
+        ]
+      ],
+      "geometrySource": "natural-earth-water-graph",
+      "geometryDetail": "water-graph",
+      "geometryPointCount": 23,
+      "routeMiles": 407.7774611846547,
+      "estimatedMinutes": 1189,
+      "routeConfidence": "high",
+      "routeWarnings": [],
+      "routeErrors": [],
+      "routeValidation": {
+        "routeMiles": 407.7774611846546,
+        "directMiles": 290.4920142256827,
+        "startEndpointGapMiles": 6.562126865698907,
+        "endEndpointGapMiles": 11.361422976144883,
+        "maxEndpointGapMiles": 11.361422976144883,
+        "landCrossings": 0,
+        "surfaceWaterRatio": 0,
+        "stationaryFallback": false,
+        "networkStartGapMiles": 0,
+        "networkEndGapMiles": 0,
+        "graphVisited": 0,
+        "usedFallback": false,
+        "canonicalBidirectionalRoute": true,
+        "reversedRouteReuse": false
+      },
+      "routingVersion": "multimodal-v7.1",
+      "updatedAt": "2026-07-16T19:03:15.334Z"
+    },
+    "a9rk7t::leg-e053f7d2342f": {
+      "id": "a9rk7t::leg-e053f7d2342f",
+      "tripId": "a9rk7t",
+      "legId": "leg-e053f7d2342f",
+      "legIndex": 1,
+      "fromLocationId": "nassau-23",
+      "toLocationId": "melbourne-fl",
+      "fromName": "Nassau",
+      "toName": "Melbourne",
+      "mode": "boat",
+      "miles": 290.4948540132068,
+      "routeCacheKey": "multimodal-v7.1:leg-e053f7d2342f:nassau-23@-77.34306,25.05823->melbourne-fl@-80.60810,28.08360:boat",
+      "reverseRouteCacheKey": "multimodal-v7.1:leg-e053f7d2342f-reverse:melbourne-fl@-80.60810,28.08360->nassau-23@-77.34306,25.05823:boat",
+      "endpointPairKey": "melbourne-fl↔nassau-23",
+      "routeStackOffset": 0,
+      "routeStackBaseOffset": 0,
+      "routeStackDirectionSign": -1,
+      "routeStackCount": 1,
+      "routeStackIndex": 0,
+      "coordinates": {
+        "from": [
+          -77.34306,
+          25.05823
+        ],
+        "to": [
+          -80.6081,
+          28.0836
+        ]
+      },
+      "geometry": [
+        [
+          -77.413,
+          25.129
+        ],
+        [
+          -78,
+          25.6
+        ],
+        [
+          -80.3,
+          25.3
+        ],
+        [
+          -80.2,
+          25.5
+        ],
+        [
+          -80.2,
+          26
+        ],
+        [
+          -80.1,
+          26.1
+        ],
+        [
+          -80.1,
+          26.5
+        ],
+        [
+          -80,
+          26.6
+        ],
+        [
+          -80,
+          26.8
+        ],
+        [
+          -80,
+          26.9
+        ],
+        [
+          -80.1,
+          27
+        ],
+        [
+          -80.1,
+          27.1
+        ],
+        [
+          -80.2,
+          27.2
+        ],
+        [
+          -80.2,
+          27.3
+        ],
+        [
+          -80.2,
+          27.4
+        ],
+        [
+          -80.3,
+          27.5
+        ],
+        [
+          -80.3,
+          27.6
+        ],
+        [
+          -80.4,
+          27.7
+        ],
+        [
+          -80.4,
+          27.8
+        ],
+        [
+          -80.4,
+          27.9
+        ],
+        [
+          -80.4,
+          28
+        ],
+        [
+          -80.4,
+          28.1
+        ],
+        [
+          -80.443,
+          28.16
+        ]
+      ],
+      "geometrySource": "natural-earth-water-graph",
+      "geometryDetail": "water-graph",
+      "geometryPointCount": 23,
+      "routeMiles": 407.7774611846546,
+      "estimatedMinutes": 1189,
+      "routeConfidence": "high",
+      "routeWarnings": [],
+      "routeErrors": [],
+      "routeValidation": {
+        "routeMiles": 407.7774611846546,
+        "directMiles": 290.4920142256827,
+        "startEndpointGapMiles": 6.562126865698907,
+        "endEndpointGapMiles": 11.361422976144883,
+        "maxEndpointGapMiles": 11.361422976144883,
+        "landCrossings": 0,
+        "surfaceWaterRatio": 0,
+        "stationaryFallback": false,
+        "networkStartGapMiles": 0,
+        "networkEndGapMiles": 0,
+        "graphVisited": 0,
+        "usedFallback": false,
+        "canonicalBidirectionalRoute": true,
+        "reversedRouteReuse": true
+      },
+      "routingVersion": "multimodal-v7.1",
+      "updatedAt": "2026-07-16T19:03:15.334Z"
     }
   }
 }
