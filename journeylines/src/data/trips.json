@@ -1705,5 +1705,88 @@
         }
       ]
     }
+  },
+  {
+    "id": "01qq92",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-07-99-2016-07-99-025",
+    "label": "Jekyll Island July 2016",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "jekyll-island-ga",
+    "route": [
+      {
+        "pointId": "point-2bca208fb8ce",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-1064cadaf14c",
+        "legId": "leg-1df9717e6509",
+        "locationId": "jekyll-island-ga",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-b03a81c5389f",
+        "legId": "leg-9460c4cd5a57",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-1df9717e6509\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"jekyll-island-ga@-81.42790@31.06800\"},{\"id\":\"leg-9460c4cd5a57\",\"mode\":\"drive\",\"from\":\"jekyll-island-ga@-81.42790@31.06800\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:18:50.453Z",
+      "legs": [
+        {
+          "legId": "leg-1df9717e6509",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 212,
+          "routeMiles": 246.56,
+          "estimatedMinutes": 232,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2151,
+          "reviewedAt": "2026-07-16T19:18:49.997Z"
+        },
+        {
+          "legId": "leg-9460c4cd5a57",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 212,
+          "routeMiles": 249.32,
+          "estimatedMinutes": 233,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1992,
+          "reviewedAt": "2026-07-16T19:18:49.871Z"
+        }
+      ]
+    }
   }
 ]
