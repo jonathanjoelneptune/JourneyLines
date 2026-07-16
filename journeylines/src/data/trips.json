@@ -4152,5 +4152,59 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "4pymk1",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-01-99-2019-01-99-068",
+    "label": "Denver January 2019",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-5b48846d1f9b",
+        "name": "Asim",
+        "colorName": "green",
+        "color": "#44f48a"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "denver-co",
+    "route": [
+      {
+        "pointId": "point-251c59a25df9",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-e7a956e7dd97",
+        "legId": "leg-24d4c4c32ca2",
+        "locationId": "denver-co",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-bfbec130df81",
+        "legId": "leg-22f250f9e650",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
