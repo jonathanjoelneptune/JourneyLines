@@ -2113,5 +2113,52 @@
         }
       ]
     }
+  },
+  {
+    "id": "bxrri4",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-10-99-2016-10-99-030",
+    "label": "Phoenix October 2016",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "phoenix-az",
+    "route": [
+      {
+        "pointId": "point-9a3c39f058a9",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-788a096aa6ca",
+        "legId": "leg-ec1ddf8d4679",
+        "locationId": "phoenix-az",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-4941e6421eba",
+        "legId": "leg-40104c5abb3b",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
