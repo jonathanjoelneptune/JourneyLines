@@ -1835,5 +1835,144 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "fni76t",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-09-99-2016-09-99-027",
+    "label": "Chicago September 2016",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [
+      {
+        "pointId": "point-df6fb0880148",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-1b129dd1b870",
+        "legId": "leg-cebf6576b7bc",
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-b4f6495f2548",
+        "legId": "leg-6347a17f1562",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "8r98ei",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-09-99-2026-09-99-028",
+    "label": "Miami September 2026",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-949c6c83ddc5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-a30f53b5e81b",
+        "legId": "leg-adb2ccc039cc",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-a48622ccb585",
+        "legId": "leg-476776c9061f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-adb2ccc039cc\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-476776c9061f\",\"mode\":\"drive\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:20:04.162Z",
+      "legs": [
+        {
+          "legId": "leg-adb2ccc039cc",
+          "mode": "drive",
+          "source": "natural-earth-road-fallback",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 2268.17,
+          "routeMiles": 2278.77,
+          "estimatedMinutes": 2641,
+          "confidence": "medium",
+          "warnings": [
+            "Valhalla/OpenStreetMap was unavailable: Valhalla routing failed. https://valhalla1.openstreetmap.de: HTTP 400: {\"error_code\":442,\"error\":\"No path could be found for input\",\"status_code\":400,\"status\":\"Bad Request\"} | https://valhalla.openstreetmap.de: Failed to fetch",
+            "A meaningful portion of the fallback driving route is not on mapped land. A ferry or manual correction may be needed.",
+            "The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor."
+          ],
+          "errors": [],
+          "geometryPointCount": 100,
+          "reviewedAt": "2026-07-16T19:20:04.162Z"
+        },
+        {
+          "legId": "leg-476776c9061f",
+          "mode": "drive",
+          "source": "natural-earth-road-fallback",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 2268.17,
+          "routeMiles": 2278.77,
+          "estimatedMinutes": 2641,
+          "confidence": "medium",
+          "warnings": [
+            "Valhalla/OpenStreetMap was unavailable: Valhalla routing failed. https://valhalla1.openstreetmap.de: HTTP 400: {\"error_code\":442,\"error\":\"No path could be found for input\",\"status_code\":400,\"status\":\"Bad Request\"} | https://valhalla.openstreetmap.de: Failed to fetch",
+            "A meaningful portion of the fallback driving route is not on mapped land. A ferry or manual correction may be needed.",
+            "The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor."
+          ],
+          "errors": [],
+          "geometryPointCount": 100,
+          "reviewedAt": "2026-07-16T19:20:03.126Z"
+        }
+      ]
+    }
   }
 ]
