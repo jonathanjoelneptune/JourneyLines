@@ -4635,5 +4635,99 @@
         }
       ]
     }
+  },
+  {
+    "id": "gpzneo",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-08-99-2019-08-99-076",
+    "label": "Greensboro August 2019",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "greensboro-nc",
+    "route": [
+      {
+        "pointId": "point-41102deaafcc",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-3384b9bcc807",
+        "legId": "leg-9cd20bd737bb",
+        "locationId": "greensboro-nc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-6d17d01c69d5",
+        "legId": "leg-349857624871",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "fmtsmw",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-09-99-2019-09-99-077",
+    "label": "Washington DC September 2019",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-7671fd038f5e",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-c83c57c00a23",
+        "legId": "leg-8e3d2e0afb0f",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-21c496b868af",
+        "legId": "leg-9062929cd32a",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]

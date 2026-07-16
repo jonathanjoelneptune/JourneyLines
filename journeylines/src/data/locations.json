@@ -968,5 +968,18 @@
     "geonameId": 2650225,
     "population": 435791,
     "timezone": "Europe/London"
+  },
+  {
+    "id": "greensboro-nc",
+    "name": "Greensboro",
+    "region": "NC",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 36.07264,
+    "lon": -79.79198,
+    "geonameId": 4469146,
+    "population": 269666,
+    "timezone": "America/New_York"
   }
 ]
