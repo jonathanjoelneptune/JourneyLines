@@ -7038,5 +7038,182 @@
         }
       ]
     }
+  },
+  {
+    "id": "q9h3bv",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-03-99-2023-03-99-120",
+    "label": "Geneva + Rome + Florence + Venice +  Evian + Swiss Alps March 2023",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "geneva-ch",
+    "route": [
+      {
+        "pointId": "point-ef41c3743cd4",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-d547ce9d3c0f",
+        "legId": "leg-18c41dd9241d",
+        "locationId": "geneva-ch",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-6e91696feb4d",
+        "legId": "leg-24f8b327e712",
+        "locationId": "rome-it",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-11c716b87a37",
+        "legId": "leg-e6f1d868c969",
+        "locationId": "florence-it",
+        "modeFromPrevious": "train"
+      },
+      {
+        "pointId": "point-59522e996efb",
+        "legId": "leg-64291e46e7af",
+        "locationId": "venice-it",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-d47a245e111c",
+        "legId": "leg-b5b5ab39c318",
+        "locationId": "geneva-ch",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-abe21c58be2a",
+        "legId": "leg-2bd60fc5c080",
+        "locationId": "evian-fr",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-f3420d2468bd",
+        "legId": "leg-f2dccd151f0a",
+        "locationId": "interlaken-ch",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-484af0be0381",
+        "legId": "leg-f3732126ec4e",
+        "locationId": "evian-fr",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-1ffe099cc145",
+        "legId": "leg-56cd2ea8073d",
+        "locationId": "geneva-ch",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-1d1c94df27b0",
+        "legId": "leg-b402edf14456",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-e6f1d868c969\",\"mode\":\"train\",\"from\":\"rome-it@12.49640@41.90280\",\"to\":\"florence-it@11.25580@43.76960\"},{\"id\":\"leg-2bd60fc5c080\",\"mode\":\"drive\",\"from\":\"geneva-ch@6.14320@46.20440\",\"to\":\"evian-fr@6.59150@46.40140\"},{\"id\":\"leg-f2dccd151f0a\",\"mode\":\"drive\",\"from\":\"evian-fr@6.59150@46.40140\",\"to\":\"interlaken-ch@7.86320@46.68630\"},{\"id\":\"leg-f3732126ec4e\",\"mode\":\"drive\",\"from\":\"interlaken-ch@7.86320@46.68630\",\"to\":\"evian-fr@6.59150@46.40140\"},{\"id\":\"leg-56cd2ea8073d\",\"mode\":\"drive\",\"from\":\"evian-fr@6.59150@46.40140\",\"to\":\"geneva-ch@6.14320@46.20440\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T23:01:58.032Z",
+      "legs": [
+        {
+          "legId": "leg-e6f1d868c969",
+          "mode": "train",
+          "source": "natural-earth-rail-fallback",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 143.48,
+          "routeMiles": 143.48,
+          "estimatedMinutes": 157,
+          "confidence": "medium",
+          "warnings": [
+            "The mapped rail network begins about 582 miles from an endpoint, so a fallback connector was used.",
+            "The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor.",
+            "This rail leg uses city coordinates. Choose saved station locations for more precise station-to-station routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 110,
+          "reviewedAt": "2026-07-16T23:01:58.007Z"
+        },
+        {
+          "legId": "leg-2bd60fc5c080",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 25.36,
+          "routeMiles": 28.62,
+          "estimatedMinutes": 64,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2366,
+          "reviewedAt": "2026-07-16T23:01:58.009Z"
+        },
+        {
+          "legId": "leg-f2dccd151f0a",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 63.56,
+          "routeMiles": 114.06,
+          "estimatedMinutes": 158,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 6735,
+          "reviewedAt": "2026-07-16T23:01:58.026Z"
+        },
+        {
+          "legId": "leg-f3732126ec4e",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 63.56,
+          "routeMiles": 114.06,
+          "estimatedMinutes": 158,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 6735,
+          "reviewedAt": "2026-07-16T23:01:58.030Z"
+        },
+        {
+          "legId": "leg-56cd2ea8073d",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 25.36,
+          "routeMiles": 28.62,
+          "estimatedMinutes": 64,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2366,
+          "reviewedAt": "2026-07-16T23:01:58.032Z"
+        }
+      ]
+    }
   }
 ]
