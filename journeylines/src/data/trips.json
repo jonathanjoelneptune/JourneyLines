@@ -932,7 +932,7 @@
     }
   },
   {
-    "id": "hnym39",
+    "id": "id170w",
     "routeModelVersion": 2,
     "year": 2014,
     "month": 9,
@@ -943,6 +943,53 @@
     "displayDate": "September 2014",
     "displayEndDate": "",
     "sortKey": "2014-09-99-2014-09-99-013",
+    "label": "Los Angeles September 2014",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "los-angeles-ca",
+    "route": [
+      {
+        "pointId": "point-9b937881b154",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-c76708c66a6a",
+        "legId": "leg-ae5d028cc0ef",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-53883c630682",
+        "legId": "leg-ae3655ef6a1a",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "hnym39",
+    "routeModelVersion": 2,
+    "year": 2014,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2014",
+    "displayEndDate": "",
+    "sortKey": "2014-09-99-2014-09-99-014",
     "label": "Nassau September 2014",
     "travelers": [
       "joey",
