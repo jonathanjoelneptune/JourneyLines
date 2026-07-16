@@ -9785,5 +9785,105 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "gxkbyg",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-04-99-2026-04-99-173",
+    "label": "Syracuse + Orlando April 2026",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "syracuse-ny",
+    "route": [
+      {
+        "pointId": "point-2f5f2c0bd0f2",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-f9dc07ebe45c",
+        "legId": "leg-c4e50e6b6806",
+        "locationId": "syracuse-ny",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-12d52d877f2c",
+        "legId": "leg-eb166d25f859",
+        "locationId": "orlando-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-bc3315f83121",
+        "legId": "leg-0600d7fd74ac",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "q19fcc",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-05-99-2026-05-99-174",
+    "label": "Detroit May 2026",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "detroit-mi",
+    "route": [
+      {
+        "pointId": "point-345f5493319c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-b6a6e2a86a02",
+        "legId": "leg-33727ff011f5",
+        "locationId": "detroit-mi",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-78b2734a13a2",
+        "legId": "leg-c37bc941c21c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
