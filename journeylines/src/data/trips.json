@@ -8760,5 +8760,59 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "31empi",
+    "routeModelVersion": 2,
+    "year": 2025,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2025",
+    "displayEndDate": "",
+    "sortKey": "2025-02-99-2025-02-99-152",
+    "label": "Chicago + St. Louis February 2025",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [
+      {
+        "pointId": "point-c30b138a5c6f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-39f5f22e0f23",
+        "legId": "leg-4875d7beafd6",
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-36456e664acc",
+        "legId": "leg-ecc11922f1dc",
+        "locationId": "st-louis-mo",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-0d71ad19d604",
+        "legId": "leg-b25a8376a390",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
