@@ -2115,7 +2115,7 @@
     }
   },
   {
-    "id": "bxrri4",
+    "id": "u9fpa0",
     "routeModelVersion": 2,
     "year": 2016,
     "month": 10,
@@ -2126,6 +2126,67 @@
     "displayDate": "October 2016",
     "displayEndDate": "",
     "sortKey": "2016-10-99-2016-10-99-030",
+    "label": "Atlanta October 2016",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-efa1e5fcd5eb",
+        "name": "Tomiwa",
+        "colorName": "blue",
+        "color": "#2f80ff"
+      },
+      {
+        "id": "guest-95a7b172934e",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-7a801402bc94",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-204cf6015954",
+        "legId": "leg-9bfcaf9902d0",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-fd2f52198533",
+        "legId": "leg-2b6f6ef093eb",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "bxrri4",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-10-99-2016-10-99-031",
     "label": "Phoenix October 2016",
     "travelers": [
       "bonnie"
