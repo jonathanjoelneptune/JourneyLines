@@ -9529,5 +9529,52 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "fy0i84",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-01-99-2026-01-99-168",
+    "label": "Washington DC January 2026",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-af93cfae6c55",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-06c8786e89c7",
+        "legId": "leg-e90f2e31dc05",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-6db25af87148",
+        "legId": "leg-dd38b2e3871d",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
