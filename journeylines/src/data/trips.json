@@ -2313,6 +2313,54 @@
     "routeReview": null
   },
   {
+    "id": "hdvfp0",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-01-99-2017-01-99-034",
+    "label": "Fort Lauderdale January 2017",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-7ee6d9d9a6f1",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-6288a2747b1b",
+        "legId": "leg-863b518aab04",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-804cc947ef2d",
+        "legId": "leg-5005e4bf95bb",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "1j7foh",
     "routeModelVersion": 2,
     "year": 2017,
@@ -2323,7 +2371,7 @@
     "endDay": null,
     "displayDate": "July 2017",
     "displayEndDate": "",
-    "sortKey": "2017-07-99-2017-07-99-034",
+    "sortKey": "2017-07-99-2017-07-99-035",
     "label": "Las Vegas July 2017",
     "travelers": [
       "joey",
