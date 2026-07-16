@@ -1083,5 +1083,18 @@
     "lat": 34.75133,
     "lon": 120.52023,
     "source": "manual-coordinates"
+  },
+  {
+    "id": "santa-maria-ca",
+    "name": "Santa Maria",
+    "region": "CA",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 34.95303,
+    "lon": -120.43572,
+    "geonameId": 5393180,
+    "population": 99553,
+    "timezone": "America/Los_Angeles"
   }
 ]
