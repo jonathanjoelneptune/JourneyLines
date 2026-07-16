@@ -6931,7 +6931,7 @@
     "roundTrip": true,
     "returnMode": "plane",
     "fromLocationId": null,
-    "toLocationId": "location-8f56e3506c27",
+    "toLocationId": "santa-maria-ca",
     "route": [
       {
         "pointId": "point-b72ba8065eef",
@@ -6941,7 +6941,7 @@
       {
         "pointId": "point-46bd268d566e",
         "legId": "leg-373bd945cc7a",
-        "locationId": "location-8f56e3506c27",
+        "locationId": "santa-maria-ca",
         "modeFromPrevious": "plane"
       },
       {
