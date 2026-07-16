@@ -6341,7 +6341,7 @@
     "routeReview": null
   },
   {
-    "id": "864k6l",
+    "id": "o6q1qq",
     "routeModelVersion": 2,
     "year": 2022,
     "month": 7,
@@ -6352,6 +6352,54 @@
     "displayDate": "July 2022",
     "displayEndDate": "",
     "sortKey": "2022-07-99-2022-07-99-107",
+    "label": "Anchorage July 2022",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "anchorage-ak-2",
+    "route": [
+      {
+        "pointId": "point-1b49f9f3caf7",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-65c75dd2459e",
+        "legId": "leg-23e9c5a951d1",
+        "locationId": "anchorage-ak-2",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-509756889313",
+        "legId": "leg-e0ef6e41c0fb",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "864k6l",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-07-99-2022-07-99-108",
     "label": "Las Vegas July 2022",
     "travelers": [
       "joey",
