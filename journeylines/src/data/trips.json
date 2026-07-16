@@ -1159,5 +1159,101 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "em923q",
+    "routeModelVersion": 2,
+    "year": 2015,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2015",
+    "displayEndDate": "",
+    "sortKey": "2015-03-99-2015-03-99-017",
+    "label": "Atlanta March 2015",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-d9d576d26a39",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-2af11977439a",
+        "legId": "leg-6488bccf3420",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-8b95c52bd56e",
+        "legId": "leg-9aea7ccb2aa2",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "n9p3l2",
+    "routeModelVersion": 2,
+    "year": 2015,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2015",
+    "displayEndDate": "",
+    "sortKey": "2015-04-99-2015-04-99-018",
+    "label": "San Diego April 2015",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "san-diego-ca",
+    "route": [
+      {
+        "pointId": "point-acf82fc33552",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-227ed7e48637",
+        "legId": "leg-ba723423adea",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-af390f561430",
+        "legId": "leg-11201223b5fb",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
