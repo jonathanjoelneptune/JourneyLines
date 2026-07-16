@@ -5672,5 +5672,52 @@
         }
       ]
     }
+  },
+  {
+    "id": "di61uv",
+    "routeModelVersion": 2,
+    "year": 2021,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2021",
+    "displayEndDate": "",
+    "sortKey": "2021-01-99-2021-01-99-094",
+    "label": "Cocoa January 2021",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cocoa-fl",
+    "route": [
+      {
+        "pointId": "point-aaac3a652707",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-6a401467f408",
+        "legId": "leg-0e3133a94122",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-7dfa0c2f11af",
+        "legId": "leg-ce67b9bec495",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
