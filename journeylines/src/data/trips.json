@@ -8373,5 +8373,94 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "y8rywn",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-10-99-2024-10-99-145",
+    "label": "Seattle + Vancouver + Seattle October 2024",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": false,
+    "returnMode": "",
+    "fromLocationId": null,
+    "toLocationId": "seattle-wa",
+    "route": [
+      {
+        "pointId": "point-b1ad3131c3cb",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-dfc85d31ed71",
+        "legId": "leg-98268e64a3d3",
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-819f2d9eab23",
+        "legId": "leg-27f1146b30bd",
+        "locationId": "vancouver-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-36ccccd6383c",
+        "legId": "leg-bf134159d3f2",
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-27f1146b30bd\",\"mode\":\"drive\",\"from\":\"seattle-wa@-122.33280@47.60610\",\"to\":\"vancouver-ca@-123.12070@49.28270\"},{\"id\":\"leg-bf134159d3f2\",\"mode\":\"drive\",\"from\":\"vancouver-ca@-123.12070@49.28270\",\"to\":\"seattle-wa@-122.33280@47.60610\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T23:18:54.646Z",
+      "legs": [
+        {
+          "legId": "leg-27f1146b30bd",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 121.34,
+          "routeMiles": 142.64,
+          "estimatedMinutes": 165,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2383,
+          "reviewedAt": "2026-07-16T23:18:54.644Z"
+        },
+        {
+          "legId": "leg-bf134159d3f2",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 121.34,
+          "routeMiles": 142.64,
+          "estimatedMinutes": 165,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2383,
+          "reviewedAt": "2026-07-16T23:18:54.645Z"
+        }
+      ]
+    }
   }
 ]
