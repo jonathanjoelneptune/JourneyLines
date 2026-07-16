@@ -3178,7 +3178,7 @@
     "roundTrip": true,
     "returnMode": "plane",
     "fromLocationId": null,
-    "toLocationId": "san-francisco-08",
+    "toLocationId": "san-francisco-ca",
     "route": [
       {
         "pointId": "point-dca246b3d100",
@@ -3188,7 +3188,7 @@
       {
         "pointId": "point-20601adb404e",
         "legId": "leg-0ef9ad983710",
-        "locationId": "san-francisco-08",
+        "locationId": "san-francisco-ca",
         "modeFromPrevious": "plane"
       },
       {
