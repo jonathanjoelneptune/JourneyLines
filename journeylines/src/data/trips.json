@@ -9578,7 +9578,7 @@
     "routeReview": null
   },
   {
-    "id": "sfx8kf",
+    "id": "c9elqz",
     "routeModelVersion": 2,
     "year": 2026,
     "month": 2,
@@ -9589,6 +9589,54 @@
     "displayDate": "February 2026",
     "displayEndDate": "",
     "sortKey": "2026-02-99-2026-02-99-169",
+    "label": "Charlotte February 2026",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "charlotte-nc",
+    "route": [
+      {
+        "pointId": "point-7953a515935f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ae251ac6d73f",
+        "legId": "leg-32928e258f77",
+        "locationId": "charlotte-nc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-0c74edbd30db",
+        "legId": "leg-e0a64393459c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "sfx8kf",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-02-99-2026-02-99-170",
     "label": "Chicago February 2026",
     "travelers": [
       "joey",
@@ -9629,6 +9677,53 @@
     "notes": "",
     "occasion": "",
     "trailStyle": "stripe",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "k8hd0a",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-03-99-2026-03-99-171",
+    "label": "San Francisco March 2026",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "san-francisco-ca",
+    "route": [
+      {
+        "pointId": "point-7a2e4a7f0a5f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-06c56aabd87b",
+        "legId": "leg-835c6546dce4",
+        "locationId": "san-francisco-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-aec49f0a3824",
+        "legId": "leg-6fd8b0e36603",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
   }
