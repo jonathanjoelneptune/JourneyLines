@@ -981,5 +981,18 @@
     "geonameId": 4469146,
     "population": 269666,
     "timezone": "America/New_York"
+  },
+  {
+    "id": "raleigh-nc",
+    "name": "Raleigh",
+    "region": "NC",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 35.7721,
+    "lon": -78.63861,
+    "geonameId": 4487042,
+    "population": 403892,
+    "timezone": "America/New_York"
   }
 ]
