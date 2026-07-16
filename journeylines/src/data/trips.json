@@ -478,5 +478,131 @@
         }
       ]
     }
+  },
+  {
+    "id": "rjylx5",
+    "routeModelVersion": 2,
+    "year": 2013,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2013",
+    "displayEndDate": "",
+    "sortKey": "2013-01-99-2013-01-99-007",
+    "label": "Miami + Nassau + Miami January 2013",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-f5b302d2cf54",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-73e04dcdb39c",
+        "legId": "leg-fe4ce5553c03",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-7de7588a8eb0",
+        "legId": "leg-f29798431ba2",
+        "locationId": "nassau-23",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-13c1846699dc",
+        "legId": "leg-41937fd8a9e0",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-35fd4a37c465",
+        "legId": "leg-b79d0cb61874",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-fe4ce5553c03\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-f29798431ba2\",\"mode\":\"boat\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"nassau-23@-77.34306@25.05823\"},{\"id\":\"leg-41937fd8a9e0\",\"mode\":\"boat\",\"from\":\"nassau-23@-77.34306@25.05823\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-b79d0cb61874\",\"mode\":\"drive\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:02:05.748Z",
+      "legs": [
+        {
+          "legId": "leg-fe4ce5553c03",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T19:02:05.747Z"
+        },
+        {
+          "legId": "leg-f29798431ba2",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 184.31,
+          "routeMiles": 193.99,
+          "estimatedMinutes": 578,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 3,
+          "reviewedAt": "2026-07-16T19:02:05.747Z"
+        },
+        {
+          "legId": "leg-41937fd8a9e0",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 184.31,
+          "routeMiles": 193.99,
+          "estimatedMinutes": 578,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 3,
+          "reviewedAt": "2026-07-16T19:02:05.747Z"
+        },
+        {
+          "legId": "leg-b79d0cb61874",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T19:02:05.748Z"
+        }
+      ]
+    }
   }
 ]
