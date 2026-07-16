@@ -691,5 +691,53 @@
         }
       ]
     }
+  },
+  {
+    "id": "8pe4wt",
+    "routeModelVersion": 2,
+    "year": 2013,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2013",
+    "displayEndDate": "",
+    "sortKey": "2013-05-99-2013-05-99-009",
+    "label": "Chicago May 2013",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [
+      {
+        "pointId": "point-59dbcce51615",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-f85192aadef1",
+        "legId": "leg-0d33496aa42c",
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-45754bda1999",
+        "legId": "leg-d3e4d87a719a",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
