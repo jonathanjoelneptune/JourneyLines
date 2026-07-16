@@ -2269,5 +2269,47 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "aqzxjc",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-12-99-2016-12-99-033",
+    "label": "San Diego December 2016",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": false,
+    "returnMode": "",
+    "fromLocationId": null,
+    "toLocationId": "san-diego-ca",
+    "route": [
+      {
+        "pointId": "point-fd9644695b3a",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-0270399c73f5",
+        "legId": "leg-1f76fb047db5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
