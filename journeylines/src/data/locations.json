@@ -955,5 +955,18 @@
     "geonameId": 4747845,
     "population": 42620,
     "timezone": "America/New_York"
+  },
+  {
+    "id": "edinburgh-sct",
+    "name": "Edinburgh",
+    "region": "SCT",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "continent": "",
+    "lat": 55.95206,
+    "lon": -3.19648,
+    "geonameId": 2650225,
+    "population": 435791,
+    "timezone": "Europe/London"
   }
 ]
