@@ -903,5 +903,18 @@
     "geonameId": 3583747,
     "population": 16152,
     "timezone": "America/El_Salvador"
+  },
+  {
+    "id": "maryland-city-md",
+    "name": "Maryland City",
+    "region": "MD",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 39.09205,
+    "lon": -76.81775,
+    "geonameId": 4361831,
+    "population": 16093,
+    "timezone": "America/New_York"
   }
 ]

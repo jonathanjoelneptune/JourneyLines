@@ -3022,8 +3022,7 @@
     "sortKey": "2018-02-99-2018-02-99-045",
     "label": "Miami February 2018",
     "travelers": [
-      "joey",
-      "bonnie"
+      "joey"
     ],
     "guestHoppers": [],
     "mode": "plane",
@@ -3206,6 +3205,53 @@
     "routeReview": null
   },
   {
+    "id": "8i40tt",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-06-99-2018-06-99-049",
+    "label": "Maryland City June 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "maryland-city-md",
+    "route": [
+      {
+        "pointId": "point-6cc764740deb",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-6418a7feb4bc",
+        "legId": "leg-d05dda6d8d79",
+        "locationId": "maryland-city-md",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-42fd2a6edd6d",
+        "legId": "leg-5b46f9c360bc",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "dnup4p",
     "routeModelVersion": 2,
     "year": 2026,
@@ -3216,7 +3262,7 @@
     "endDay": null,
     "displayDate": "June 2026",
     "displayEndDate": "",
-    "sortKey": "2026-06-99-2026-06-99-049",
+    "sortKey": "2026-06-99-2026-06-99-050",
     "label": "Rosarito June 2026",
     "travelers": [
       "joey"
