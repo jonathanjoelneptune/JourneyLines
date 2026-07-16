@@ -6909,5 +6909,52 @@
         }
       ]
     }
+  },
+  {
+    "id": "v8qkzm",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-02-99-2023-02-99-118",
+    "label": "Vandenburg February 2023",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "location-8f56e3506c27",
+    "route": [
+      {
+        "pointId": "point-b72ba8065eef",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-46bd268d566e",
+        "legId": "leg-373bd945cc7a",
+        "locationId": "location-8f56e3506c27",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-fd53ed4c3f20",
+        "legId": "leg-cd0c7ed18714",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
