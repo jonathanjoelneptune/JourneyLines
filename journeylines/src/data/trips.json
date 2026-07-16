@@ -9885,5 +9885,100 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "jw6aew",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-06-99-2026-06-99-175",
+    "label": "Boston June 2026",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "boston-ma",
+    "route": [
+      {
+        "pointId": "point-8bf811cf16fc",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-3b02d32f3381",
+        "legId": "leg-eee5b447fe51",
+        "locationId": "boston-ma",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9c58847e4469",
+        "legId": "leg-01996c335d94",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "elbae2",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-06-99-2026-06-99-176",
+    "label": "Puerto Plata June 2026",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "puerto-plata-do",
+    "route": [
+      {
+        "pointId": "point-4d28de51a5a0",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ff856c8cf4c5",
+        "legId": "leg-9d169fca65b8",
+        "locationId": "puerto-plata-do",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e0128201cd8b",
+        "legId": "leg-a2f724a49954",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
