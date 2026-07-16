@@ -5719,5 +5719,101 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "guijgd",
+    "routeModelVersion": 2,
+    "year": 2021,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2021",
+    "displayEndDate": "",
+    "sortKey": "2021-01-99-2021-01-99-095",
+    "label": "Honolulu January 2021",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "honolulu-hi",
+    "route": [
+      {
+        "pointId": "point-3a0e9fc42440",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-7a50d5d830ed",
+        "legId": "leg-d3c3b6fbd552",
+        "locationId": "honolulu-hi",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-eec07059a30d",
+        "legId": "leg-6ffac12178ff",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "at2c0s",
+    "routeModelVersion": 2,
+    "year": 2021,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2021",
+    "displayEndDate": "",
+    "sortKey": "2021-05-99-2021-05-99-096",
+    "label": "Fort Lauderdale May 2021",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-0032b3b8f4ba",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-d2a87c2f436e",
+        "legId": "leg-486d1de97377",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9315fced0f56",
+        "legId": "leg-f389be32b652",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
