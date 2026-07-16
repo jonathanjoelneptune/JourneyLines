@@ -2727,5 +2727,88 @@
         }
       ]
     }
+  },
+  {
+    "id": "ulh1bl",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-11-99-2017-11-99-041",
+    "label": "Malibu November 2017",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "malibu-ca",
+    "route": [
+      {
+        "pointId": "point-724f0a5a7de9",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-164d64ebbfcb",
+        "legId": "leg-1d9819bd6e9d",
+        "locationId": "malibu-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-bb49a24ae604",
+        "legId": "leg-7c797ac37f03",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-1d9819bd6e9d\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"malibu-ca@-118.77980@34.02590\"},{\"id\":\"leg-7c797ac37f03\",\"mode\":\"drive\",\"from\":\"malibu-ca@-118.77980@34.02590\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:12:39.552Z",
+      "legs": [
+        {
+          "legId": "leg-1d9819bd6e9d",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 130.07,
+          "routeMiles": 151.9,
+          "estimatedMinutes": 155,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2858,
+          "reviewedAt": "2026-07-16T21:12:39.264Z"
+        },
+        {
+          "legId": "leg-7c797ac37f03",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 130.07,
+          "routeMiles": 151.68,
+          "estimatedMinutes": 154,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2921,
+          "reviewedAt": "2026-07-16T21:12:39.268Z"
+        }
+      ]
+    }
   }
 ]
