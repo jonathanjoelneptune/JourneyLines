@@ -5256,5 +5256,60 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "y4zhqf",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-08-99-2020-08-99-088",
+    "label": "Las Vegas August 2020",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-f52c5105519e",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-3d34fa492364",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-aec3b7692bfb",
+        "legId": "leg-77303879fcef",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-3eecca04e3cc",
+        "legId": "leg-e53a642507b5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
