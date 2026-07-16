@@ -8375,64 +8375,17 @@
     "routeReview": null
   },
   {
-    "id": "xqodtl",
-    "routeModelVersion": 2,
-    "year": 2024,
-    "month": 10,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "October 2024",
-    "displayEndDate": "",
-    "sortKey": "2024-10-99-2024-10-99-145",
-    "label": "Philadelphia + San Diego October 2024",
-    "travelers": [
-      "joey"
-    ],
-    "guestHoppers": [],
-    "mode": "plane",
-    "roundTrip": false,
-    "returnMode": "",
-    "fromLocationId": "seattle-wa",
-    "toLocationId": "philadelphia-pa",
-    "route": [
-      {
-        "pointId": "point-79f0f7229923",
-        "locationId": "seattle-wa",
-        "modeFromPrevious": null
-      },
-      {
-        "pointId": "point-b63fe47ea48d",
-        "legId": "leg-a0e178cef6bc",
-        "locationId": "philadelphia-pa",
-        "modeFromPrevious": "plane"
-      },
-      {
-        "pointId": "point-dba082a66800",
-        "legId": "leg-d4fd30ed5649",
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "solid",
-    "trailColorMode": "members",
-    "routeReview": null
-  },
-  {
     "id": "y8rywn",
     "routeModelVersion": 2,
     "year": 2024,
     "month": 10,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "October 2024",
-    "displayEndDate": "",
-    "sortKey": "2024-10-99-2024-10-99-146",
+    "day": 3,
+    "endYear": 2024,
+    "endMonth": 10,
+    "endDay": 6,
+    "displayDate": "October 3, 2024",
+    "displayEndDate": "October 6, 2024",
+    "sortKey": "2024-10-03-2024-10-06-145",
     "label": "Seattle + Vancouver + Seattle October 2024",
     "travelers": [
       "joey",
@@ -8509,5 +8462,52 @@
         }
       ]
     }
+  },
+  {
+    "id": "xqodtl",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-10-99-2024-10-99-146",
+    "label": "Philadelphia + San Diego October 2024",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": false,
+    "returnMode": "",
+    "fromLocationId": "seattle-wa",
+    "toLocationId": "philadelphia-pa",
+    "route": [
+      {
+        "pointId": "point-79f0f7229923",
+        "locationId": "seattle-wa",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-b63fe47ea48d",
+        "legId": "leg-a0e178cef6bc",
+        "locationId": "philadelphia-pa",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-dba082a66800",
+        "legId": "leg-d4fd30ed5649",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
