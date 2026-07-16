@@ -6911,7 +6911,7 @@
     }
   },
   {
-    "id": "v8qkzm",
+    "id": "yot370",
     "routeModelVersion": 2,
     "year": 2023,
     "month": 2,
@@ -6922,14 +6922,61 @@
     "displayDate": "February 2023",
     "displayEndDate": "",
     "sortKey": "2023-02-99-2023-02-99-118",
-    "label": "Vandenburg February 2023",
+    "label": "Cocoa February 2023",
     "travelers": [
-      "bonnie"
+      "joey"
     ],
     "guestHoppers": [],
     "mode": "plane",
     "roundTrip": true,
     "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cocoa-fl",
+    "route": [
+      {
+        "pointId": "point-6ff49dca2384",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-a84a0f1db9e1",
+        "legId": "leg-bdf7aa6ee7aa",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9ddf22b52228",
+        "legId": "leg-94f5743822a7",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "v8qkzm",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-02-99-2023-02-99-119",
+    "label": "Vandenburg February 2023",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
     "fromLocationId": null,
     "toLocationId": "santa-maria-ca",
     "route": [
@@ -6942,19 +6989,54 @@
         "pointId": "point-46bd268d566e",
         "legId": "leg-373bd945cc7a",
         "locationId": "santa-maria-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "drive"
       },
       {
         "pointId": "point-fd53ed4c3f20",
         "legId": "leg-cd0c7ed18714",
         "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "drive"
       }
     ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
     "trailColorMode": "members",
-    "routeReview": null
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-373bd945cc7a\",\"mode\":\"drive\",\"from\":\"los-angeles-ca@-118.24370@34.05220\",\"to\":\"santa-maria-ca@-120.43572@34.95303\"},{\"id\":\"leg-cd0c7ed18714\",\"mode\":\"drive\",\"from\":\"santa-maria-ca@-120.43572@34.95303\",\"to\":\"los-angeles-ca@-118.24370@34.05220\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T22:58:52.003Z",
+      "legs": [
+        {
+          "legId": "leg-373bd945cc7a",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 139.47,
+          "routeMiles": 170.3,
+          "estimatedMinutes": 173,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 3720,
+          "reviewedAt": "2026-07-16T22:58:51.800Z"
+        },
+        {
+          "legId": "leg-cd0c7ed18714",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 139.47,
+          "routeMiles": 170.04,
+          "estimatedMinutes": 171,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 3647,
+          "reviewedAt": "2026-07-16T22:58:51.881Z"
+        }
+      ]
+    }
   }
 ]
