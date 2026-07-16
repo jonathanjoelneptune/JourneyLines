@@ -1090,7 +1090,7 @@
     "displayDate": "November 2014",
     "displayEndDate": "",
     "sortKey": "2014-11-99-2014-11-99-015",
-    "label": "Castries November 2014",
+    "label": "St. Lucia November 2014",
     "travelers": [
       "joey",
       "bonnie"
@@ -1100,7 +1100,7 @@
     "roundTrip": true,
     "returnMode": "plane",
     "fromLocationId": null,
-    "toLocationId": "castries-03",
+    "toLocationId": "castries-lc",
     "route": [
       {
         "pointId": "point-75d8bd87c324",
@@ -1110,7 +1110,7 @@
       {
         "pointId": "point-ad425a077113",
         "legId": "leg-0f8712b4502f",
-        "locationId": "castries-03",
+        "locationId": "castries-lc",
         "modeFromPrevious": "plane"
       },
       {
