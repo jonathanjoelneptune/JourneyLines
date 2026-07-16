@@ -851,5 +851,18 @@
     "geonameId": 3576812,
     "population": 20000,
     "timezone": "America/St_Lucia"
+  },
+  {
+    "id": "irvine-ca",
+    "name": "Irvine",
+    "region": "CA",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 33.66946,
+    "lon": -117.82311,
+    "geonameId": 5359777,
+    "population": 212375,
+    "timezone": "America/Los_Angeles"
   }
 ]
