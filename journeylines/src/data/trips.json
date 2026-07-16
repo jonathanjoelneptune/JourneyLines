@@ -8517,7 +8517,7 @@
     "routeReview": null
   },
   {
-    "id": "tr3zlj",
+    "id": "w5f0rk",
     "routeModelVersion": 2,
     "year": 2024,
     "month": 11,
@@ -8528,6 +8528,61 @@
     "displayDate": "November 2024",
     "displayEndDate": "",
     "sortKey": "2024-11-99-2024-11-99-147",
+    "label": "Maui November 2024",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-f4dd0ad86c38",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "maui-hi",
+    "route": [
+      {
+        "pointId": "point-d62b4d77d901",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-7ef1c2c86178",
+        "legId": "leg-40a530752413",
+        "locationId": "maui-hi",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-bd7db8df76d5",
+        "legId": "leg-777fe879009a",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "tr3zlj",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-11-99-2024-11-99-148",
     "label": "San Jose November 2024",
     "travelers": [
       "joey"
