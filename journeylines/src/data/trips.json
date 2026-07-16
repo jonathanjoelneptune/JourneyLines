@@ -7649,7 +7649,7 @@
     "routeReview": null
   },
   {
-    "id": "tfupg0",
+    "id": "cjn6z8",
     "routeModelVersion": 2,
     "year": 2023,
     "month": 9,
@@ -7660,6 +7660,54 @@
     "displayDate": "September 2023",
     "displayEndDate": "",
     "sortKey": "2023-09-99-2023-09-99-130",
+    "label": "Barcelona September 2023",
+    "travelers": [
+      "bonnie",
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "barcelona-es",
+    "route": [
+      {
+        "pointId": "point-2b72b2bd5fa7",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-03c0c79cbac8",
+        "legId": "leg-4263afea493c",
+        "locationId": "barcelona-es",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-2fa058cd38dc",
+        "legId": "leg-b4ab0eaebe3b",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "tfupg0",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-09-99-2023-09-99-131",
     "label": "Las Vegas September 2023",
     "travelers": [
       "joey",
@@ -7693,6 +7741,53 @@
     "notes": "",
     "occasion": "",
     "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "lal8di",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-10-99-2023-10-99-132",
+    "label": "Washington DC October 2023",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-5276891a67aa",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-5bd3af589643",
+        "legId": "leg-70ead57cd05f",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-948c0998b36a",
+        "legId": "leg-d1709c7fa7ae",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
   }
