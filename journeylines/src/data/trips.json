@@ -6766,5 +6766,53 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "qxo6or",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-11-99-2022-11-99-116",
+    "label": "Honolulu November 2022",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "honolulu-hi",
+    "route": [
+      {
+        "pointId": "point-baa2a9ffe895",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-460c827f6766",
+        "legId": "leg-8bb422787151",
+        "locationId": "honolulu-hi",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-82bf5834b33a",
+        "legId": "leg-92347892cc62",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
