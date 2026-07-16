@@ -9576,5 +9576,60 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "sfx8kf",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-02-99-2026-02-99-169",
+    "label": "Chicago February 2026",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-a8af745abc7e",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [
+      {
+        "pointId": "point-2cd92c0514a1",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-a244a15f1c00",
+        "legId": "leg-127e3242dabe",
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-ce71f1a45dea",
+        "legId": "leg-b21fee97820a",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
