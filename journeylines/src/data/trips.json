@@ -834,5 +834,101 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "dcr014",
+    "routeModelVersion": 2,
+    "year": 2014,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2014",
+    "displayEndDate": "",
+    "sortKey": "2014-05-99-2014-05-99-012",
+    "label": "Destin May 2014",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-ab1e9369de25",
+        "name": "Tomiwa",
+        "colorName": "blue",
+        "color": "#2f80ff"
+      },
+      {
+        "id": "guest-ca725a651a4f",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "destin-fl",
+    "route": [
+      {
+        "pointId": "point-e0a5d4460839",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-cc9f2c01a2ea",
+        "legId": "leg-1fcdcdd87209",
+        "locationId": "destin-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-bdbec21192b6",
+        "legId": "leg-b9cdf720d196",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-1fcdcdd87209\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"destin-fl@-86.49580@30.39350\"},{\"id\":\"leg-b9cdf720d196\",\"mode\":\"drive\",\"from\":\"destin-fl@-86.49580@30.39350\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:05:36.455Z",
+      "legs": [
+        {
+          "legId": "leg-1fcdcdd87209",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 389.12,
+          "routeMiles": 482.41,
+          "estimatedMinutes": 444,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 4302,
+          "reviewedAt": "2026-07-16T19:05:36.162Z"
+        },
+        {
+          "legId": "leg-b9cdf720d196",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 389.12,
+          "routeMiles": 483.57,
+          "estimatedMinutes": 444,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 3948,
+          "reviewedAt": "2026-07-16T19:05:36.042Z"
+        }
+      ]
+    }
   }
 ]
