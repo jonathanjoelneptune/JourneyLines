@@ -1033,5 +1033,18 @@
     "geonameId": 5367929,
     "population": 462257,
     "timezone": "America/Los_Angeles"
+  },
+  {
+    "id": "anchorage-ak-2",
+    "name": "Anchorage",
+    "region": "AK",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 61.21806,
+    "lon": -149.90028,
+    "geonameId": 5879400,
+    "population": 291826,
+    "timezone": "America/Anchorage"
   }
 ]
