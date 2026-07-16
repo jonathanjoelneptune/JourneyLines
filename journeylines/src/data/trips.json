@@ -7792,7 +7792,7 @@
     "routeReview": null
   },
   {
-    "id": "gcpsd4",
+    "id": "c0544l",
     "routeModelVersion": 2,
     "year": 2023,
     "month": 12,
@@ -7803,6 +7803,54 @@
     "displayDate": "December 2023",
     "displayEndDate": "",
     "sortKey": "2023-12-99-2023-12-99-133",
+    "label": "Cancun December 2023",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cancun-mx",
+    "route": [
+      {
+        "pointId": "point-dbad76fb41e2",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-24583390162e",
+        "legId": "leg-69f5353e0bd5",
+        "locationId": "cancun-mx",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-33055a054597",
+        "legId": "leg-ef0e37aa0ac4",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "gcpsd4",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-12-99-2023-12-99-134",
     "label": "Orlando + Atlanta + Fort Lauderdale December 2023",
     "travelers": [
       "joey",
