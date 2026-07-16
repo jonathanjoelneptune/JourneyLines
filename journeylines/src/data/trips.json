@@ -495,7 +495,20 @@
     "travelers": [
       "joey"
     ],
-    "guestHoppers": [],
+    "guestHoppers": [
+      {
+        "id": "guest-e543a6eefb12",
+        "name": "Tomiwa",
+        "colorName": "blue",
+        "color": "#2f80ff"
+      },
+      {
+        "id": "guest-aa60fe6b2db7",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
     "mode": "drive",
     "roundTrip": true,
     "returnMode": "drive",
@@ -534,7 +547,7 @@
     ],
     "notes": "",
     "occasion": "",
-    "trailStyle": "solid",
+    "trailStyle": "stripe",
     "trailColorMode": "members",
     "routeReview": {
       "version": "7.1",
