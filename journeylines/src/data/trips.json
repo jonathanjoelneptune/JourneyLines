@@ -9980,5 +9980,53 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "a6pzc2",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-07-99-2026-07-99-177",
+    "label": "Cabo San Lucas July 2026",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cabo-san-lucas-mx",
+    "route": [
+      {
+        "pointId": "point-673f4651805b",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-4359c6798595",
+        "legId": "leg-61adf1df1022",
+        "locationId": "cabo-san-lucas-mx",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-995ebd16fca8",
+        "legId": "leg-35542506e757",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
