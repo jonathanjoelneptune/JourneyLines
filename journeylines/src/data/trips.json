@@ -5550,7 +5550,8 @@
     "sortKey": "2020-10-99-2020-10-99-092",
     "label": "Las Vegas October 2020",
     "travelers": [
-      "bonnie"
+      "bonnie",
+      "joey"
     ],
     "guestHoppers": [
       {
@@ -5560,9 +5561,9 @@
         "color": "#44f48a"
       }
     ],
-    "mode": "plane",
+    "mode": "drive",
     "roundTrip": true,
-    "returnMode": "plane",
+    "returnMode": "drive",
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
     "route": [
@@ -5575,20 +5576,55 @@
         "pointId": "point-9bc860eeca18",
         "legId": "leg-397808dd9a5e",
         "locationId": "las-vegas-nv",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "drive"
       },
       {
         "pointId": "point-2c3ba30df88e",
         "legId": "leg-048e51184c40",
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "drive"
       }
     ],
     "notes": "",
     "occasion": "",
     "trailStyle": "ribbon",
     "trailColorMode": "members",
-    "routeReview": null
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-397808dd9a5e\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"las-vegas-nv@-115.13910@36.17160\"},{\"id\":\"leg-048e51184c40\",\"mode\":\"drive\",\"from\":\"las-vegas-nv@-115.13910@36.17160\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T23:38:15.127Z",
+      "legs": [
+        {
+          "legId": "leg-397808dd9a5e",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 265.1,
+          "routeMiles": 332.08,
+          "estimatedMinutes": 324,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2980,
+          "reviewedAt": "2026-07-16T23:38:15.125Z"
+        },
+        {
+          "legId": "leg-048e51184c40",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 265.1,
+          "routeMiles": 332.08,
+          "estimatedMinutes": 324,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2980,
+          "reviewedAt": "2026-07-16T23:38:15.127Z"
+        }
+      ]
+    }
   },
   {
     "id": "zdokjf",
