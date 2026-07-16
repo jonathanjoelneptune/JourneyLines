@@ -7453,7 +7453,7 @@
     "routeReview": null
   },
   {
-    "id": "c46wk2",
+    "id": "5o0pf4",
     "routeModelVersion": 2,
     "year": 2023,
     "month": 6,
@@ -7464,6 +7464,59 @@
     "displayDate": "June 2023",
     "displayEndDate": "",
     "sortKey": "2023-06-99-2023-06-99-126",
+    "label": "Fort Lauderdale + Baltimore June 2023",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-1fcc655b2846",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-3e5cd0034f0f",
+        "legId": "leg-6b3910c61e0c",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9c12e6c84dd4",
+        "legId": "leg-0a8d020ec2b9",
+        "locationId": "baltimore-md",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-8e9b1d756154",
+        "legId": "leg-411c61bf6a40",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "c46wk2",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-06-99-2023-06-99-127",
     "label": "Tampa June 2023",
     "travelers": [
       "joey",
@@ -7497,6 +7550,53 @@
     "notes": "",
     "occasion": "",
     "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "jkcojw",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-07-99-2023-07-99-128",
+    "label": "Washington DC July 2023",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-e96ca2289c04",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ef64f748ecad",
+        "legId": "leg-712d528b4602",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-b45a659de51e",
+        "legId": "leg-4bf4978aacba",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
   }
