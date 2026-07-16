@@ -3300,6 +3300,148 @@
     "routeReview": null
   },
   {
+    "id": "ie2vkq",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-06-99-2018-06-99-051",
+    "label": "Washington DC June 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-4829781eb863",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-1ac12cf7313f",
+        "legId": "leg-aa887035bdc8",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-cef74ede91f3",
+        "legId": "leg-4eb455798d2f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "4d4xdj",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-07-99-2018-07-99-052",
+    "label": "Cabo San Lucas July 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cabo-san-lucas-mx",
+    "route": [
+      {
+        "pointId": "point-f17eefb35006",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-64366d5ed8f0",
+        "legId": "leg-e18ecb3ce052",
+        "locationId": "cabo-san-lucas-mx",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-8175c2229f2b",
+        "legId": "leg-9b78a7ca446c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "vfbay2",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-07-99-2018-07-99-053",
+    "label": "San Jose July 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "san-jose-ca",
+    "route": [
+      {
+        "pointId": "point-029b4eec7d3d",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-3e92e6f6208e",
+        "legId": "leg-15b195d26b23",
+        "locationId": "san-jose-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-5525e532012b",
+        "legId": "leg-c119f26b22dd",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "dnup4p",
     "routeModelVersion": 2,
     "year": 2026,
@@ -3310,7 +3452,7 @@
     "endDay": null,
     "displayDate": "June 2026",
     "displayEndDate": "",
-    "sortKey": "2026-06-99-2026-06-99-051",
+    "sortKey": "2026-06-99-2026-06-99-054",
     "label": "Rosarito June 2026",
     "travelers": [
       "joey"
