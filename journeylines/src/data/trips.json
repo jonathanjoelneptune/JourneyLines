@@ -8675,16 +8675,16 @@
   {
     "id": "4fd0km",
     "routeModelVersion": 2,
-    "year": 2026,
+    "year": 2025,
     "month": 1,
     "day": null,
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayDate": "January 2026",
+    "displayDate": "January 2025",
     "displayEndDate": "",
-    "sortKey": "2026-01-99-2026-01-99-150",
-    "label": "Atlanta January 2026",
+    "sortKey": "2025-01-99-2025-01-99-150",
+    "label": "Atlanta January 2025",
     "travelers": [
       "joey",
       "bonnie"
@@ -8711,6 +8711,53 @@
     "notes": "",
     "occasion": "",
     "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "2427wk",
+    "routeModelVersion": 2,
+    "year": 2025,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2025",
+    "displayEndDate": "",
+    "sortKey": "2025-01-99-2025-01-99-151",
+    "label": "Washington DC January 2025",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": "atlanta-ga",
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-832062096442",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-f1796801a82a",
+        "legId": "leg-59e1b7897959",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e514534c4643",
+        "legId": "leg-b04488f626c6",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
   }
