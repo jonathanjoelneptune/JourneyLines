@@ -916,5 +916,18 @@
     "geonameId": 4361831,
     "population": 16093,
     "timezone": "America/New_York"
+  },
+  {
+    "id": "charleston-sc",
+    "name": "Charleston",
+    "region": "SC",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 32.77657,
+    "lon": -79.93092,
+    "geonameId": 4574324,
+    "population": 120083,
+    "timezone": "America/New_York"
   }
 ]
