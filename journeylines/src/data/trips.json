@@ -1399,5 +1399,53 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "jo2l8f",
+    "routeModelVersion": 2,
+    "year": 2015,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2015",
+    "displayEndDate": "",
+    "sortKey": "2015-09-99-2015-09-99-021",
+    "label": "Aruba September 2015",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "oranjestad-aw",
+    "route": [
+      {
+        "pointId": "point-ce0247383425",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-1f744beacd2a",
+        "legId": "leg-9da8d613685f",
+        "locationId": "oranjestad-aw",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-5a2e681c9fa5",
+        "legId": "leg-d2f03b0f9984",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
