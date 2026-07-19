@@ -1,0 +1,608 @@
+begin;
+
+-- =========================================================
+-- Private authorization helpers
+-- =========================================================
+
+create schema if not exists private;
+
+revoke all on schema private from public;
+grant usage on schema private to authenticated;
+
+-- Returns true when the current authenticated user owns the map.
+create or replace function private.is_map_owner(target_map_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.travel_maps tm
+    where tm.id = target_map_id
+      and tm.owner_id = (select auth.uid())
+  );
+$$;
+
+-- Returns true when the current authenticated user can view the map.
+create or replace function private.can_view_map(target_map_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    exists (
+      select 1
+      from public.travel_maps tm
+      where tm.id = target_map_id
+        and tm.owner_id = (select auth.uid())
+    )
+    or exists (
+      select 1
+      from public.map_members mm
+      where mm.map_id = target_map_id
+        and mm.user_id = (select auth.uid())
+    );
+$$;
+
+-- Returns true for map owners and editors.
+create or replace function private.can_edit_map(target_map_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    exists (
+      select 1
+      from public.travel_maps tm
+      where tm.id = target_map_id
+        and tm.owner_id = (select auth.uid())
+    )
+    or exists (
+      select 1
+      from public.map_members mm
+      where mm.map_id = target_map_id
+        and mm.user_id = (select auth.uid())
+        and mm.role in ('owner', 'editor')
+    );
+$$;
+
+-- Resolves a trip to its parent travel map.
+create or replace function private.trip_map_id(target_trip_id uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select t.map_id
+  from public.trips t
+  where t.id = target_trip_id;
+$$;
+
+grant execute on function private.is_map_owner(uuid) to authenticated;
+grant execute on function private.can_view_map(uuid) to authenticated;
+grant execute on function private.can_edit_map(uuid) to authenticated;
+grant execute on function private.trip_map_id(uuid) to authenticated;
+
+-- =========================================================
+-- Enable RLS explicitly
+-- The Supabase popup may already have enabled it, but these
+-- statements ensure the migration records the intended state.
+-- =========================================================
+
+alter table public.profiles enable row level security;
+alter table public.travel_maps enable row level security;
+alter table public.map_members enable row level security;
+alter table public.hoppers enable row level security;
+alter table public.locations enable row level security;
+alter table public.trips enable row level security;
+alter table public.trip_legs enable row level security;
+alter table public.trip_hoppers enable row level security;
+alter table public.user_preferences enable row level security;
+
+-- =========================================================
+-- API privileges
+-- RLS policies still determine which rows can be accessed.
+-- =========================================================
+
+revoke all on table public.profiles from anon;
+revoke all on table public.travel_maps from anon;
+revoke all on table public.map_members from anon;
+revoke all on table public.hoppers from anon;
+revoke all on table public.locations from anon;
+revoke all on table public.trips from anon;
+revoke all on table public.trip_legs from anon;
+revoke all on table public.trip_hoppers from anon;
+revoke all on table public.user_preferences from anon;
+
+grant select, insert, update on table public.profiles to authenticated;
+grant select, insert, update, delete on table public.travel_maps to authenticated;
+grant select, insert, update, delete on table public.map_members to authenticated;
+grant select, insert, update, delete on table public.hoppers to authenticated;
+grant select on table public.locations to authenticated;
+grant select, insert, update, delete on table public.trips to authenticated;
+grant select, insert, update, delete on table public.trip_legs to authenticated;
+grant select, insert, update, delete on table public.trip_hoppers to authenticated;
+grant select, insert, update on table public.user_preferences to authenticated;
+
+-- =========================================================
+-- Profiles
+-- =========================================================
+
+create policy "Users can view their own profile"
+on public.profiles
+for select
+to authenticated
+using (
+  id = (select auth.uid())
+);
+
+create policy "Users can create their own profile"
+on public.profiles
+for insert
+to authenticated
+with check (
+  id = (select auth.uid())
+);
+
+create policy "Users can update their own profile"
+on public.profiles
+for update
+to authenticated
+using (
+  id = (select auth.uid())
+)
+with check (
+  id = (select auth.uid())
+);
+
+-- =========================================================
+-- Travel maps
+-- =========================================================
+
+create policy "Map participants can view accessible maps"
+on public.travel_maps
+for select
+to authenticated
+using (
+  (select private.can_view_map(id))
+);
+
+create policy "Users can create maps they own"
+on public.travel_maps
+for insert
+to authenticated
+with check (
+  owner_id = (select auth.uid())
+);
+
+create policy "Map owners can update their maps"
+on public.travel_maps
+for update
+to authenticated
+using (
+  (select private.is_map_owner(id))
+)
+with check (
+  owner_id = (select auth.uid())
+);
+
+create policy "Map owners can delete their maps"
+on public.travel_maps
+for delete
+to authenticated
+using (
+  (select private.is_map_owner(id))
+);
+
+-- =========================================================
+-- Map members
+-- =========================================================
+
+create policy "Map participants can view memberships"
+on public.map_members
+for select
+to authenticated
+using (
+  (select private.can_view_map(map_id))
+);
+
+create policy "Map owners can add members"
+on public.map_members
+for insert
+to authenticated
+with check (
+  (select private.is_map_owner(map_id))
+);
+
+create policy "Map owners can update members"
+on public.map_members
+for update
+to authenticated
+using (
+  (select private.is_map_owner(map_id))
+)
+with check (
+  (select private.is_map_owner(map_id))
+);
+
+create policy "Owners can remove members and users can leave maps"
+on public.map_members
+for delete
+to authenticated
+using (
+  (select private.is_map_owner(map_id))
+  or user_id = (select auth.uid())
+);
+
+-- =========================================================
+-- Hoppers
+-- =========================================================
+
+create policy "Map participants can view Hoppers"
+on public.hoppers
+for select
+to authenticated
+using (
+  (select private.can_view_map(map_id))
+);
+
+create policy "Map editors can create Hoppers"
+on public.hoppers
+for insert
+to authenticated
+with check (
+  (select private.can_edit_map(map_id))
+);
+
+create policy "Map editors can update Hoppers"
+on public.hoppers
+for update
+to authenticated
+using (
+  (select private.can_edit_map(map_id))
+)
+with check (
+  (select private.can_edit_map(map_id))
+);
+
+create policy "Map editors can delete Hoppers"
+on public.hoppers
+for delete
+to authenticated
+using (
+  (select private.can_edit_map(map_id))
+);
+
+-- =========================================================
+-- Locations
+--
+-- Locations are shared reference data. Authenticated clients
+-- can read them, but cannot edit the global location catalog.
+-- Future custom-location creation should use a controlled
+-- database function or a map-owned locations design.
+-- =========================================================
+
+create policy "Authenticated users can view locations"
+on public.locations
+for select
+to authenticated
+using (true);
+
+-- =========================================================
+-- Trips
+-- =========================================================
+
+create policy "Map participants can view trips"
+on public.trips
+for select
+to authenticated
+using (
+  (select private.can_view_map(map_id))
+);
+
+create policy "Map editors can create trips"
+on public.trips
+for insert
+to authenticated
+with check (
+  (select private.can_edit_map(map_id))
+);
+
+create policy "Map editors can update trips"
+on public.trips
+for update
+to authenticated
+using (
+  (select private.can_edit_map(map_id))
+)
+with check (
+  (select private.can_edit_map(map_id))
+);
+
+create policy "Map editors can delete trips"
+on public.trips
+for delete
+to authenticated
+using (
+  (select private.can_edit_map(map_id))
+);
+
+-- =========================================================
+-- Trip legs
+-- Access resolves through trip_id -> trips.map_id.
+-- =========================================================
+
+create policy "Map participants can view trip legs"
+on public.trip_legs
+for select
+to authenticated
+using (
+  (select private.can_view_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+create policy "Map editors can create trip legs"
+on public.trip_legs
+for insert
+to authenticated
+with check (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+create policy "Map editors can update trip legs"
+on public.trip_legs
+for update
+to authenticated
+using (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+)
+with check (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+create policy "Map editors can delete trip legs"
+on public.trip_legs
+for delete
+to authenticated
+using (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+-- =========================================================
+-- Trip Hoppers
+-- Access resolves through trip_id -> trips.map_id.
+-- =========================================================
+
+create policy "Map participants can view trip Hopper assignments"
+on public.trip_hoppers
+for select
+to authenticated
+using (
+  (select private.can_view_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+create policy "Map editors can create trip Hopper assignments"
+on public.trip_hoppers
+for insert
+to authenticated
+with check (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+create policy "Map editors can update trip Hopper assignments"
+on public.trip_hoppers
+for update
+to authenticated
+using (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+)
+with check (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+create policy "Map editors can delete trip Hopper assignments"
+on public.trip_hoppers
+for delete
+to authenticated
+using (
+  (select private.can_edit_map(
+    private.trip_map_id(trip_id)
+  ))
+);
+
+-- =========================================================
+-- User preferences
+-- =========================================================
+
+create policy "Users can view their own preferences"
+on public.user_preferences
+for select
+to authenticated
+using (
+  user_id = (select auth.uid())
+);
+
+create policy "Users can create their own preferences"
+on public.user_preferences
+for insert
+to authenticated
+with check (
+  user_id = (select auth.uid())
+);
+
+create policy "Users can update their own preferences"
+on public.user_preferences
+for update
+to authenticated
+using (
+  user_id = (select auth.uid())
+)
+with check (
+  user_id = (select auth.uid())
+);
+
+-- =========================================================
+-- Cross-map integrity
+--
+-- Prevent a trip from being associated with a Hopper that
+-- belongs to a different travel map.
+-- =========================================================
+
+create or replace function public.validate_trip_hopper_map()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  trip_map uuid;
+  hopper_map uuid;
+begin
+  select t.map_id
+  into trip_map
+  from public.trips t
+  where t.id = new.trip_id;
+
+  select h.map_id
+  into hopper_map
+  from public.hoppers h
+  where h.id = new.hopper_id;
+
+  if trip_map is null then
+    raise exception 'The selected trip does not exist.';
+  end if;
+
+  if hopper_map is null then
+    raise exception 'The selected Hopper does not exist.';
+  end if;
+
+  if trip_map <> hopper_map then
+    raise exception
+      'A trip and Hopper must belong to the same travel map.';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trip_hoppers_validate_map
+before insert or update
+on public.trip_hoppers
+for each row
+execute function public.validate_trip_hopper_map();
+
+-- =========================================================
+-- Default-map integrity
+--
+-- A user's default map must be a map they own or belong to.
+-- =========================================================
+
+create or replace function public.validate_user_default_map()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.default_map_id is null then
+    return new;
+  end if;
+
+  if not exists (
+    select 1
+    from public.travel_maps tm
+    where tm.id = new.default_map_id
+      and tm.owner_id = new.user_id
+  )
+  and not exists (
+    select 1
+    from public.map_members mm
+    where mm.map_id = new.default_map_id
+      and mm.user_id = new.user_id
+  ) then
+    raise exception
+      'The default map must be accessible to the user.';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger user_preferences_validate_default_map
+before insert or update of default_map_id, user_id
+on public.user_preferences
+for each row
+execute function public.validate_user_default_map();
+
+-- =========================================================
+-- Automatically create a public profile for new Auth users
+-- =========================================================
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.profiles (
+    id,
+    display_name
+  )
+  values (
+    new.id,
+    coalesce(
+      nullif(new.raw_user_meta_data ->> 'display_name', ''),
+      nullif(new.raw_user_meta_data ->> 'full_name', ''),
+      split_part(coalesce(new.email, ''), '@', 1)
+    )
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user();
+
+-- Add profiles for Auth users who already existed before this migration.
+insert into public.profiles (
+  id,
+  display_name
+)
+select
+  au.id,
+  coalesce(
+    nullif(au.raw_user_meta_data ->> 'display_name', ''),
+    nullif(au.raw_user_meta_data ->> 'full_name', ''),
+    split_part(coalesce(au.email, ''), '@', 1)
+  )
+from auth.users au
+on conflict (id) do nothing;
+
+commit;
