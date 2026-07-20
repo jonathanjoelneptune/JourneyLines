@@ -233,7 +233,7 @@ async function acquireRepoSaveLock(onStatus = () => {}) {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {}, cloudMode = false, cloudTripCreateEnabled = false, mapId = null, onCloudCreateTrip = null }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -1006,6 +1006,28 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       const message = `${actionLabel}: ${normalizedTrip.label || normalizedTrip.toLocationName || normalizedTrip.id} (${normalizedTrip.id})`;
       const changeKind = editingId ? classifyTripEdit(existingTrip, normalizedTrip) : 'add';
       const shouldAutoPlay = !editingId || changeKind === 'route' || changeKind === 'date';
+
+      if (cloudMode) {
+        if (editingId) throw new Error('Editing existing cloud trips is not enabled in Work Package 3.');
+        if (!cloudTripCreateEnabled) throw new Error('Cloud Add Hop saving is disabled for this deployment.');
+        if (!mapId) throw new Error('Your private map is still loading. Close Add Hop and try again.');
+        if (typeof onCloudCreateTrip !== 'function') throw new Error('The cloud trip repository is unavailable.');
+
+        const saved = await onCloudCreateTrip({
+          trip: normalizedTrip,
+          locations: nextLocations
+        });
+        initialDraftSignatureRef.current = draftSignature(draft);
+        closeModal(true);
+        onTripSaved({
+          tripId: saved?.tripId || saved?.id || normalizedTrip.id,
+          action: 'add',
+          label: normalizedTrip.label,
+          changeKind: 'add',
+          shouldAutoPlay: false
+        });
+        return;
+      }
 
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
       validateTripLocationReferences(normalizedTrip, nextLocations);
