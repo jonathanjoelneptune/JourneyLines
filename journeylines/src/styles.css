@@ -15300,3 +15300,56 @@ svg text {
     width: min(330px, calc(100vw - 20px)) !important;
   }
 }
+
+/* =========================================================
+   v8.1 Account authentication and RLS test surfaces
+   ========================================================= */
+.account-control { position: relative; margin-left: auto; flex: 0 0 auto; }
+.account-button { display: inline-flex; align-items: center; gap: 8px; max-width: 220px; }
+.account-avatar { width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 999px; background: rgba(56,189,248,.18); border: 1px solid rgba(125,211,252,.42); font-size: 12px; font-weight: 800; }
+.account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu { position: absolute; z-index: 500; top: calc(100% + 10px); right: 0; width: 250px; padding: 10px; border-radius: 16px; box-shadow: 0 22px 60px rgba(0,0,0,.38); }
+.account-menu__identity { display: grid; gap: 2px; padding: 8px 10px 12px; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 6px; }
+.account-menu__identity small { opacity: .68; overflow-wrap: anywhere; }
+.account-menu > button { width: 100%; text-align: left; padding: 10px; border: 0; border-radius: 10px; background: transparent; color: inherit; cursor: pointer; }
+.account-menu > button:hover { background: rgba(255,255,255,.08); }
+.account-menu__warning { display: block; padding: 8px 10px; color: #fbbf24; }
+
+.auth-backdrop, .security-test-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(1,7,14,.68); backdrop-filter: blur(8px); }
+.auth-modal { position: relative; width: min(470px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 28px; border-radius: 24px; box-shadow: 0 30px 90px rgba(0,0,0,.5); }
+.auth-modal h2, .security-test-panel h2 { margin: 4px 0 8px; }
+.auth-modal__intro { margin: 0 0 20px; opacity: .76; line-height: 1.5; }
+.auth-modal__close { position: absolute; top: 12px; right: 14px; width: 34px; height: 34px; border: 0; border-radius: 999px; background: rgba(255,255,255,.08); color: inherit; font-size: 24px; cursor: pointer; }
+.auth-modal form, .security-test-panel label { display: grid; gap: 14px; }
+.auth-modal label, .security-test-panel label { font-size: 13px; font-weight: 700; }
+.auth-modal input, .security-test-panel input { width: 100%; margin-top: 6px; padding: 12px 13px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(0,0,0,.2); color: inherit; font: inherit; box-sizing: border-box; }
+.auth-submit { width: 100%; min-height: 46px; margin-top: 4px; }
+.auth-message { padding: 11px 12px; border-radius: 11px; line-height: 1.4; }
+.auth-message--error { background: rgba(239,68,68,.13); border: 1px solid rgba(248,113,113,.28); color: #fecaca; }
+.auth-message--success { background: rgba(34,197,94,.12); border: 1px solid rgba(74,222,128,.25); color: #bbf7d0; }
+.auth-modal__links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 16px; }
+.auth-modal__links button { border: 0; background: transparent; color: #7dd3fc; cursor: pointer; padding: 6px 0; }
+
+.security-test-panel { position: relative; width: min(820px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 28px; border-radius: 24px; box-shadow: 0 30px 90px rgba(0,0,0,.5); }
+.security-test-grid { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 8px 14px; margin: 18px 0; padding: 14px; border-radius: 14px; background: rgba(0,0,0,.18); }
+.security-test-grid span { opacity: .7; }
+.security-test-grid code { overflow-wrap: anywhere; }
+.security-test-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 14px 0; }
+.security-test-actions button, .security-test-records button { border: 1px solid rgba(255,255,255,.13); border-radius: 10px; padding: 9px 12px; background: rgba(255,255,255,.06); color: inherit; cursor: pointer; }
+.security-test-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.security-test-records { display: grid; gap: 8px; margin: 14px 0; }
+.security-test-records > div { display: grid; grid-template-columns: minmax(180px,1.5fr) minmax(150px,1fr) auto auto; gap: 8px; align-items: center; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.045); }
+.security-test-records code { overflow-wrap: anywhere; font-size: 11px; }
+.security-test-result { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 13px; border-radius: 12px; background: rgba(0,0,0,.28); }
+.security-test-note { margin-bottom: 0; opacity: .68; line-height: 1.5; }
+
+@media (max-width: 900px) {
+  .account-name { display: none; }
+  .account-button { padding-inline: 10px; }
+}
+@media (max-width: 650px) {
+  .auth-modal, .security-test-panel { padding: 22px 18px; }
+  .security-test-grid { grid-template-columns: 1fr; }
+  .security-test-records > div { grid-template-columns: 1fr 1fr; }
+  .security-test-records code, .security-test-records span { grid-column: 1 / -1; }
+}

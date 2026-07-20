@@ -20,6 +20,11 @@ import { playbackEngine } from './utils/playbackEngine.js';
 import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, restartRoutingEngine, subscribeRoutingStatus } from './utils/routingClient.js';
 import { normalizeTripsForV61 } from './utils/tripModel.js';
 import { DEFAULT_GLOBE_SPIN_SPEED, clampGlobeSpinSpeed, locationIdsVisitedByTrip, shouldEnterIdleMode } from './utils/globeInteraction.js';
+import { useAuth } from './auth/useAuth.js';
+import AuthModal from './components/auth/AuthModal.jsx';
+import AccountControl from './components/account/AccountControl.jsx';
+import SecurityTestPanel from './components/account/SecurityTestPanel.jsx';
+import { bootstrapAccount } from './services/accountBootstrap.js';
 
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
 
@@ -272,8 +277,15 @@ function syncParameterLocalsFromRepoOnce() {
 
 
 export default function App() {
+  const auth = useAuth();
   syncParameterLocalsFromRepoOnce();
   clearStaleTripCaches();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('signin');
+  const [accountData, setAccountData] = useState(null);
+  const [accountBootstrapState, setAccountBootstrapState] = useState('idle');
+  const [securityTestOpen, setSecurityTestOpen] = useState(false);
+  const rlsTestEnabled = import.meta.env.DEV || String(import.meta.env.VITE_ENABLE_RLS_TEST_PANEL || '').toLowerCase() === 'true';
   const [screensaverConfig] = useState(() => readScreensaverConfiguration());
   const screensaverEnabled = screensaverConfig.enabled;
   const [screensaverPhase, setScreensaverPhase] = useState(() => screensaverConfig.enabled ? 'boot' : 'off');
@@ -351,6 +363,37 @@ export default function App() {
   const destinationSelectionRef = useRef(null);
   const destinationSelectionCloseTimerRef = useRef(null);
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
+
+  useEffect(() => {
+    if (auth.authEvent === 'PASSWORD_RECOVERY') {
+      setAuthModalMode('update-password');
+      setAuthModalOpen(true);
+    }
+  }, [auth.authEvent]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!auth.user) {
+      setAccountData(null);
+      setAccountBootstrapState('idle');
+      setSecurityTestOpen(false);
+      return undefined;
+    }
+    setAccountBootstrapState('loading');
+    bootstrapAccount()
+      .then(data => {
+        if (cancelled) return;
+        setAccountData(data);
+        setAccountBootstrapState('ready');
+      })
+      .catch(error => {
+        if (cancelled) return;
+        console.error('Unable to bootstrap GlobeHoppers account.', error);
+        setAccountData(null);
+        setAccountBootstrapState('error');
+      });
+    return () => { cancelled = true; };
+  }, [auth.user?.id]);
 
   // Committed trip/location/hopper data comes from deployed repo JSON.
   // Do not let older browser localStorage override the repository timeline/order.
@@ -1319,6 +1362,7 @@ export default function App() {
       </div>
       <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
       <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} disabled={isRelocating} onClick={isPlaying ? pause : play}>{isRelocating ? '…' : isPlaying ? '⏸' : '▶'}</button>
+      <AccountControl profile={accountData?.profile} bootstrapState={accountBootstrapState} onSignIn={() => { setAuthModalMode('signin'); setAuthModalOpen(true); }} onOpenSecurityTest={() => { if (rlsTestEnabled) setSecurityTestOpen(true); }} securityTestEnabled={rlsTestEnabled} />
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
     <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
@@ -1361,6 +1405,8 @@ export default function App() {
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
     {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
+    <AuthModal open={authModalOpen} initialMode={authModalMode} onClose={() => setAuthModalOpen(false)} />
+    {rlsTestEnabled && <SecurityTestPanel open={securityTestOpen} account={accountData} onClose={() => setSecurityTestOpen(false)} />}
   </main>;
 }
 
