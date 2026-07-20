@@ -19,7 +19,7 @@ defaults:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
 
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL_DEV }}
@@ -44,12 +44,10 @@ jobs:
             echo "::error::VITE_SUPABASE_URL_DEV is missing."
             exit 1
           fi
-
           if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
             echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY_DEV is missing."
             exit 1
           fi
-
           echo "Supabase Development environment variables are present."
 
       - name: Set up Node
@@ -58,8 +56,15 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: journeylines/package-lock.json
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
+        timeout-minutes: 10
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+          NPM_CONFIG_FETCH_RETRIES: 4
+          NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 10000
+          NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
         run: npm ci --no-audit --no-fund
 
       - name: Run v8.1 authentication verification
