@@ -7,6 +7,22 @@ import { routeLegInWorker, routeLegWithDiagnostics } from '../utils/routingClien
 import { compareDateParts, createStableId, isResolvedLocation, normalizeTripForV61, validDateParts } from '../utils/tripModel.js';
 import { createRouteReviewSnapshot, formatReviewDuration, isSurfaceTravelMode, routeReviewSignature, routeSourceLabel } from '../utils/multimodalRouting.js';
 
+
+const CLOUD_SAVE_TIMEOUT_MS = 30000;
+const TRIP_CONFLICT_MESSAGE = 'This trip changed in another session. Reload before saving.';
+
+function withCloudSaveTimeout(promise, timeoutMessage) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      const error = new Error(timeoutMessage);
+      error.code = 'CLOUD_SAVE_TIMEOUT';
+      reject(error);
+    }, CLOUD_SAVE_TIMEOUT_MS);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
+}
+
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
   { id: 'drive', label: 'Car', icon: '🚗' },
@@ -1013,12 +1029,12 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         if (editingId) {
           if (!cloudTripEditEnabled) throw new Error('Cloud Edit Hop saving is disabled for this deployment.');
           if (typeof onCloudUpdateTrip !== 'function') throw new Error('The cloud trip update repository is unavailable.');
-          saved = await onCloudUpdateTrip({
+          saved = await withCloudSaveTimeout(onCloudUpdateTrip({
             tripId: editingId,
             expectedUpdatedAt: existingTrip?.databaseUpdatedAt || null,
             trip: normalizedTrip,
             locations: nextLocations
-          });
+          }), 'The trip update took too long. Check your connection and try again.');
         } else {
           if (!cloudTripCreateEnabled) throw new Error('Cloud Add Hop saving is disabled for this deployment.');
           if (typeof onCloudCreateTrip !== 'function') throw new Error('The cloud trip repository is unavailable.');
@@ -1070,7 +1086,17 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         label: normalizedTrip.label || normalizedTrip.toLocationName || normalizedTrip.id
       });
     } catch (err) {
-      setFormError(err.message || String(err));
+      const rawMessage = err?.message || String(err);
+      const isConflict = err?.code === 'TRIP_CONFLICT'
+        || err?.code === '40001'
+        || /changed in another session/i.test(rawMessage);
+      const message = isConflict ? TRIP_CONFLICT_MESSAGE : rawMessage;
+
+      // Release the button immediately before surfacing the error. The finally
+      // block repeats this defensively so every failure path leaves the editor usable.
+      setBusy(false);
+      setFormError(message);
+      if (isConflict) window.alert(message);
     } finally {
       setBusy(false);
     }

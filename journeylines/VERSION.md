@@ -1,3 +1,3 @@
 # GlobeHoppers Version
 
-**v8.2.4** — Work Package 4 timeline access hotfix.
+**v8.2.5** — Work Package 4 concurrency feedback hotfix.

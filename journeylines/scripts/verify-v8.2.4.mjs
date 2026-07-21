@@ -5,7 +5,7 @@ const admin = fs.readFileSync(new URL('../src/components/AdminPanel.jsx', import
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 const checks = [
-  [pkg.version === '8.2.4', 'package version is 8.2.4'],
+  [/^8\.2\.(?:[4-9]|\d{2,})$/.test(pkg.version), 'package version is v8.2.4 or newer'],
   [app.includes('function requireCloudTimelineAccess()'), 'private timeline access gate exists'],
   [app.includes('if (!requireCloudTimelineAccess()) return;'), 'timeline menu uses the private timeline gate'],
   [!app.includes("requireCloudWriteAccess('GlobeHopper Timeline editing')"), 'obsolete blanket timeline block removed'],
