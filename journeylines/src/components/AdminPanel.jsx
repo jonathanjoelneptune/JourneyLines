@@ -7,6 +7,23 @@ import { routeLegInWorker, routeLegWithDiagnostics } from '../utils/routingClien
 import { compareDateParts, createStableId, isResolvedLocation, normalizeTripForV61, validDateParts } from '../utils/tripModel.js';
 import { createRouteReviewSnapshot, formatReviewDuration, isSurfaceTravelMode, routeReviewSignature, routeSourceLabel } from '../utils/multimodalRouting.js';
 
+
+const CLOUD_SAVE_TIMEOUT_MS = 30000;
+const TRIP_CONFLICT_MESSAGE = 'This trip changed in another session. Reload before saving.';
+const TRIP_DELETE_CONFLICT_MESSAGE = 'This trip changed in another session. Reload before deleting.';
+
+function withCloudSaveTimeout(promise, timeoutMessage) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      const error = new Error(timeoutMessage);
+      error.code = 'CLOUD_SAVE_TIMEOUT';
+      reject(error);
+    }, CLOUD_SAVE_TIMEOUT_MS);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
+}
+
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
   { id: 'drive', label: 'Car', icon: '🚗' },
@@ -233,13 +250,15 @@ async function acquireRepoSaveLock(onStatus = () => {}) {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {}, cloudMode = false, cloudTripCreateEnabled = false, cloudTripEditEnabled = false, cloudTripDeleteEnabled = false, cloudTimelineOrderEnabled = false, mapId = null, timelineOrderRevision = 0, onCloudCreateTrip = null, onCloudUpdateTrip = null, onCloudDeleteTrip = null, onCloudReorderTrips = null, onCloudReloadTravel = null }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
   const [closing, setClosing] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const reorderMode = false;
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderTripIds, setReorderTripIds] = useState([]);
+  const [reorderSaving, setReorderSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [formError, setFormError] = useState('');
@@ -272,7 +291,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   useEffect(() => { tripsRef.current = trips; }, [trips]);
   useEffect(() => { locationsRef.current = locations; }, [locations]);
-  const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
+  const sortedTrips = useMemo(() => {
+    if (reorderMode && reorderTripIds.length) {
+      const byId = new Map((trips || []).map(trip => [trip.id, trip]));
+      return reorderTripIds.map(id => byId.get(id)).filter(Boolean);
+    }
+    return sortTripsForEditor(trips);
+  }, [trips, reorderMode, reorderTripIds]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
   const draftReviewLegs = useMemo(
     () => modal ? buildDraftReviewLegs(draft, locById, locs, homeBases) : [],
@@ -1007,6 +1032,35 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       const changeKind = editingId ? classifyTripEdit(existingTrip, normalizedTrip) : 'add';
       const shouldAutoPlay = !editingId || changeKind === 'route' || changeKind === 'date';
 
+      if (cloudMode) {
+        if (!mapId) throw new Error('Your private map is still loading. Close the editor and try again.');
+        let saved;
+        if (editingId) {
+          if (!cloudTripEditEnabled) throw new Error('Cloud Edit Hop saving is disabled for this deployment.');
+          if (typeof onCloudUpdateTrip !== 'function') throw new Error('The cloud trip update repository is unavailable.');
+          saved = await withCloudSaveTimeout(onCloudUpdateTrip({
+            tripId: editingId,
+            expectedUpdatedAt: existingTrip?.databaseUpdatedAt || null,
+            trip: normalizedTrip,
+            locations: nextLocations
+          }), 'The trip update took too long. Check your connection and try again.');
+        } else {
+          if (!cloudTripCreateEnabled) throw new Error('Cloud Add Hop saving is disabled for this deployment.');
+          if (typeof onCloudCreateTrip !== 'function') throw new Error('The cloud trip repository is unavailable.');
+          saved = await onCloudCreateTrip({ trip: normalizedTrip, locations: nextLocations });
+        }
+        initialDraftSignatureRef.current = draftSignature(draft);
+        closeModal(true);
+        onTripSaved({
+          tripId: saved?.tripId || saved?.id || normalizedTrip.id,
+          action: editingId ? 'edit' : 'add',
+          label: normalizedTrip.label,
+          changeKind: editingId ? changeKind : 'add',
+          shouldAutoPlay: false
+        });
+        return;
+      }
+
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
       validateTripLocationReferences(normalizedTrip, nextLocations);
       tripsRef.current = nextTrips;
@@ -1041,7 +1095,29 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         label: normalizedTrip.label || normalizedTrip.toLocationName || normalizedTrip.id
       });
     } catch (err) {
-      setFormError(err.message || String(err));
+      const rawMessage = err?.message || String(err);
+      const isConflict = err?.code === 'TRIP_CONFLICT'
+        || err?.code === '40001'
+        || /changed in another session/i.test(rawMessage);
+      const message = isConflict ? TRIP_CONFLICT_MESSAGE : rawMessage;
+
+      // Release the button immediately before surfacing the error. The finally
+      // block repeats this defensively so every failure path leaves the editor usable.
+      setBusy(false);
+      setFormError(message);
+      if (isConflict) {
+        setConfirmRequest({
+          title: 'Trip changed',
+          message,
+          confirmLabel: 'Reload trip',
+          confirmClass: 'primary',
+          cancelLabel: 'Keep editing',
+          onConfirm: async () => {
+            closeModal(true);
+            await onCloudReloadTravel?.();
+          }
+        });
+      }
     } finally {
       setBusy(false);
     }
@@ -1049,16 +1125,32 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   async function deleteTripFromModal() {
     if (!editingId) return;
-    const label = draft.label || draft.toLocationText || editingId;
+    const currentTrips = tripsRef.current || trips;
+    const existingTrip = currentTrips.find(item => item.id === editingId);
+    const label = draft.label || draft.toLocationText || existingTrip?.label || editingId;
     setConfirmRequest({
-      title: 'Delete hop?',
-      message: `Delete ${label}? This cannot be undone.`,
-      confirmLabel: 'Delete hop',
+      title: 'Delete Hop?',
+      message: `Delete “${label}”? Its route, legs, and Hopper assignments will be permanently removed.`,
+      confirmLabel: 'Delete Hop',
+      confirmClass: 'danger',
       onConfirm: async () => {
         if (busy) return;
         setBusy(true);
+        setFormError('');
         try {
-          const currentTrips = tripsRef.current || trips;
+          if (cloudMode) {
+            if (!cloudTripDeleteEnabled) throw new Error('Cloud Delete Hop is disabled for this deployment.');
+            if (typeof onCloudDeleteTrip !== 'function') throw new Error('The cloud trip deletion repository is unavailable.');
+            await withCloudSaveTimeout(onCloudDeleteTrip({
+              tripId: editingId,
+              expectedUpdatedAt: existingTrip?.databaseUpdatedAt || null
+            }), 'The trip deletion took too long. Check your connection and try again.');
+            initialDraftSignatureRef.current = draftSignature(draft);
+            closeModal(true);
+            onTripSaved({ tripId: editingId, action: 'delete', label, changeKind: 'delete', shouldAutoPlay: false });
+            return;
+          }
+
           const currentLocations = locationsRef.current || locations;
           const currentScroll = studioListRef.current?.scrollTop ?? null;
           const nextTrips = insertChronologically(currentTrips.filter(t => t.id !== editingId));
@@ -1069,13 +1161,40 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           closeModal(true);
           saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label} (${editingId})`, { action: 'delete', tripId: editingId, label });
         } catch (err) {
-          setFormError(err.message || String(err));
+          const rawMessage = err?.message || String(err);
+          const isConflict = err?.code === 'TRIP_CONFLICT' || /changed in another session/i.test(rawMessage);
+          const message = isConflict ? TRIP_DELETE_CONFLICT_MESSAGE : rawMessage;
+          setBusy(false);
+          setFormError(message);
+          if (isConflict) {
+            setConfirmRequest({
+              title: 'Trip changed',
+              message,
+              confirmLabel: 'Reload trip',
+              confirmClass: 'primary',
+              cancelLabel: 'Keep editing',
+              onConfirm: async () => {
+                closeModal(true);
+                await onCloudReloadTravel?.();
+              }
+            });
+          } else {
+            setConfirmRequest({
+              title: 'Delete failed',
+              message,
+              confirmLabel: 'Try again',
+              confirmClass: 'primary',
+              cancelLabel: 'Close',
+              onConfirm: deleteTripFromModal
+            });
+          }
         } finally {
           setBusy(false);
         }
       }
     });
   }
+
 
   function del(id) {
     const trip = trips.find(t => t.id === id);
@@ -1551,7 +1670,79 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     throw lastError || new Error(`Could not commit ${path}.`);
   }
 
-  function moveTrip() {}
+  function beginReorder() {
+    if (!cloudMode || !cloudTimelineOrderEnabled) return;
+    setFormError('');
+    setReorderTripIds(sortTripsForEditor(tripsRef.current || trips).map(trip => trip.id));
+    setReorderMode(true);
+  }
+
+  function cancelReorder() {
+    setDragId(null);
+    setDropId(null);
+    setReorderTripIds([]);
+    setReorderMode(false);
+  }
+
+  function moveTrip(sourceId, targetId) {
+    if (!reorderMode || !sourceId || !targetId || sourceId === targetId) return;
+    setReorderTripIds(current => {
+      const next = [...current];
+      const from = next.indexOf(sourceId);
+      const to = next.indexOf(targetId);
+      if (from < 0 || to < 0) return current;
+      next.splice(from, 1);
+      next.splice(to, 0, sourceId);
+      return next;
+    });
+  }
+
+  async function saveTimelineOrder() {
+    if (!cloudMode || !cloudTimelineOrderEnabled || typeof onCloudReorderTrips !== 'function') return;
+    if (reorderSaving) return;
+    setReorderSaving(true);
+    setFormError('');
+    try {
+      await onCloudReorderTrips({
+        tripIds: reorderTripIds,
+        expectedRevision: Number(timelineOrderRevision) || 0
+      });
+      setReorderMode(false);
+      setReorderTripIds([]);
+      await onCloudReloadTravel?.();
+    } catch (error) {
+      const rawMessage = error?.message || String(error);
+      const isConflict = error?.code === 'TIMELINE_CONFLICT' || /timeline changed in another session/i.test(rawMessage);
+      const message = isConflict
+        ? 'This timeline changed in another session. Reload before saving the order.'
+        : rawMessage;
+      setFormError(message);
+      if (isConflict) {
+        setConfirmRequest({
+          title: 'Timeline changed',
+          message,
+          confirmLabel: 'Reload timeline',
+          confirmClass: 'primary',
+          cancelLabel: 'Keep arranging',
+          onConfirm: async () => {
+            cancelReorder();
+            await onCloudReloadTravel?.();
+          }
+        });
+      } else {
+        setConfirmRequest({
+          title: 'Order not saved',
+          message,
+          confirmLabel: 'Try again',
+          confirmClass: 'primary',
+          cancelLabel: 'Keep arranging',
+          onConfirm: saveTimelineOrder
+        });
+      }
+    } finally {
+      setReorderSaving(false);
+    }
+  }
   function requestCloseStudio() {
     if (modal) {
       closeModal();
@@ -1572,19 +1763,25 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       </div>
 
       <div className="studio-actions-main">
-        <button className="primary" onClick={openAdd}>Add {addTripNoun}</button>
+        {!reorderMode && <button className="primary" onClick={openAdd}>Add {addTripNoun}</button>}
+        {cloudMode && cloudTimelineOrderEnabled && !reorderMode && trips.length > 1 && <button className="secondary reorder-button" onClick={beginReorder}>Reorder Timeline</button>}
+        {reorderMode && <>
+          <button className="secondary" disabled={reorderSaving} onClick={cancelReorder}>Cancel</button>
+          <button className="primary" disabled={reorderSaving} onClick={saveTimelineOrder}>{reorderSaving ? 'Saving order…' : 'Save Timeline Order'}</button>
+        </>}
       </div>
+      {formError && !modal && <div className="studio-inline-error" role="alert">{formError}</div>}
 
       <div ref={studioListRef} className={`studio-trip-list studio-trip-list--${viewType}`} onWheel={(e) => e.stopPropagation()} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
-        {viewType === 'card' ? groupTripsByYear(sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
+        {viewType === 'card' && !reorderMode ? groupTripsByYear(sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid studio-card-grid">
-            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={cloudMode ? null : del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
           </div>
-        </section>) : sortedTrips.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+        </section>) : sortedTrips.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={cloudMode ? null : del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
       </div>
 
-      <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
+      {!cloudMode && <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
         <summary>Repository Settings</summary>
         <div className="repo-grid">
           <button onClick={download}>Download trips.json</button>
@@ -1593,7 +1790,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           <button onClick={() => commitData().then(() => alert('Travel history committed.')).catch(err => alert(err.message))}>Commit current data</button>
           <button onClick={() => { localStorage.removeItem('journeylines.githubToken'); setToken(''); }}>Clear token</button>
         </div>
-      </details>
+      </details>}
     </aside>
 
     {confirmRequest && <ThemedConfirmPopup
@@ -1614,7 +1811,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       locById={locById}
       onClose={closeModal}
       onSave={modal === 'batch' ? stageCurrentBatchHop : saveTripFromModal}
-      onOpenBatch={openBatchAdd}
+      onOpenBatch={cloudMode ? null : openBatchAdd}
       onSaveBatch={requestSaveBatch}
       onAddAnotherBatchHop={requestNewBatchDraft}
       onEditBatchHop={requestBatchEdit}
@@ -1631,7 +1828,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onSetReturnMode={setReturnMode}
       onSetPreviewLegMode={setPreviewLegMode}
       addTripNoun={addTripNoun} normalizedHoppers={normalizedHoppers} formError={formError} setFormError={setFormError}
-      onDelete={modal === 'edit' ? deleteTripFromModal : null}
+      onDelete={modal === 'edit' && (!cloudMode || cloudTripDeleteEnabled) ? deleteTripFromModal : null}
       homeBases={homeBases}
       cityDb={cityDb}
       cityDbLoaded={cityDbLoaded}
@@ -1871,7 +2068,7 @@ function ThemedConfirmPopup({ request, busy, onCancel, onConfirm, onDiscard }) {
       <h3 id="studio-confirm-title">{request.title || 'Confirm action'}</h3>
       <p>{request.message}</p>
       <div className="studio-confirm-actions">
-        <button type="button" className="secondary" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onCancel}>Cancel</button>
+        <button type="button" className="secondary" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onCancel}>{request.cancelLabel || 'Cancel'}</button>
         {request.discardLabel && request.onDiscard && <button type="button" className="secondary studio-confirm-discard" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onDiscard}>{request.discardLabel}</button>}
         <button type="button" className={confirmClass} disabled={busy} onPointerDown={stopConfirmEvent} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
       </div>
@@ -1953,7 +2150,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
     <span className="studio-trip-buttons">
-      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button><button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button></>}
+      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button>{onDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button>}</>}
     </span>
     <StudioTimelineRowBorder colors={borderColors} fallback={accent} />
   </div>;
@@ -3198,6 +3395,9 @@ function bucketKey(t) {
 function buildSortKey(t, n) { return `${bucketKey(t)}-${String(n).padStart(3,'0')}`; }
 function sortTripsForEditor(rows) {
   return [...(rows || [])].sort((a,b) => {
+    const aOrder = Number.isFinite(Number(a.sortOrder)) ? Number(a.sortOrder) : null;
+    const bOrder = Number.isFinite(Number(b.sortOrder)) ? Number(b.sortOrder) : null;
+    if (aOrder != null && bOrder != null && aOrder !== bOrder) return aOrder - bOrder;
     const aKey = `${bucketKey(a)}-${String(a.label || a.toLocationName || a.toLocationId || '')}-${String(a.id || '')}`;
     const bKey = `${bucketKey(b)}-${String(b.label || b.toLocationName || b.toLocationId || '')}-${String(b.id || '')}`;
     return aKey.localeCompare(bKey);
