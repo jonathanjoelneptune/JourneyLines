@@ -7,14 +7,15 @@ export async function bootstrapAccount() {
 
   const [{ data: profile, error: profileError }, { data: maps, error: mapsError }] = await Promise.all([
     client.from('profiles').select('id, display_name, avatar_url, created_at, updated_at').single(),
-    client.from('travel_maps').select('id, owner_id, name, description, slug, is_public, created_at, updated_at').order('created_at', { ascending: true })
+    client.from('travel_maps').select('id, owner_id, name, description, slug, is_public, timeline_order_revision, created_at, updated_at').order('created_at', { ascending: true })
   ]);
 
   if (profileError) throw profileError;
   if (mapsError) throw mapsError;
 
-  const selectedMap = maps?.find(map => map.id === mapId) || maps?.[0] || null;
-  return { profile, maps: maps || [], selectedMap };
+  const normalizedMaps = (maps || []).map(map => ({ ...map, timelineOrderRevision: Number(map.timeline_order_revision) || 0 }));
+  const selectedMap = normalizedMaps.find(map => map.id === mapId) || normalizedMaps[0] || null;
+  return { profile, maps: normalizedMaps, selectedMap };
 }
 
 export async function listSecurityTestHoppers(mapId) {

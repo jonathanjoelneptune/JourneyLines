@@ -25,6 +25,7 @@ import AuthModal from './components/auth/AuthModal.jsx';
 import AccountControl from './components/account/AccountControl.jsx';
 import SecurityTestPanel from './components/account/SecurityTestPanel.jsx';
 import { bootstrapAccount } from './services/accountBootstrap.js';
+import { createTravelRepository } from './repositories/createTravelRepository.js';
 
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
 
@@ -286,12 +287,18 @@ export default function App() {
   const [accountBootstrapState, setAccountBootstrapState] = useState('idle');
   const [securityTestOpen, setSecurityTestOpen] = useState(false);
   const rlsTestEnabled = import.meta.env.DEV || String(import.meta.env.VITE_ENABLE_RLS_TEST_PANEL || '').toLowerCase() === 'true';
+  const cloudTravelEnabled = String(import.meta.env.VITE_ENABLE_CLOUD_TRAVEL_DATA || '').toLowerCase() === 'true';
+  const cloudTravelWriteEnabled = String(import.meta.env.VITE_ENABLE_CLOUD_TRAVEL_WRITES || '').toLowerCase() === 'true';
+  const cloudHopperWriteEnabled = cloudTravelWriteEnabled || String(import.meta.env.VITE_ENABLE_CLOUD_HOPPER_WRITES || '').toLowerCase() === 'true';
   const [screensaverConfig] = useState(() => readScreensaverConfiguration());
   const screensaverEnabled = screensaverConfig.enabled;
   const [screensaverPhase, setScreensaverPhase] = useState(() => screensaverConfig.enabled ? 'boot' : 'off');
-  const [trips, setTrips] = useState(() => normalizeTripsForV61(baseTrips, homeBases));
-  const [locations, setLocations] = useState(() => baseLocations);
-  const [hopperData, setHopperData] = useState(() => baseHoppers);
+  const [trips, setTrips] = useState(() => cloudTravelEnabled ? [] : normalizeTripsForV61(baseTrips, homeBases));
+  const [locations, setLocations] = useState(() => cloudTravelEnabled ? [] : baseLocations);
+  const [hopperData, setHopperData] = useState(() => cloudTravelEnabled ? { hoppers: [], hopSquads: [], palette: baseHoppers.palette || [] } : baseHoppers);
+  const [travelDataState, setTravelDataState] = useState(cloudTravelEnabled ? 'signedOut' : 'legacy');
+  const [travelDataError, setTravelDataError] = useState('');
+  const [travelDataReloadNonce, setTravelDataReloadNonce] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(999999);
@@ -394,6 +401,91 @@ export default function App() {
       });
     return () => { cancelled = true; };
   }, [auth.user?.id]);
+
+  useEffect(() => {
+    if (!cloudTravelEnabled) return undefined;
+    let cancelled = false;
+
+    // Clear every account-owned visual immediately before loading another account.
+    setIsPlaying(false);
+    setStarted(false);
+    setActiveIndex(999999);
+    setLegProgress(1);
+    setAdmin(false);
+    setTripDrawerOpen(false);
+    setHopperEditorOpen(false);
+    setTrips([]);
+    setLocations([]);
+    setHopperData({ hoppers: [], hopSquads: [], palette: baseHoppers.palette || [] });
+    setTravelDataError('');
+
+    if (!auth.user) {
+      setTravelDataState('signedOut');
+      return undefined;
+    }
+
+    const mapId = accountData?.selectedMap?.id;
+    if (!mapId) {
+      setTravelDataState(accountBootstrapState === 'error' ? 'error' : 'loading');
+      return undefined;
+    }
+
+    setTravelDataState('loading');
+    const repository = createTravelRepository({ cloudEnabled: true, mapId });
+    repository.loadTravelMap()
+      .then(data => {
+        if (cancelled) return;
+        setTrips(normalizeTripsForV61(data.trips || [], homeBases));
+        setLocations(data.locations || []);
+        setHopperData({
+          hoppers: data.hopperData?.hoppers || [],
+          hopSquads: data.hopperData?.hopSquads || [],
+          palette: data.hopperData?.palette?.length ? data.hopperData.palette : (baseHoppers.palette || [])
+        });
+        if (data.map) {
+          setAccountData(current => current ? {
+            ...current,
+            maps: (current.maps || []).map(map => map.id === data.map.id ? { ...map, ...data.map } : map),
+            selectedMap: current.selectedMap?.id === data.map.id ? { ...current.selectedMap, ...data.map } : current.selectedMap
+          } : current);
+        }
+        setTravelDataState('ready');
+        setResetNonce(value => value + 1);
+      })
+      .catch(error => {
+        if (cancelled) return;
+        console.error('Unable to load account-specific travel data.', error);
+        setTravelDataError(error?.message || 'Unable to load your Globe.');
+        setTravelDataState('error');
+      });
+
+    return () => { cancelled = true; };
+  }, [cloudTravelEnabled, auth.user?.id, accountData?.selectedMap?.id, accountBootstrapState, travelDataReloadNonce]);
+
+  function requireCloudTimelineAccess() {
+    if (!cloudTravelEnabled || cloudTravelWriteEnabled) return true;
+    window.alert('Private timeline access is not enabled for this deployment. Enable VITE_ENABLE_CLOUD_TRAVEL_WRITES for the Work Package 4 Preview.');
+    return false;
+  }
+
+  function requireCloudTripEditAccess() {
+    if (!cloudTravelEnabled || cloudTravelWriteEnabled) return true;
+    window.alert('Edit Hop cloud saving is not enabled for this deployment. Enable VITE_ENABLE_CLOUD_TRAVEL_WRITES for the v8.2 Work Package 4 Preview.');
+    return false;
+  }
+
+  function requireCloudTripCreateAccess() {
+    if (!cloudTravelEnabled || cloudTravelWriteEnabled) return true;
+    window.alert('Add Hop cloud saving is not enabled for this deployment. Enable VITE_ENABLE_CLOUD_TRAVEL_WRITES for the v8.2 Work Package 3 Preview.');
+    return false;
+  }
+
+
+  function requireCloudHopperWriteAccess() {
+    if (!cloudTravelEnabled || cloudHopperWriteEnabled) return true;
+    window.alert('Hopper editing is not enabled for this deployment. Enable VITE_ENABLE_CLOUD_HOPPER_WRITES for the v8.2 Work Package 2 Preview.');
+    return false;
+  }
 
   // Committed trip/location/hopper data comes from deployed repo JSON.
   // Do not let older browser localStorage override the repository timeline/order.
@@ -974,6 +1066,7 @@ export default function App() {
     setIsPlaying(true);
   }, [legProgress]);
   function editTravelHistory() {
+    if (!requireCloudTimelineAccess()) return;
     if (destinationSelectionRef.current) cancelDestinationSelection('open-timeline');
     relocationTransitionRef.current = null;
     setRelocationTransition(null);
@@ -990,6 +1083,7 @@ export default function App() {
   }
 
   function editTimelineMarker(marker) {
+    if (!requireCloudTripEditAccess()) return;
     relocationTransitionRef.current = null;
     setRelocationTransition(null);
     prewarmRoutingEngine('Edit Hop').catch(() => {});
@@ -1011,6 +1105,8 @@ export default function App() {
     setIsPlaying(false);
   }
   function addTravelTimelineEntry() {
+    if (!auth.user && cloudTravelEnabled) { setAuthModalMode('signin'); setAuthModalOpen(true); return; }
+    if (!requireCloudTripCreateAccess()) return;
     if (destinationSelectionRef.current) cancelDestinationSelection('add-hop');
     if (idleMode) exitIdleMode('restore');
     relocationTransitionRef.current = null;
@@ -1160,6 +1256,7 @@ export default function App() {
     jumpToLeg(index, withinLeg, isPlaying);
   }
   function openStudioForTrip(tripId) {
+    if (!requireCloudTripEditAccess()) return;
     prewarmRoutingEngine('Edit Hop').catch(() => {});
     setTripDrawerOpen(false);
     setStudioAddRequestId(0);
@@ -1350,7 +1447,7 @@ export default function App() {
       <div className="tagline">All your hops, skips & jumps.</div>
       <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add Hop</button>
       <button className="topbar-pill topbar-old-timeline" aria-hidden="true" tabIndex={-1} onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Old Timeline</button>
-      <button className="topbar-pill topbar-hoppers" onClick={() => { if (destinationSelectionRef.current) cancelDestinationSelection('hoppers'); setStudioAddRequestId(0); setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}><span className="topbar-hoppers-icon" aria-hidden="true">👤</span><span>Hoppers</span></button>
+      <button className="topbar-pill topbar-hoppers" onClick={() => { if (!auth.user && cloudTravelEnabled) { setAuthModalMode('signin'); setAuthModalOpen(true); return; } if (!requireCloudHopperWriteAccess()) return; if (destinationSelectionRef.current) cancelDestinationSelection('hoppers'); setStudioAddRequestId(0); setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}><span className="topbar-hoppers-icon" aria-hidden="true">👤</span><span>Hoppers</span></button>
       <button className="topbar-pill" onClick={editTravelHistory}>GlobeHopper Timeline</button>
       <div className="topbar-globe-menu">
         <button className="topbar-pill topbar-icon-pill topbar-globe-button" title="View Globe" onClick={() => { setGlobeDisplayMode('both'); viewGlobe(); }}>🌐</button>
@@ -1365,12 +1462,14 @@ export default function App() {
       <AccountControl profile={accountData?.profile} bootstrapState={accountBootstrapState} onSignIn={() => { setAuthModalMode('signin'); setAuthModalOpen(true); }} onOpenSecurityTest={() => { if (rlsTestEnabled) setSecurityTestOpen(true); }} securityTestEnabled={rlsTestEnabled} />
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
+    {cloudTravelEnabled && travelDataState === 'loading' && <div className="cloud-travel-status glass"><strong>Loading your Globe…</strong><span>Retrieving your private travel history.</span></div>}
+    {cloudTravelEnabled && travelDataState === 'error' && <div className="cloud-travel-status cloud-travel-status--error glass"><strong>Unable to load your Globe</strong><span>{travelDataError}</span></div>}
     <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
-      <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
+      <p className="eyebrow">{cloudTravelEnabled ? (auth.user ? `${filteredTrips.length} trips · private cloud map` : 'Your private travel map') : `${filteredTrips.length} trips · lifetime travel archive`}</p>
       <h1>GlobeHoppers</h1>
-      <p>All your hops, skips & jumps, replayed across a living globe.</p>
+      <p>{cloudTravelEnabled && !auth.user ? 'Sign in to view your private GlobeHoppers timeline.' : 'All your hops, skips & jumps, replayed across a living globe.'}</p>
       <div className="hero-actions">
         <button className="primary big" onClick={play}>Start the Journey</button>
         <button className="primary big hero-add-hop" onClick={addTravelTimelineEntry}>Add Hop</button>
@@ -1403,8 +1502,8 @@ export default function App() {
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
+    {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} cloudMode={cloudTravelEnabled} cloudWritesEnabled={cloudHopperWriteEnabled} mapId={accountData?.selectedMap?.id || null} onCloudSaved={() => setTravelDataReloadNonce(value => value + 1)} />}
+    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} cloudMode={cloudTravelEnabled} cloudTripCreateEnabled={cloudTravelWriteEnabled} cloudTripEditEnabled={cloudTravelWriteEnabled} mapId={accountData?.selectedMap?.id || null} onCloudCreateTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.createTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} onCloudUpdateTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.updateTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} cloudTripDeleteEnabled={cloudTravelWriteEnabled} cloudTimelineOrderEnabled={cloudTravelWriteEnabled} timelineOrderRevision={accountData?.selectedMap?.timelineOrderRevision || 0} onCloudDeleteTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.deleteTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} onCloudReorderTrips={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); return repository.reorderTrips(payload); }} onCloudReloadTravel={async () => { setTravelDataReloadNonce(value => value + 1); }} /></Suspense>}
     <AuthModal open={authModalOpen} initialMode={authModalMode} onClose={() => setAuthModalOpen(false)} />
     {rlsTestEnabled && <SecurityTestPanel open={securityTestOpen} account={accountData} onClose={() => setSecurityTestOpen(false)} />}
   </main>;
@@ -1543,7 +1642,7 @@ function TimelineTuningUtility({ values, onChange, onClose, onReset, onSave }) {
   </aside>;
 }
 
-function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
+function HopperEditorPanel({ hopperData, setHopperData, onClose, cloudMode = false, cloudWritesEnabled = false, mapId = null, onCloudSaved }) {
   const { hoppers, hopSquads, palette } = normalizeHopperData(hopperData);
   const [closing, setClosing] = useState(false);
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify({ hoppers, hopSquads, palette })));
@@ -1573,13 +1672,13 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     const label = hopper?.name || 'this Hopper';
     setConfirmRequest({
       title: 'Delete Hopper?',
-      message: `Delete ${label}? This will also remove them from any HopSquads.`,
+      message: `Delete ${label}? This will also remove them from HopSquads and any trip assignments.`,
       confirmLabel: 'Delete Hopper',
       onConfirm: () => setDraft(d => ({ ...d, hoppers: d.hoppers.filter(h => h.id !== id), hopSquads: d.hopSquads.map(s => ({ ...s, hopperIds: (s.hopperIds || []).filter(x => x !== id) })) }))
     });
   }
   function addHopper() {
-    const id = `hopper-${Date.now().toString(36)}`;
+    const id = `new-hopper-${Date.now().toString(36)}`;
     setDraft(d => ({ ...d, hoppers: [...d.hoppers, { id, name: 'New Hopper', colorName: 'blue', color: '#2f80ff' }] }));
   }
   function updateSquad(id, patch) { setDraft(d => ({ ...d, hopSquads: d.hopSquads.map(s => s.id === id ? { ...s, ...patch } : s) })); }
@@ -1616,9 +1715,34 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   async function save() {
     const clean = {
       ...draft,
-      hoppers: draft.hoppers.map(h => ({ ...h, id: h.id || slugify(h.name), name: h.name || 'Hopper' })),
+      hoppers: draft.hoppers.map(h => ({ ...h, id: h.id || `new-hopper-${Date.now().toString(36)}`, name: String(h.name || '').trim() || 'Hopper' })),
       hopSquads: draft.hopSquads.map(s => ({ ...s, id: s.id || slugify(s.name), name: s.name || 'Hop Squad', hopperIds: s.hopperIds || [] }))
     };
+
+    if (cloudMode) {
+      if (!cloudWritesEnabled) {
+        window.alert('Cloud Hopper writes are disabled for this deployment.');
+        return;
+      }
+      if (!mapId) {
+        window.alert('Your account map is still loading. Please close this panel and try again.');
+        return;
+      }
+      try {
+        setBusy(true);
+        const repository = createTravelRepository({ cloudEnabled: true, mapId });
+        await repository.replaceHoppers(clean.hoppers);
+        await onCloudSaved?.();
+        onClose?.();
+      } catch (err) {
+        console.error('Unable to save cloud Hoppers.', err);
+        window.alert(`Unable to save Hoppers: ${err?.message || err}`);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     setHopperData(clean);
     localStorage.setItem('globehoppers.hoppers', JSON.stringify(clean));
     if (token && repo) {
@@ -1631,6 +1755,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     }
     onClose?.();
   }
+
   return <section className={`hopper-editor-backdrop hopper-editor-drawer-backdrop ${closing ? 'is-closing' : ''}`} onClick={requestClose}>
     <div className={`hopper-editor glass hopper-editor--compact hopper-editor-drawer ${closing ? 'is-closing' : ''}`} onClick={e => e.stopPropagation()}>
       <header className="hopper-editor__header">
@@ -1650,7 +1775,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
             </article>)}
           </div>
         </section>
-        <section>
+        {!cloudMode && <section>
           <div className="hopper-section-title"><h3>HopSquads</h3><button className="primary small" onClick={addSquad}>Add Squad</button></div>
           <div className="hopper-list">
             {draft.hopSquads.map(s => <article className="hopper-card hopper-card--squad" key={s.id} style={{ '--accent': s.color }}>
@@ -1672,9 +1797,10 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
               </div>
             </article>)}
           </div>
-        </section>
+        </section>}
+        {cloudMode && <p className="hopper-cloud-note">Hoppers save privately to this account. HopSquads remain disabled until they receive their own cloud schema.</p>}
       </div>
-      <footer className="hopper-editor__footer"><button className="secondary" onClick={requestClose}>Cancel</button><button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save Hoppers'}</button></footer>
+      <footer className="hopper-editor__footer"><button className="secondary" onClick={requestClose}>Cancel</button><button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : (cloudMode ? 'Save Private Hoppers' : 'Save Hoppers')}</button></footer>
     </div>
     {confirmRequest && <HopperConfirmPopup request={confirmRequest} busy={busy} onCancel={() => setConfirmRequest(null)} onConfirm={() => { const action = confirmRequest.onConfirm; setConfirmRequest(null); action?.(); }} />}
   </section>;
