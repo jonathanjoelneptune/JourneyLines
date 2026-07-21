@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - develop
+      - feature/account-travel-data
+      - feature/timeline-ordering
 
   pull_request:
     branches:
+      - develop
       - main
 
   workflow_dispatch:
@@ -28,6 +31,8 @@ jobs:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL_DEV }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY_DEV }}
       VITE_ENABLE_RLS_TEST_PANEL: "true"
+      VITE_ENABLE_CLOUD_TRAVEL_DATA: "true"
+      VITE_ENABLE_CLOUD_TRAVEL_WRITES: "true"
 
     steps:
       - name: Checkout repository
@@ -159,6 +164,42 @@ jobs:
       - name: Run v8.1 authentication verification
         shell: bash
         run: npm run verify:v8.1
+
+      - name: Run v8.2 cloud travel verification
+        shell: bash
+        run: npm run verify:v8.2
+
+      - name: Run v8.2 Work Package 2 verification
+        shell: bash
+        run: npm run verify:v8.2.1
+
+      - name: Run v8.2 Work Package 3 verification
+        shell: bash
+        run: npm run verify:v8.2.2
+
+      - name: Run v8.2 Work Package 4 verification
+        shell: bash
+        run: npm run verify:v8.2.3
+
+      - name: Run v8.2 Work Package 4 timeline access verification
+        shell: bash
+        run: npm run verify:v8.2.4
+
+      - name: Run v8.2 Work Package 4 concurrency feedback verification
+        shell: bash
+        run: npm run verify:v8.2.5
+
+      - name: Run v8.2.6 fast conflict verification
+        shell: bash
+        run: npm run verify:v8.2.6
+
+      - name: Run v8.2 Work Package 5 verification
+        shell: bash
+        run: npm run verify:v8.2.7
+
+      - name: Run v8.2 Work Package 6 verification
+        shell: bash
+        run: npm run verify:v8.2.8
 
       - name: Build GlobeHoppers
         shell: bash
