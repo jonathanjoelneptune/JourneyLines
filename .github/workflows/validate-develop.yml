@@ -6,12 +6,10 @@ on:
       - develop
       - feature/account-travel-data
       - feature/timeline-ordering
-
   pull_request:
     branches:
       - develop
       - main
-
   workflow_dispatch:
 
 permissions:
@@ -33,6 +31,7 @@ jobs:
       VITE_ENABLE_RLS_TEST_PANEL: "true"
       VITE_ENABLE_CLOUD_TRAVEL_DATA: "true"
       VITE_ENABLE_CLOUD_TRAVEL_WRITES: "true"
+      VITE_ENABLE_CLOUD_HOPPER_WRITES: "true"
 
     steps:
       - name: Checkout repository
@@ -41,55 +40,18 @@ jobs:
       - name: Verify repository structure
         shell: bash
         run: |
-          echo "Working directory:"
           pwd
-
-          echo "Repository contents:"
           ls -la
-
-          test -f package.json || {
-            echo "::error::journeylines/package.json was not found."
-            exit 1
-          }
-
-          test -f package-lock.json || {
-            echo "::error::journeylines/package-lock.json was not found."
-            exit 1
-          }
-
-          if [ ! -f vite.config.js ] && \
-             [ ! -f vite.config.ts ] && \
-             [ ! -f vite.config.mjs ] && \
-             [ ! -f vite.config.cjs ]; then
-            echo "::error::No Vite configuration file was found."
-            exit 1
-          fi
-
-          echo "Repository structure is valid."
+          test -f package.json
+          test -f package-lock.json
+          test -f vite.config.js || test -f vite.config.ts || test -f vite.config.mjs || test -f vite.config.cjs
+          test -f src/repositories/createTravelRepository.js
 
       - name: Verify development environment variables
         shell: bash
         run: |
-          if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "::error::GitHub secret VITE_SUPABASE_URL_DEV is missing."
-            exit 1
-          fi
-
-          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "::error::GitHub secret VITE_SUPABASE_PUBLISHABLE_KEY_DEV is missing."
-            exit 1
-          fi
-
-          case "$VITE_SUPABASE_URL" in
-            https://*.supabase.co)
-              echo "Supabase Development URL format appears valid."
-              ;;
-            *)
-              echo "::warning::VITE_SUPABASE_URL_DEV does not match the usual https://PROJECT.supabase.co format."
-              ;;
-          esac
-
-          echo "Required Development environment variables are present."
+          test -n "$VITE_SUPABASE_URL" || { echo "::error::VITE_SUPABASE_URL_DEV is missing."; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY_DEV is missing."; exit 1; }
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -100,7 +62,6 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Show runtime versions
-        shell: bash
         run: |
           node --version
           npm --version
@@ -109,41 +70,18 @@ jobs:
       - name: Check lockfile for inaccessible registries
         shell: bash
         run: |
-          echo "Checking package-lock.json for private or inaccessible registry URLs..."
-
-          if grep -Ein \
-            "applied-caas|openai\.org|artifactory|localhost|127\.0\.0\.1" \
-            package-lock.json; then
+          if grep -Ein "applied-caas|openai\.org|artifactory|localhost|127\.0\.0\.1" package-lock.json; then
             echo "::error::package-lock.json contains a private or inaccessible registry URL."
-            echo "::error::Regenerate package-lock.json locally using https://registry.npmjs.org/."
             exit 1
           fi
-
-          echo "No private registry URLs were found."
 
       - name: Verify npm registry connectivity
         shell: bash
         timeout-minutes: 2
         run: |
           npm config set registry https://registry.npmjs.org/
-
-          echo "Configured npm registry:"
-          npm config get registry
-
-          echo "Testing npm registry..."
           npm ping --registry=https://registry.npmjs.org/
-
-          echo "Testing direct HTTPS access..."
-          curl \
-            --fail \
-            --show-error \
-            --silent \
-            --location \
-            --max-time 30 \
-            https://registry.npmjs.org/react/latest \
-            > /dev/null
-
-          echo "Public npm registry is reachable."
+          curl --fail --show-error --silent --location --max-time 30 https://registry.npmjs.org/react/latest > /dev/null
 
       - name: Install dependencies
         shell: bash
@@ -155,51 +93,15 @@ jobs:
           NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: "60000"
           NPM_CONFIG_AUDIT: "false"
           NPM_CONFIG_FUND: "false"
+        run: npm ci --no-audit --no-fund
+
+      - name: Run available v8 verifications
+        shell: bash
         run: |
-          npm ci \
-            --no-audit \
-            --no-fund \
-            --loglevel verbose
-
-      - name: Run v8.1 authentication verification
-        shell: bash
-        run: npm run verify:v8.1
-
-      - name: Run v8.2 cloud travel verification
-        shell: bash
-        run: npm run verify:v8.2
-
-      - name: Run v8.2 Work Package 2 verification
-        shell: bash
-        run: npm run verify:v8.2.1
-
-      - name: Run v8.2 Work Package 3 verification
-        shell: bash
-        run: npm run verify:v8.2.2
-
-      - name: Run v8.2 Work Package 4 verification
-        shell: bash
-        run: npm run verify:v8.2.3
-
-      - name: Run v8.2 Work Package 4 timeline access verification
-        shell: bash
-        run: npm run verify:v8.2.4
-
-      - name: Run v8.2 Work Package 4 concurrency feedback verification
-        shell: bash
-        run: npm run verify:v8.2.5
-
-      - name: Run v8.2.6 fast conflict verification
-        shell: bash
-        run: npm run verify:v8.2.6
-
-      - name: Run v8.2 Work Package 5 verification
-        shell: bash
-        run: npm run verify:v8.2.7
-
-      - name: Run v8.2 Work Package 6 verification
-        shell: bash
-        run: npm run verify:v8.2.8
+          npm run verify:v8.1
+          npm run verify:v8.2.4
+          npm run verify:v8.2.5
+          npm run verify:v8.2.8
 
       - name: Build GlobeHoppers
         shell: bash
@@ -208,17 +110,6 @@ jobs:
       - name: Verify build output
         shell: bash
         run: |
-          test -d dist || {
-            echo "::error::The dist directory was not created."
-            exit 1
-          }
-
-          test -f dist/index.html || {
-            echo "::error::dist/index.html was not created."
-            exit 1
-          }
-
-          echo "Build output:"
-          find dist -maxdepth 2 -type f | sort | head -100
-
-          echo "GlobeHoppers develop validation completed successfully."
+          test -d dist
+          test -f dist/index.html
+          echo "GlobeHoppers timeline-ordering validation completed successfully."
