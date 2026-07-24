@@ -15,7 +15,7 @@ export class SupabaseTravelRepository {
   async loadTravelMap() {
     const { data: map, error: mapError } = await this.client
       .from('travel_maps')
-      .select('id, owner_id, name, description, slug, is_public, timeline_order_revision, created_at, updated_at')
+      .select('id, owner_id, name, description, slug, is_public, created_at, updated_at')
       .eq('id', this.mapId)
       .single();
     if (mapError) throw mapError;
@@ -30,8 +30,10 @@ export class SupabaseTravelRepository {
         .from('trips')
         .select('id, map_id, title, start_date, end_date, notes, sort_order, occasion, trail_style, trail_color_mode, created_at, updated_at')
         .eq('map_id', this.mapId)
-        .order('sort_order', { ascending: true })
-        .order('start_date', { ascending: true })
+        .order('start_date', { ascending: true, nullsFirst: false })
+        .order('end_date', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
     ]);
 
     if (hoppersResult.error) throw hoppersResult.error;
@@ -269,26 +271,6 @@ export class SupabaseTravelRepository {
     return { tripId: data };
   }
 
-
-  async reorderTrips({ tripIds = [], expectedRevision = 0 } = {}) {
-    if (!Array.isArray(tripIds) || !tripIds.length) {
-      throw new Error('At least one trip is required to save timeline order.');
-    }
-    if (tripIds.some(id => !isUuid(id)) || new Set(tripIds).size !== tripIds.length) {
-      throw new Error('The timeline order contains an invalid or duplicate trip. Reload and try again.');
-    }
-
-    const { data, error } = await this.client.rpc('reorder_private_trips', {
-      p_map_id: this.mapId,
-      p_expected_revision: Number(expectedRevision) || 0,
-      p_trip_ids: tripIds
-    });
-    if (error) {
-      if (String(error.message || '').includes('changed in another session')) error.code = 'TIMELINE_CONFLICT';
-      throw error;
-    }
-    return { revision: Number(data) || 0 };
-  }
 
   async deleteTrip({ tripId, expectedUpdatedAt } = {}) {
     if (!isUuid(tripId)) throw new Error('A valid trip ID is required for deletion.');

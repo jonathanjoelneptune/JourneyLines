@@ -29,9 +29,16 @@ function displayDate(parts) {
   return parts.day ? `${month} ${parts.day}, ${parts.year}` : `${month} ${parts.year}`;
 }
 
+function sortableDate(value, fallback = '9999-12-31') {
+  const text = String(value || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : fallback;
+}
+
 function sortKeyFor(trip) {
-  if (trip?.sort_order != null) return `${String(Number(trip.sort_order) || 0).padStart(8, '0')}-${trip.id}`;
-  return `99999999-${trip.id}`;
+  const startDate = sortableDate(trip?.start_date);
+  const endDate = sortableDate(trip?.end_date, startDate);
+  const createdAt = String(trip?.created_at || '9999-12-31T23:59:59.999Z');
+  return `${startDate}|${endDate}|${createdAt}|${String(trip?.id || '')}`;
 }
 
 function normalizeLocation(row) {
@@ -98,7 +105,6 @@ function normalizeTrip(trip, legs, hopperIds) {
     endDay: end.day,
     displayDate: displayDate(start),
     displayEndDate: displayDate(end),
-    sortOrder: Number(trip.sort_order) || 0,
     sortKey: sortKeyFor(trip),
     label: trip.title || fallbackTitle,
     title: trip.title || fallbackTitle,
@@ -137,7 +143,7 @@ export function supabaseRowsToTravelMap({ map, hoppers = [], locations = [], tri
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
 
   return {
-    map: { ...map, timelineOrderRevision: Number(map?.timeline_order_revision) || 0 },
+    map,
     trips: trips
       .map(trip => normalizeTrip(trip, legsByTrip.get(trip.id) || [], hopperIdsByTrip.get(trip.id) || []))
       .sort((a, b) => String(a.sortKey).localeCompare(String(b.sortKey))),

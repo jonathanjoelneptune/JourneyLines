@@ -285,6 +285,7 @@ export default function App() {
   const [authModalMode, setAuthModalMode] = useState('signin');
   const [accountData, setAccountData] = useState(null);
   const [accountBootstrapState, setAccountBootstrapState] = useState('idle');
+  const [accountBootstrapRetryNonce, setAccountBootstrapRetryNonce] = useState(0);
   const [securityTestOpen, setSecurityTestOpen] = useState(false);
   const rlsTestEnabled = import.meta.env.DEV || String(import.meta.env.VITE_ENABLE_RLS_TEST_PANEL || '').toLowerCase() === 'true';
   const cloudTravelEnabled = String(import.meta.env.VITE_ENABLE_CLOUD_TRAVEL_DATA || '').toLowerCase() === 'true';
@@ -400,7 +401,7 @@ export default function App() {
         setAccountBootstrapState('error');
       });
     return () => { cancelled = true; };
-  }, [auth.user?.id]);
+  }, [auth.user?.id, accountBootstrapRetryNonce]);
 
   useEffect(() => {
     if (!cloudTravelEnabled) return undefined;
@@ -442,13 +443,6 @@ export default function App() {
           hopSquads: data.hopperData?.hopSquads || [],
           palette: data.hopperData?.palette?.length ? data.hopperData.palette : (baseHoppers.palette || [])
         });
-        if (data.map) {
-          setAccountData(current => current ? {
-            ...current,
-            maps: (current.maps || []).map(map => map.id === data.map.id ? { ...map, ...data.map } : map),
-            selectedMap: current.selectedMap?.id === data.map.id ? { ...current.selectedMap, ...data.map } : current.selectedMap
-          } : current);
-        }
         setTravelDataState('ready');
         setResetNonce(value => value + 1);
       })
@@ -461,6 +455,17 @@ export default function App() {
 
     return () => { cancelled = true; };
   }, [cloudTravelEnabled, auth.user?.id, accountData?.selectedMap?.id, accountBootstrapState, travelDataReloadNonce]);
+
+  function retryPrivateGlobeLoad() {
+    setTravelDataError('');
+    if (accountBootstrapState === 'error' || !accountData?.selectedMap?.id) {
+      setAccountBootstrapState('loading');
+      setAccountBootstrapRetryNonce(value => value + 1);
+      return;
+    }
+    setTravelDataState('loading');
+    setTravelDataReloadNonce(value => value + 1);
+  }
 
   function requireCloudTimelineAccess() {
     if (!cloudTravelEnabled || cloudTravelWriteEnabled) return true;
@@ -1463,7 +1468,7 @@ export default function App() {
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
     {cloudTravelEnabled && travelDataState === 'loading' && <div className="cloud-travel-status glass"><strong>Loading your Globe…</strong><span>Retrieving your private travel history.</span></div>}
-    {cloudTravelEnabled && travelDataState === 'error' && <div className="cloud-travel-status cloud-travel-status--error glass"><strong>Unable to load your Globe</strong><span>{travelDataError}</span></div>}
+    {cloudTravelEnabled && travelDataState === 'error' && <div className="cloud-travel-status cloud-travel-status--error glass"><strong>Unable to load your Globe</strong><span>{travelDataError}</span><button type="button" className="secondary" onClick={retryPrivateGlobeLoad}>Retry</button></div>}
     <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
@@ -1503,7 +1508,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} cloudMode={cloudTravelEnabled} cloudWritesEnabled={cloudHopperWriteEnabled} mapId={accountData?.selectedMap?.id || null} onCloudSaved={() => setTravelDataReloadNonce(value => value + 1)} />}
-    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} cloudMode={cloudTravelEnabled} cloudTripCreateEnabled={cloudTravelWriteEnabled} cloudTripEditEnabled={cloudTravelWriteEnabled} mapId={accountData?.selectedMap?.id || null} onCloudCreateTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.createTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} onCloudUpdateTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.updateTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} cloudTripDeleteEnabled={cloudTravelWriteEnabled} cloudTimelineOrderEnabled={cloudTravelWriteEnabled} timelineOrderRevision={accountData?.selectedMap?.timelineOrderRevision || 0} onCloudDeleteTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.deleteTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} onCloudReorderTrips={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); return repository.reorderTrips(payload); }} onCloudReloadTravel={async () => { setTravelDataReloadNonce(value => value + 1); }} /></Suspense>}
+    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} cloudMode={cloudTravelEnabled} cloudTripCreateEnabled={cloudTravelWriteEnabled} cloudTripEditEnabled={cloudTravelWriteEnabled} mapId={accountData?.selectedMap?.id || null} onCloudCreateTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.createTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} onCloudUpdateTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.updateTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} cloudTripDeleteEnabled={cloudTravelWriteEnabled} onCloudDeleteTrip={async (payload) => { const repository = createTravelRepository({ cloudEnabled: true, mapId: accountData?.selectedMap?.id }); const result = await repository.deleteTrip(payload); setTravelDataReloadNonce(value => value + 1); return result; }} onCloudReloadTravel={async () => { setTravelDataReloadNonce(value => value + 1); }} /></Suspense>}
     <AuthModal open={authModalOpen} initialMode={authModalMode} onClose={() => setAuthModalOpen(false)} />
     {rlsTestEnabled && <SecurityTestPanel open={securityTestOpen} account={accountData} onClose={() => setSecurityTestOpen(false)} />}
   </main>;

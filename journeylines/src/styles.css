@@ -15353,3 +15353,37 @@ svg text {
   .security-test-records > div { grid-template-columns: 1fr 1fr; }
   .security-test-records code, .security-test-records span { grid-column: 1 / -1; }
 }
+
+/* v8.2 account-specific cloud travel loading */
+.cloud-travel-status {
+  position: fixed;
+  z-index: 60;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 4px;
+  min-width: min(420px, calc(100vw - 32px));
+  padding: 14px 18px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.cloud-travel-status span {
+  font-size: 0.82rem;
+  opacity: 0.78;
+}
+
+.cloud-travel-status--error {
+  border-color: rgba(255, 91, 91, 0.55);
+}
+
+.hopper-cloud-note { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(80, 180, 255, 0.10); border: 1px solid rgba(120, 205, 255, 0.28); color: rgba(235, 248, 255, 0.88); font-size: 0.82rem; line-height: 1.45; }
+
+
+/* v8.2.8 chronological timeline: private-load failure remains cloud-only. */
+.cloud-travel-status--error .secondary {
+  align-self: center;
+  min-width: 7rem;
+  margin-top: 0.35rem;
+}
