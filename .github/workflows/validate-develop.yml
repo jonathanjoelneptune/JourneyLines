@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - develop
+      - feature/account-travel-data
+      - feature/chronological-timeline
 
   pull_request:
     branches:
+      - develop
       - main
 
   workflow_dispatch:
@@ -28,6 +31,9 @@ jobs:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL_DEV }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY_DEV }}
       VITE_ENABLE_RLS_TEST_PANEL: "true"
+      VITE_ENABLE_CLOUD_TRAVEL_DATA: "true"
+      VITE_ENABLE_CLOUD_HOPPER_WRITES: "true"
+      VITE_ENABLE_CLOUD_TRAVEL_WRITES: "true"
 
     steps:
       - name: Checkout repository
@@ -52,10 +58,27 @@ jobs:
             exit 1
           }
 
-          if [ ! -f vite.config.js ] && \
-             [ ! -f vite.config.ts ] && \
-             [ ! -f vite.config.mjs ] && \
-             [ ! -f vite.config.cjs ]; then
+          test -f src/App.jsx || {
+            echo "::error::journeylines/src/App.jsx was not found."
+            exit 1
+          }
+
+          test -f src/repositories/createTravelRepository.js || {
+            echo "::error::createTravelRepository.js was not found."
+            exit 1
+          }
+
+          test -f scripts/verify-v8.1.mjs || {
+            echo "::error::verify-v8.1.mjs was not found."
+            exit 1
+          }
+
+          test -f scripts/verify-v8.2.8.mjs || {
+            echo "::error::verify-v8.2.8.mjs was not found."
+            exit 1
+          }
+
+          if [ ! -f vite.config.js ] &&              [ ! -f vite.config.ts ] &&              [ ! -f vite.config.mjs ] &&              [ ! -f vite.config.cjs ]; then
             echo "::error::No Vite configuration file was found."
             exit 1
           fi
@@ -106,11 +129,8 @@ jobs:
         run: |
           echo "Checking package-lock.json for private or inaccessible registry URLs..."
 
-          if grep -Ein \
-            "applied-caas|openai\.org|artifactory|localhost|127\.0\.0\.1" \
-            package-lock.json; then
+          if grep -Ein             "applied-caas|openai\.org|artifactory|localhost|127\.0\.0\.1"             package-lock.json; then
             echo "::error::package-lock.json contains a private or inaccessible registry URL."
-            echo "::error::Regenerate package-lock.json locally using https://registry.npmjs.org/."
             exit 1
           fi
 
@@ -121,22 +141,10 @@ jobs:
         timeout-minutes: 2
         run: |
           npm config set registry https://registry.npmjs.org/
-
-          echo "Configured npm registry:"
           npm config get registry
-
-          echo "Testing npm registry..."
           npm ping --registry=https://registry.npmjs.org/
 
-          echo "Testing direct HTTPS access..."
-          curl \
-            --fail \
-            --show-error \
-            --silent \
-            --location \
-            --max-time 30 \
-            https://registry.npmjs.org/react/latest \
-            > /dev/null
+          curl             --fail             --show-error             --silent             --location             --max-time 30             https://registry.npmjs.org/react/latest             > /dev/null
 
           echo "Public npm registry is reachable."
 
@@ -151,14 +159,49 @@ jobs:
           NPM_CONFIG_AUDIT: "false"
           NPM_CONFIG_FUND: "false"
         run: |
-          npm ci \
-            --no-audit \
-            --no-fund \
-            --loglevel verbose
+          npm ci             --no-audit             --no-fund             --loglevel verbose
 
-      - name: Run v8.1 authentication verification
+      - name: Verify required npm scripts
         shell: bash
-        run: npm run verify:v8.1
+        run: |
+          node <<'NODE'
+          const scripts = require('./package.json').scripts || {};
+          const required = ['verify:v8.1', 'verify:v8.2.8', 'build'];
+
+          const missing = required.filter((name) => !scripts[name]);
+
+          if (missing.length) {
+            console.error(`Missing required npm scripts: ${missing.join(', ')}`);
+            process.exit(1);
+          }
+
+          console.log('Required npm scripts are present.');
+          NODE
+
+      - name: Run available v8 verification suites
+        shell: bash
+        run: |
+          checks=(
+            "verify:v8.1"
+            "verify:v8.2"
+            "verify:v8.2.1"
+            "verify:v8.2.2"
+            "verify:v8.2.3"
+            "verify:v8.2.4"
+            "verify:v8.2.5"
+            "verify:v8.2.6"
+            "verify:v8.2.7"
+            "verify:v8.2.8"
+          )
+
+          for check in "${checks[@]}"; do
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s['$check'] ? 0 : 1)"; then
+              echo "Running $check"
+              npm run "$check"
+            else
+              echo "Skipping $check because it is not defined in package.json."
+            fi
+          done
 
       - name: Build GlobeHoppers
         shell: bash
@@ -180,4 +223,4 @@ jobs:
           echo "Build output:"
           find dist -maxdepth 2 -type f | sort | head -100
 
-          echo "GlobeHoppers develop validation completed successfully."
+          echo "GlobeHoppers chronological timeline validation completed successfully."
